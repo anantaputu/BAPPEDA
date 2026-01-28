@@ -11,25 +11,26 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('data_values', function (Blueprint $table) {
-    $table->id('id_value');
+    Schema::create('data_values', function (Blueprint $table) {
+    $table->id();
 
     $table->unsignedBigInteger('id_upload');
     $table->unsignedBigInteger('id_field');
 
-    $table->text('nilai');   // nilai sel (angka / teks)
+    $table->integer('row_index'); 
+    $table->text('value');
 
     $table->timestamps();
 
     $table->foreign('id_upload')
-          ->references('id_upload')
-          ->on('data_uploads')
-          ->onDelete('cascade');
+        ->references('id_upload')
+        ->on('data_uploads')
+        ->onDelete('cascade');
 
     $table->foreign('id_field')
-          ->references('id_field')
-          ->on('data_fields')
-          ->onDelete('cascade');
+        ->references('id_field')
+        ->on('data_fields')
+        ->onDelete('cascade');
 });
 
     }

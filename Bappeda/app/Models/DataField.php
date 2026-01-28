@@ -3,8 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Data;
-use App\Models\DataValue;
 
 class DataField extends Model
 {
@@ -19,13 +17,31 @@ class DataField extends Model
         'wajib'
     ];
 
+    protected $casts = [
+        'wajib' => 'boolean',
+    ];
+
+    /**
+     * Relasi ke master data
+     */
     public function data()
     {
-        return $this->belongsTo(Data::class, 'id_data');
+        return $this->belongsTo(Data::class, 'id_data', 'id_data');
     }
 
+    /**
+     * Relasi ke mapping Excel
+     */
+    public function mappings()
+    {
+        return $this->hasMany(DataFieldMapping::class, 'id_field', 'id_field');
+    }
+
+    /**
+     * Relasi ke nilai data
+     */
     public function values()
     {
-        return $this->hasMany(DataValue::class, 'id_field');
+        return $this->hasMany(DataValue::class, 'id_field', 'id_field');
     }
 }

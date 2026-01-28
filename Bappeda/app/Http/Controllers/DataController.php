@@ -24,15 +24,16 @@ class DataController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama_indikator' => 'required|string',
-            'deskripsi' => 'required|string',
-            'id_tema' => 'required',
-            'id_urusan' => 'required',
-            'id_bidang' => 'required',
-            'kata_kunci' => 'nullable|string',
-            'satuan' => 'required|string',
-            'id_frekuensi' => 'required',
-            'sumber' => 'required|string',
+        'nama_indikator' => 'required|string',
+        'deskripsi'      => 'nullable|string', // Sekarang boleh kosong
+        'id_tema'        => 'required',
+        'id_urusan'      => 'required',
+        'id_bidang'      => 'required',
+        'kata_kunci'     => 'nullable|string', // Sudah opsional
+        'satuan'         => 'nullable|string',
+        'id_frekuensi'   => 'required',
+        'sumber'         => 'nullable|string', // Sekarang boleh kosong
+        'status'         => 'nullable|string'
         ]);
 
         Data::create([

@@ -16,13 +16,12 @@ class DataUpload extends Model
         'id_user',
         'periode',
         'file_path',
-        'status',
-        'catatan'
+        'status'
     ];
 
     public function data()
     {
-        return $this->belongsTo(Data::class, 'id_data');
+        return $this->belongsTo(Data::class, 'id_data', 'id_data');
     }
 
     public function user()

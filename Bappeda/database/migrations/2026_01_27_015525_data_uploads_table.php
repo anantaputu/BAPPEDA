@@ -17,8 +17,8 @@ return new class extends Migration
     $table->unsignedBigInteger('id_data');
     $table->unsignedBigInteger('id_user');
 
-    $table->string('periode');      // contoh: 2024 / 2024-TW1
-    $table->string('file_path');    // lokasi file Excel
+    $table->string('periode');      
+    $table->string('file_path');    
 
     $table->enum('status', [
         'draft',
