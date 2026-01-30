@@ -16,7 +16,13 @@ class DataUpload extends Model
         'id_user',
         'periode',
         'file_path',
-        'status'
+        'status',
+        'value'
+    ];
+
+    // MENGUBAH JSON MENJADI ARRAY OTOMATIS
+    protected $casts = [
+        'value' => 'array', 
     ];
 
     public function data()

@@ -26,7 +26,7 @@ return new class extends Migration
     $table->string('satuan');
     $table->string('sumber');
 
-    $table->enum('status', ['draft', 'aktif'])->default('draft');
+    $table->string('status')->default('aktif');
 
     $table->timestamps();
 

@@ -6,12 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class DataFieldMapping extends Model
 {
+    // PENTING: Nama tabel harus sama persis dengan yang di migrasi
     protected $table = 'data_mappings'; 
-    // kalau nama tabel kamu: data_mappings
-    // kalau data_field_mappings, ganti sesuai tabel
+    
+    // Primary Key (default 'id', jadi tidak wajib ditulis, tapi boleh biar jelas)
+    protected $primaryKey = 'id';
 
-    protected $primaryKey = 'id'; // default, aman
-
+    // Kolom yang boleh diisi (Mass Assignment)
     protected $fillable = [
         'id_upload',
         'id_field',
@@ -19,7 +20,7 @@ class DataFieldMapping extends Model
     ];
 
     /**
-     * Relasi ke upload
+     * Relasi ke DataUpload (Upload Induk)
      */
     public function upload()
     {
@@ -27,7 +28,7 @@ class DataFieldMapping extends Model
     }
 
     /**
-     * Relasi ke field
+     * Relasi ke DataField (Master Field)
      */
     public function field()
     {

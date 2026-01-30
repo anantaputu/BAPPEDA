@@ -20,12 +20,9 @@ return new class extends Migration
     $table->string('periode');      
     $table->string('file_path');    
 
-    $table->enum('status', [
-        'draft',
-        'diajukan',
-        'disetujui',
-        'ditolak'
-    ])->default('draft');
+    $table->string('status')->default('processing');
+
+    $table->jsonb('value')->nullable();
 
     $table->text('catatan')->nullable();
     $table->timestamps();

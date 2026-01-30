@@ -3,6 +3,7 @@
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DataInputController;
+use App\Http\Controllers\DataOutputController;
 use App\Http\Controllers\DataController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
@@ -83,4 +84,10 @@ Route::post(
     '/input-data/{upload}/parse',
     [DataInputController::class, 'parse']
 )->name('input-data.parse');
+
+Route::get('/input-data/{upload}/export', [DataOutputController::class, 'export'])
+        ->name('input-data.export');
+
 });
+
+

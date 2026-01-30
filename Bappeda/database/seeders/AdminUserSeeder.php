@@ -13,7 +13,7 @@ class AdminUserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'admin@bappeda.go.id'],
             [
-                'name'      => 'Gweh lu member',
+                'name'      => 'yesss',
                 'username'  => 'admin',
                 'password'      => Hash::make('admin123'),
                 'role_id'       => 1, 
@@ -22,6 +22,8 @@ class AdminUserSeeder extends Seeder
                 'status_aktif'  => true,
                 'email_verified_at' => now(),
             ]
+            
+
         );
     }
 }
