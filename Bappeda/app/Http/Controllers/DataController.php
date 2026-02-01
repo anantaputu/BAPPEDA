@@ -25,14 +25,14 @@ class DataController extends Controller
     {
         $request->validate([
         'nama_indikator' => 'required|string',
-        'deskripsi'      => 'nullable|string', // Sekarang boleh kosong
+        'deskripsi'      => 'nullable|string', 
         'id_tema'        => 'required',
         'id_urusan'      => 'required',
         'id_bidang'      => 'required',
-        'kata_kunci'     => 'nullable|string', // Sudah opsional
+        'kata_kunci'     => 'nullable|string', 
         'satuan'         => 'nullable|string',
         'id_frekuensi'   => 'required',
-        'sumber'         => 'nullable|string', // Sekarang boleh kosong
+        'sumber'         => 'nullable|string', 
         'status'         => 'nullable|string'
         ]);
 

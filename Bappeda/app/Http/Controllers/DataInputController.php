@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Data;
 use App\Models\DataUpload;
 use App\Models\DataField;
-use App\Models\DataFieldMapping; // <--- WAJIB ADA
+use App\Models\DataFieldMapping;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -39,7 +39,14 @@ class DataInputController extends Controller
             'file' => 'required|file|mimes:xlsx,xls,csv,txt'
         ]);
 
-        // Simpan di disk 'private'
+        // --- UPDATE 1: CEK DUPLIKASI (Pindahkan ke Atas) ---
+        $exists = DataUpload::where('id_data', $data->id_data)
+            ->where('periode', $request->periode)
+            ->exists();
+
+        if ($exists) {
+            return back()->withErrors(['periode' => 'Data untuk periode ini sudah pernah diupload! Mohon hapus data lama jika ingin mengganti.']);
+        }
         $path = $request->file('file')->store('uploads/excel', 'private');
 
         $upload = DataUpload::create([
@@ -47,7 +54,7 @@ class DataInputController extends Controller
             'id_user' => Auth::id(),
             'periode' => $request->periode,
             'file_path' => $path,
-            'status' => 'processing' // Default status menunggu mapping
+            'status' => 'processing'
         ]);
 
         return redirect()->route('input-data.mapping', $upload->id_upload);
@@ -64,15 +71,15 @@ class DataInputController extends Controller
         $spreadsheet = IOFactory::load($path);
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Ambil data Excel: ['A' => 'Nama', 'B' => 'Alamat']
+        // Ambil data Excel
         $allRows = $sheet->toArray(null, true, true, true);
         
-        $header = array_shift($allRows); // Baris 1 jadi Header
-        $previewData = array_slice($allRows, 0, 5); // 5 Baris contoh preview
+        $header = array_shift($allRows); 
+        $previewData = array_slice($allRows, 0, 5); 
 
         $fields = DataField::where('id_data', $upload->id_data)->get();
 
-        // Logic AutoMap (Mencocokkan nama header dengan field database)
+        // Logic AutoMap
         $autoMap = [];
         foreach ($header as $colKey => $colName) {
             if (!$colName) continue;
@@ -102,21 +109,16 @@ class DataInputController extends Controller
         $request->validate(['mapping' => 'required|array']);
 
         DB::transaction(function () use ($request, $upload) {
-            // 1. Hapus mapping lama jika ada (untuk re-mapping)
             DataFieldMapping::where('id_upload', $upload->id_upload)->delete();
 
-            // 2. Loop setiap kolom yang dikirim dari Vue
             foreach ($request->mapping as $excelCol => $fieldId) {
-                if (!$fieldId) continue; // Skip jika user pilih "Abaikan"
+                if (!$fieldId) continue; 
 
-                // 3. Handle jika user memilih "+ Tambah Field Baru"
                 if ($fieldId === '__new__') {
-                    // Validasi input field baru
                     if(empty($request->new_fields[$excelCol])) continue;
 
                     $newFieldData = $request->new_fields[$excelCol];
                     
-                    // Buat Master Field Baru
                     $field = DataField::create([
                         'id_data' => $upload->id_data,
                         'nama_field' => $newFieldData['nama_field'],
@@ -127,7 +129,6 @@ class DataInputController extends Controller
                     $fieldId = $field->id_field;
                 }
 
-                // 4. Simpan ke tabel data_mappings
                 DataFieldMapping::create([
                     'id_upload' => $upload->id_upload,
                     'excel_column' => $excelCol,
@@ -136,14 +137,13 @@ class DataInputController extends Controller
             }
         });
 
-        // Lanjut ke proses parsing
         return $this->parse($upload);
     }
 
-    // STEP 6: Eksekusi Pindahkan Data Excel ke JSONB (Status -> Valid)
+    // STEP 6: Eksekusi Pindahkan Data Excel ke JSONB
     public function parse(DataUpload $upload)
     {
-        // 1. Ambil Mapping yang sudah disimpan
+        // 1. Ambil Mapping
         $mappings = DB::table('data_mappings')
             ->where('id_upload', $upload->id_upload)
             ->pluck('id_field', 'excel_column'); 
@@ -152,41 +152,51 @@ class DataInputController extends Controller
             return back()->withErrors(['mapping' => 'Mapping belum disimpan.']);
         }
 
-        // 2. Baca Excel Lagi
+        // --- UPDATE 2: LOAD TIPE FIELD UNTUK SANITASI ---
+        $fieldTypes = DataField::where('id_data', $upload->id_data)
+            ->pluck('tipe_field', 'id_field');
+
         $path = Storage::disk('private')->path($upload->file_path);
         $spreadsheet = IOFactory::load($path);
         $sheet = $spreadsheet->getActiveSheet();
         
         $rows = $sheet->toArray(null, true, true, true);
-        array_shift($rows); // Buang header
+        array_shift($rows); 
 
         $jsonPayload = [];
 
-        // 3. Loop baris data Excel
         foreach ($rows as $row) {
             $rowData = [];
             $hasData = false;
 
-            // Loop berdasarkan mapping yang kita punya
             foreach ($mappings as $colKey => $fieldId) {
-                // Ambil value dari kolom Excel (misal kolom 'A')
                 $val = $row[$colKey] ?? null;
 
-                // Hanya simpan jika ada isinya
+                $type = $fieldTypes[$fieldId] ?? 'text';
+
+                // --- LOGIC PEMBERSIHAN DATA (SANITASI) ---
                 if ($val !== null && trim($val) !== '') {
-                    $rowData[$fieldId] = $val;
-                    $hasData = true;
+                    
+                    if ($type === 'number') {
+                       
+                        $cleanVal = preg_replace('/[^0-9]/', '', $val);
+                        
+                        $val = $cleanVal === '' ? null : $cleanVal;
+                    }
+
+                    if ($val !== null) {
+                        $rowData[$fieldId] = $val;
+                        $hasData = true;
+                    }
                 }
             }
 
-            // Jika baris tidak kosong, masukkan ke payload
             if ($hasData) {
                 $jsonPayload[] = $rowData;
             }
         }
 
-        // 4. Update tabel data_uploads
-        // Simpan ke kolom 'value' dan ubah status jadi 'valid'
+        // 4. Update tabel
         $upload->update([
             'value' => $jsonPayload, 
             'status' => 'valid' 
@@ -194,10 +204,9 @@ class DataInputController extends Controller
 
         return redirect()
             ->route('input-data.index')
-            ->with('success', 'Data berhasil diproses dan disimpan.');
+            ->with('success', 'Data berhasil diproses. Angka otomatis dibersihkan.');
     }
 
-    // Helper: Membersihkan string untuk pencocokan otomatis
     private function normalize($value)
     {
         if (!$value) return '';

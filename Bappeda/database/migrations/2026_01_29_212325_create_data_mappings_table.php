@@ -12,30 +12,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('data_mappings', function (Blueprint $table) {
-            $table->id(); // id (primary key)
-
-            // Relasi ke data_uploads
+            $table->id(); 
             $table->unsignedBigInteger('id_upload');
-            
-            // Relasi ke data_fields (Kolom master data)
             $table->unsignedBigInteger('id_field');
-
-            // Kolom Excel (misal: 'A', 'B', 'AB')
             $table->string('excel_column');
-
             $table->timestamps();
 
-            // --- FOREIGN KEYS (PENTING AGAR RELASI AMAN) ---
+            // --- FOREIGN KEYS 
             
-            // Jika data upload dihapus, mappingnya ikut terhapus
             $table->foreign('id_upload')
-                  ->references('id_upload') // Pastikan ini sesuai PK di data_uploads
+                  ->references('id_upload') 
                   ->on('data_uploads')
                   ->onDelete('cascade');
 
-            // Jika field master dihapus, mapping ikut terhapus
+          
             $table->foreign('id_field')
-                  ->references('id_field') // Pastikan ini sesuai PK di data_fields
+                  ->references('id_field') 
                   ->on('data_fields')
                   ->onDelete('cascade');
         });

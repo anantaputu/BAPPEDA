@@ -27,20 +27,17 @@ class DataOutputController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
 
         // --- BAGIAN A: HEADER (Baris 1) ---
-        // Menggunakan ide kamu: Konversi Angka -> Huruf (1 -> A, 2 -> B)
         $col = 1;
         $rowHeader = 1;
 
         foreach ($fields as $field) {
-            // Ubah index 1 jadi 'A', 2 jadi 'B', dst.
+
             $columnLetter = Coordinate::stringFromColumnIndex($col);
             
-            // Gabung jadi alamat sel, misal 'A1'
             $cellAddress = $columnLetter . $rowHeader;
 
             $sheet->setCellValue($cellAddress, $field->nama_field);
             
-            // Style Bold
             $sheet->getStyle($cellAddress)->getFont()->setBold(true);
             
             $col++;
@@ -50,13 +47,11 @@ class DataOutputController extends Controller
         $currentRow = 2; 
 
         foreach ($dataRows as $rowData) {
-            $col = 1; // Reset ke kolom awal untuk baris baru
+            $col = 1; 
             
             foreach ($fields as $field) {
-                // Ambil value
                 $val = $rowData[$field->id_field] ?? ''; 
                 
-                // Konversi koordinat lagi (Contoh: A2, B2, lalu A3, B3...)
                 $columnLetter = Coordinate::stringFromColumnIndex($col);
                 $cellAddress = $columnLetter . $currentRow;
 
@@ -68,7 +63,7 @@ class DataOutputController extends Controller
         }
 
         // 3. Auto Size Kolom (Opsional, biar rapi)
-        // Kita loop dari kolom 'A' sampai kolom terakhir yang terisi
+
         $highestColumn = $sheet->getHighestColumn(); 
         foreach (range('A', $highestColumn) as $colID) {
             $sheet->getColumnDimension($colID)->setAutoSize(true);

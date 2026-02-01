@@ -15,8 +15,8 @@ return new class extends Migration
     $table->id('id_field');
 
     $table->unsignedBigInteger('id_data');
-    $table->string('nama_field');      // Nama kolom di Excel
-    $table->string('key_field');       // snake_case (jumlah_sekolah)
+    $table->string('nama_field');    
+    $table->string('key_field');      
     $table->enum('tipe_field', ['number', 'text', 'date']);
     $table->boolean('wajib')->default(false);
 
