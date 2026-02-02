@@ -11,11 +11,11 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'kaklepang@bappeda.go.id'],
+            ['email' => '1@a.com'],
             [
                 'name'      => 'M. Khalid Al Rejeki',
                 'username'  => 'Khalid',
-                'password'      => Hash::make('l3pang'),
+                'password'      => Hash::make('12345'),
                 'role_id'       => 1, 
                 'nama_depan'    => 'M. Khalid',
                 'nama_belakang' => 'Al Rejeki',
@@ -37,5 +37,7 @@ class AdminUserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
+
     }
 }

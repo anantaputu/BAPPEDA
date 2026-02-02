@@ -18,7 +18,8 @@ class DataInputController extends Controller
     // List Metadata
     public function index()
     {
-        return inertia('DataInput/Index', [
+        return inertia('Inputer/Data/Index', [
+            'title' => 'Input Data',
             'dataList' => Data::where('status', 'aktif')->get()
         ]);
     }
@@ -26,7 +27,7 @@ class DataInputController extends Controller
     // Form Upload
     public function create(Data $data)
     {
-        return inertia('DataInput/Create', [
+        return inertia('Inputer/Data/Create', [
             'data' => $data
         ]);
     }
@@ -62,7 +63,7 @@ class DataInputController extends Controller
             'status' => 'processing'
         ]);
 
-        return redirect()->route('input-data.mapping', $upload->id_upload);
+        return redirect()->route('inputer.data.mapping', $upload->id_upload);
     }
 
     //  Halaman Mapping
@@ -96,7 +97,7 @@ class DataInputController extends Controller
             }
         }
 
-        return inertia('DataInput/Mapping', [
+        return inertia('Inputer/Data/Mapping', [
             'upload'       => $upload,
             'excelColumns' => $header,
             'previewData'  => $previewData,

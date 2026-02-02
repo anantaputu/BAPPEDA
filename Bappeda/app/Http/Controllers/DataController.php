@@ -13,7 +13,7 @@ class DataController extends Controller
 {
     public function create()
     {
-        return inertia('Data/Create', [
+        return inertia('Admin/Data/Create', [
             'tema' => Tema::all(),
             'urusan' => Urusan::all(),
             'bidang' => Bidang::all(),
@@ -49,7 +49,7 @@ class DataController extends Controller
             'status' => 'aktif'
         ]);
 
-        return redirect()->route('input-data.index')
+        return redirect()->route('admin.data.index')
             ->with('success', 'Metadata data berhasil ditambahkan');
     }
 }
