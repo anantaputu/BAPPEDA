@@ -10,16 +10,20 @@ import { Head, Link } from '@inertiajs/vue3'
         
         <nav class="w-full border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-                <div class="text-2xl font-extrabold text-gray-800">
+                <div class="text-2xl font-extrabold flex items-center text-gray-800">
+                    <img src="/public/images/logo.png" alt="Logo BAPPEDA" class="h-10 w-10 object-contain" />
                     DATA<span class="text-blue-600">BAPPEDA</span>
                 </div>
                 
                 <div class="flex gap-4">
-                    <Link href="/login" class="text-gray-600 font-semibold hover:text-blue-600 px-4 py-2">
-                        Login
+                    <Link href="/dashboard" class="text-gray-600 font-semibold hover:text-blue-600 px-4 py-2">
+                        Dashboard
                     </Link>
-                    <Link href="/register" class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-700 transition">
-                        Daftar
+                    <Link href="/cari" class="text-gray-600 font-semibold hover:text-blue-600 px-4 py-2">
+                        Cari
+                    </Link>
+                    <Link href="/login" class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold hover:bg-blue-700 transition">
+                        Login
                     </Link>
                 </div>
             </div>

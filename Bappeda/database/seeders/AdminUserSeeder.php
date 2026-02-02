@@ -11,19 +11,31 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'admin@bappeda.go.id'],
+            ['email' => 'kaklepang@bappeda.go.id'],
             [
-                'name'      => 'yesss',
-                'username'  => 'admin',
-                'password'      => Hash::make('admin123'),
+                'name'      => 'M. Khalid Al Rejeki',
+                'username'  => 'Khalid',
+                'password'      => Hash::make('l3pang'),
                 'role_id'       => 1, 
-                'nama_depan'    => 'Admin',
-                'nama_belakang' => 'BAPPEDA',
+                'nama_depan'    => 'M. Khalid',
+                'nama_belakang' => 'Al Rejeki',
                 'status_aktif'  => true,
                 'email_verified_at' => now(),
             ]
-            
+        );
 
+        User::updateOrCreate(
+            ['email' => 'sugiartha@bappeda.go.id'],
+            [
+                'name'      => 'I Putu Ananta Sugiartha',
+                'username'  => 'Ananta',
+                'password'      => Hash::make('4nanta'),
+                'role_id'       => 2, 
+                'nama_depan'    => 'I Putu Ananta',
+                'nama_belakang' => 'Sugiartha',
+                'status_aktif'  => true,
+                'email_verified_at' => now(),
+            ]
         );
     }
 }

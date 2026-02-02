@@ -21,6 +21,10 @@ Route::get('/welcome', function () {
     return Inertia::render('Welcome');
 })->name('welcome');
 
+Route::get('/dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->name('dashboard');
+
 /*
 |--------------------------------------------------------------------------
 | AUTH ROUTES (DARI BREEZE / AUTH BAWAAN)
@@ -48,10 +52,6 @@ Route::middleware('auth')->group(function () {
 */
 
 Route::middleware(['auth'])->group(function () {
-
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
 
     // ===== INPUT DATA =====
     Route::get('/input-data', [DataInputController::class, 'index'])

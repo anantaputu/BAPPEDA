@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 class DataInputController extends Controller
 {
-    // STEP 1: List Metadata (Master Data)
+    // List Metadata
     public function index()
     {
         return inertia('DataInput/Index', [
@@ -23,7 +23,7 @@ class DataInputController extends Controller
         ]);
     }
 
-    // STEP 2: Form Upload
+    // Form Upload
     public function create(Data $data)
     {
         return inertia('DataInput/Create', [
@@ -31,7 +31,7 @@ class DataInputController extends Controller
         ]);
     }
 
-    // STEP 3: Simpan File Excel (Status: Processing)
+    // Simpan File Excel 
     public function store(Request $request, Data $data)
     {
         $request->validate([
@@ -39,14 +39,19 @@ class DataInputController extends Controller
             'file' => 'required|file|mimes:xlsx,xls,csv,txt'
         ]);
 
-        // --- UPDATE 1: CEK DUPLIKASI (Pindahkan ke Atas) ---
-        $exists = DataUpload::where('id_data', $data->id_data)
+        $existingValid = DataUpload::where('id_data', $data->id_data)
             ->where('periode', $request->periode)
+            ->where('status', 'valid') 
             ->exists();
 
-        if ($exists) {
-            return back()->withErrors(['periode' => 'Data untuk periode ini sudah pernah diupload! Mohon hapus data lama jika ingin mengganti.']);
+        if ($existingValid) {
+            return back()->withErrors(['periode' => 'Data Valid untuk periode ini sudah ada. Hapus data lama dulu jika ingin mengganti.']);
         }
+        DataUpload::where('id_data', $data->id_data)
+            ->where('periode', $request->periode)
+            ->where('status', 'processing')
+            ->delete();
+
         $path = $request->file('file')->store('uploads/excel', 'private');
 
         $upload = DataUpload::create([
@@ -60,7 +65,7 @@ class DataInputController extends Controller
         return redirect()->route('input-data.mapping', $upload->id_upload);
     }
 
-    // STEP 4: Halaman Mapping Columns
+    //  Halaman Mapping
     public function mapping(DataUpload $upload)
     {
         if (!Storage::disk('private')->exists($upload->file_path)) {
@@ -71,15 +76,12 @@ class DataInputController extends Controller
         $spreadsheet = IOFactory::load($path);
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Ambil data Excel
         $allRows = $sheet->toArray(null, true, true, true);
-        
         $header = array_shift($allRows); 
         $previewData = array_slice($allRows, 0, 5); 
 
         $fields = DataField::where('id_data', $upload->id_data)->get();
 
-        // Logic AutoMap
         $autoMap = [];
         foreach ($header as $colKey => $colName) {
             if (!$colName) continue;
@@ -103,7 +105,7 @@ class DataInputController extends Controller
         ]);
     }
 
-    // STEP 5: Simpan Konfigurasi Mapping ke Database
+    // Simpan Mapping
     public function storeMapping(Request $request, DataUpload $upload)
     {
         $request->validate(['mapping' => 'required|array']);
@@ -140,10 +142,9 @@ class DataInputController extends Controller
         return $this->parse($upload);
     }
 
-    // STEP 6: Eksekusi Pindahkan Data Excel ke JSONB
+    //  Halaman Parsing Data Excel ke JSONB
     public function parse(DataUpload $upload)
     {
-        // 1. Ambil Mapping
         $mappings = DB::table('data_mappings')
             ->where('id_upload', $upload->id_upload)
             ->pluck('id_field', 'excel_column'); 
@@ -152,9 +153,10 @@ class DataInputController extends Controller
             return back()->withErrors(['mapping' => 'Mapping belum disimpan.']);
         }
 
-        // --- UPDATE 2: LOAD TIPE FIELD UNTUK SANITASI ---
-        $fieldTypes = DataField::where('id_data', $upload->id_data)
-            ->pluck('tipe_field', 'id_field');
+        // ambil semua info field dan jadikan ID Field 
+        $fieldsInfo = DataField::where('id_data', $upload->id_data)
+            ->get()
+            ->keyBy('id_field'); 
 
         $path = Storage::disk('private')->path($upload->file_path);
         $spreadsheet = IOFactory::load($path);
@@ -172,23 +174,28 @@ class DataInputController extends Controller
             foreach ($mappings as $colKey => $fieldId) {
                 $val = $row[$colKey] ?? null;
 
-                $type = $fieldTypes[$fieldId] ?? 'text';
+                $fieldInfo = $fieldsInfo[$fieldId] ?? null;
+                $type = $fieldInfo->tipe_field ?? 'text';
+                $isWajib = $fieldInfo->wajib ?? false; 
 
-                // --- LOGIC PEMBERSIHAN DATA (SANITASI) ---
-                if ($val !== null && trim($val) !== '') {
-                    
-                    if ($type === 'number') {
-                       
-                        $cleanVal = preg_replace('/[^0-9]/', '', $val);
-                        
-                        $val = $cleanVal === '' ? null : $cleanVal;
-                    }
+                // 1. Sanitasi Angka 
+                if ($val !== null && trim($val) !== '' && $type === 'number') {
+                    $cleanVal = preg_replace('/[^0-9]/', '', $val);
+                    $val = $cleanVal === '' ? null : $cleanVal;
+                }
 
-                    if ($val !== null) {
-                        $rowData[$fieldId] = $val;
-                        $hasData = true;
+                if ($val === null || trim($val) === '') {
+                    if ($isWajib) {
+  
+                        $val = ($type === 'number') ? '0' : '-';
+                    } else {
+                        continue; 
                     }
                 }
+
+                // Simpan
+                $rowData[$fieldId] = $val;
+                $hasData = true;
             }
 
             if ($hasData) {
@@ -204,7 +211,7 @@ class DataInputController extends Controller
 
         return redirect()
             ->route('input-data.index')
-            ->with('success', 'Data berhasil diproses. Angka otomatis dibersihkan.');
+            ->with('success', 'Data berhasil disimpan. Kolom wajib yang kosong otomatis diisi default.');
     }
 
     private function normalize($value)
