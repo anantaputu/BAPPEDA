@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class LandingController extends Controller
 {
@@ -12,7 +14,12 @@ class LandingController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render('Public/Landing');
+    }
+
+    public function dashboard()
+    {
+        return Inertia::render('Public/Dashboard');
     }
 
     /**
