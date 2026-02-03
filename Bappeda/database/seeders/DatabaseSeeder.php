@@ -23,11 +23,7 @@ class DatabaseSeeder extends Seeder
         UrusanSeeder::class,
         BidangSeeder::class,
         FrekuensiSeeder::class,
-        ]);
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        DataSeeder::class,
         ]);
     }
 
