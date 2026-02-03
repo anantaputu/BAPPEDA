@@ -2,25 +2,25 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 
-// Set Layout secara persisten
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
-    users: Array // Data user beserta relasi role-nya
+    users: Array
 });
 
 const toggleStatus = (user) => {
     if (confirm(`Apakah Anda yakin ingin ${user.status_aktif ? 'menonaktifkan' : 'mengaktifkan'} user ini?`)) {
-        router.patch(`/users/${user.id}/status`);
+        router.patch(`/admin/users/${user.id}/status`);
     }
 };
 
 const deleteUser = (id) => {
     if (confirm('Menghapus user akan menghilangkan semua riwayat uploadnya. Lanjutkan?')) {
-        router.delete(`/users/${id}`);
+        router.delete(`/admin/users/${id}`);
     }
 };
 </script>
+
 
 <template>
     <Head title="Kelola User" />
@@ -34,7 +34,7 @@ const deleteUser = (id) => {
                 </p>
             </div>
             <Link 
-                href="/users/create" 
+                href="/admin/users/create" 
                 class="bg-[#4A6CF7] text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 flex items-center gap-2"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
@@ -57,7 +57,8 @@ const deleteUser = (id) => {
                         <td class="py-5 px-2">
                             <div class="flex items-center gap-4">
                                 <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-[#4A6CF7] font-black text-xs border-2 border-white shadow-sm">
-                                    {{ user.nama_depan[0] }}{{ user.nama_belakang ? user.nama_belakang[0] : '' }}
+                                    {{ user.nama_depan?.[0] ?? '' }}{{ user.nama_belakang?.[0] ?? '' }}
+
                                 </div>
                                 <div>
                                     <p class="font-bold text-gray-900 text-sm">{{ user.nama_depan }} {{ user.nama_belakang }}</p>
@@ -84,7 +85,7 @@ const deleteUser = (id) => {
 
                         <td class="py-5 px-2 text-right">
                             <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Link :href="`/users/${user.id}/edit`" class="p-2 bg-white text-gray-400 rounded-lg hover:text-blue-600 hover:shadow-sm border border-transparent hover:border-gray-100 transition-all">
+                                <Link :href="`/admin/users/${user.id}/edit`" class="p-2 bg-white text-gray-400 rounded-lg hover:text-blue-600 hover:shadow-sm border border-transparent hover:border-gray-100 transition-all">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                                 </Link>
                                 <button @click="deleteUser(user.id)" class="p-2 bg-white text-gray-400 rounded-lg hover:text-red-600 hover:shadow-sm border border-transparent hover:border-gray-100 transition-all">

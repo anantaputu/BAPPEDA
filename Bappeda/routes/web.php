@@ -6,6 +6,12 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\DataController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\TemaController;
+use App\Http\Controllers\Admin\UrusanController;
+use App\Http\Controllers\Admin\BidangController;
+use App\Http\Controllers\Admin\FrekuensiController;
+use App\Http\Controllers\Admin\KataKunciController;
+use App\Http\Controllers\Admin\SatuanController;
 use App\Http\Controllers\Inputer\DataInputController;
 use App\Http\Controllers\Inputer\DataOutputController;
 use App\Http\Controllers\Public\LandingController;
@@ -33,9 +39,15 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('users', UserController::class);
     Route::resource('data', DataController::class); // Metadata indikator
+    Route::resource('tema', TemaController::class);
+    Route::resource('urusan', UrusanController::class);
+    Route::resource('bidang', BidangController::class);
+    Route::resource('frekuensi', FrekuensiController::class);
+    Route::resource('katakunci', KataKunciController::class);
+    Route::resource('satuan', SatuanController::class);
 });
 
 /*

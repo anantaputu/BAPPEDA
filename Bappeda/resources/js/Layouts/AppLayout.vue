@@ -1,9 +1,17 @@
 <script setup>
 import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
+const openMasterData = ref(
+  page.url.startsWith('/admin/data') ||
+  page.url.startsWith('/admin/tema') ||
+  page.url.startsWith('/admin/urusan') ||
+  page.url.startsWith('/admin/bidang') ||
+  page.url.startsWith('/admin/frekuensi')
+);
 
 // Logika Role: Mencegah error jika user null
 const role = computed(() => {
@@ -37,8 +45,18 @@ const menuGroups = computed(() => {
         groups.push({
             label: 'ADMINISTRATOR',
             items: [
-                { name: 'Master Data', path: '/data', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
-                { name: 'Kelola User', path: '/users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+                { 
+                    name: 'Master Data',
+                    icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+                    children: [
+                        { name: 'Data Indikator', path: '/admin/data' },
+                        { name: 'Tema', path: '/admin/tema' },
+                        { name: 'Urusan', path: '/admin/urusan' },
+                        { name: 'Bidang', path: '/admin/bidang' },
+                        { name: 'Frekuensi', path: '/admin/frekuensi' },
+                    ]
+                },
+                { name: 'Kelola User', path: '/admin/users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
             ]
         });
     }
@@ -49,7 +67,7 @@ const menuGroups = computed(() => {
             label: 'OPERASIONAL',
             items: [
                 // Mengarah ke halaman daftar indikator untuk input baru
-                { name: 'Input Data', path: '/data', icon: 'M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                { name: 'Input Data', path: '/inputer/data', icon: 'M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
                 // Halaman riwayat untuk melihat tabular dan edit
                 // { name: 'Riwayat Input', path: '/input-data/history', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
             ]
@@ -76,13 +94,60 @@ const menuGroups = computed(() => {
                 <div v-for="group in menuGroups" :key="group.label">
                     <p class="text-[10px] font-black text-gray-400 tracking-widest mb-4 ml-2 uppercase">{{ group.label }}</p>
                     <div class="space-y-1">
-                        <Link v-for="item in group.items" :key="item.name" :href="item.path"
-                            :class="[page.url.startsWith(item.path) ? 'text-[#4A6CF7] bg-blue-50/50 rounded-xl' : 'text-gray-500 hover:text-[#4A6CF7]']"
-                            class="flex items-center gap-4 px-4 py-3 transition-all font-bold text-sm">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" /></svg>
+                        <template v-for="item in group.items" :key="item.name">
+
+                            <!-- ITEM DENGAN SUBMENU -->
+                            <div v-if="item.children">
+                            <button
+                                @click="openMasterData = !openMasterData"
+                                class="w-full flex items-center justify-between px-4 py-3 text-sm font-bold rounded-xl transition"
+                                :class="openMasterData ? 'text-[#4A6CF7] bg-blue-50/50' : 'text-gray-500 hover:text-[#4A6CF7]'"
+                            >
+                                <div class="flex items-center gap-4">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
+                                </svg>
+                                {{ item.name }}
+                                </div>
+                                <svg class="w-4 h-4 transition-transform" :class="openMasterData ? 'rotate-90' : ''"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+
+                            <!-- SUBMENU -->
+                            <div v-if="openMasterData" class="ml-9 mt-1 space-y-1">
+                                <Link
+                                v-for="child in item.children"
+                                :key="child.name"
+                                :href="child.path"
+                                class="block px-4 py-2 rounded-lg text-sm font-semibold transition"
+                                :class="page.url.startsWith(child.path)
+                                    ? 'text-[#4A6CF7] bg-blue-50'
+                                    : 'text-gray-500 hover:text-[#4A6CF7]'"
+                                >
+                                {{ child.name }}
+                                </Link>
+                            </div>
+                            </div>
+
+                            <!-- ITEM NORMAL -->
+                            <Link
+                            v-else
+                            :href="item.path"
+                            class="flex items-center gap-4 px-4 py-3 text-sm font-bold rounded-xl transition"
+                            :class="page.url.startsWith(item.path)
+                                ? 'text-[#4A6CF7] bg-blue-50/50'
+                                : 'text-gray-500 hover:text-[#4A6CF7]'"
+                            >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" />
+                            </svg>
                             {{ item.name }}
-                        </Link>
-                    </div>
+                            </Link>
+
+                        </template>
+                        </div>
                 </div>
             </div>
 

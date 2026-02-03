@@ -14,12 +14,12 @@ class RoleMiddleware
             abort(401);
         }
 
-        // Perbaikan: Ambil string 'nama_role' dari relasi, bukan objek user->role
-        $userRole = auth()->user()->role?->nama_role;
+        $userRole = strtolower(auth()->user()->role?->nama_role);
 
-        if ($userRole !== $role) {
+        if ($userRole !== strtolower($role)) {
             abort(403);
         }
+
 
         return $next($request);
     }

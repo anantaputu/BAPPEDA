@@ -30,24 +30,24 @@ class Data extends Model
 
     /* ================= RELATIONS ================= */
 
-    public function tema()
+     public function tema()
     {
-        return $this->belongsTo(Tema::class, 'id_tema');
+        return $this->belongsTo(Tema::class, 'id_tema', 'id_tema');
     }
 
     public function urusan()
     {
-        return $this->belongsTo(Urusan::class, 'id_urusan');
+        return $this->belongsTo(Urusan::class, 'id_urusan', 'id_urusan');
     }
 
     public function bidang()
     {
-        return $this->belongsTo(Bidang::class, 'id_bidang');
+        return $this->belongsTo(Bidang::class, 'id_bidang', 'id_bidang');
     }
 
     public function frekuensi()
     {
-        return $this->belongsTo(Frekuensi::class, 'id_frekuensi');
+        return $this->belongsTo(Frekuensi::class, 'id_frekuensi', 'id_frekuensi');
     }
 
     public function fields()

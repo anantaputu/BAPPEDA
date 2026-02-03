@@ -38,6 +38,20 @@ class AdminUserSeeder extends Seeder
             ]
         );
 
+        User::updateOrCreate(
+            ['email' => 'hajime@bappeda.go.id'],
+            [
+                'name'      => 'I Putu Ananta Sugiartha',
+                'username'  => 'nanto',
+                'password'      => Hash::make('4nanta'),
+                'role_id'       => 2, 
+                'nama_depan'    => 'I Putu Ananta',
+                'nama_belakang' => 'Sugiartha',
+                'status_aktif'  => true,
+                'email_verified_at' => now(),
+            ]
+        );
+
 
     }
 }
