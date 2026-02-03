@@ -30,8 +30,14 @@ class AuthenticatedSessionController extends Controller
 
     protected function redirectToDashboard($user) {
       return match ($user->role) {
+<<<<<<< HEAD
          'Admin' => route('admin.dashboard'),
          'Inputer' => route('inputer.index'),
+=======
+         'admin' => route('admin.dashboard'),
+         'inputer' => route('inputer.index'),
+         default => route('dashboard.public'),
+>>>>>>> origin
       };
     }
 

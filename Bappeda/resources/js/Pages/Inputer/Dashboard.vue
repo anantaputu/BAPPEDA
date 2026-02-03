@@ -12,22 +12,42 @@ const props = defineProps({
     stats: {
         type: Object,
         default: () => ({
+<<<<<<< HEAD
             totalTugas: 12,
             pendingMapping: 3,
             suksesUpload: 45
         })
     },
     recentUploads: Array
+=======
+            totalTugas: 0,
+            pendingMapping: 0,
+            suksesUpload: 0
+        })
+    },
+    recentUploads: {
+        type: Array,
+        default: () => []
+    }
+>>>>>>> origin
 });
 
 // Mapping warna status sesuai tabel data_uploads
 const statusColor = (status) => {
     const colors = {
+<<<<<<< HEAD
         'processing': 'bg-amber-50 text-amber-600 border-amber-100',
         'completed': 'bg-green-50 text-green-600 border-green-100',
         'failed': 'bg-red-50 text-red-600 border-red-100'
     };
     return colors[status] || 'bg-gray-50 text-gray-600 border-gray-100';
+=======
+        'processing': 'bg-amber-100 text-amber-700 border-amber-200',
+        'valid': 'bg-green-100 text-green-700 border-green-200',
+        'failed': 'bg-red-100 text-red-700 border-red-200'
+    };
+    return colors[status] || 'bg-gray-100 text-gray-600';
+>>>>>>> origin
 };
 
 // Stats untuk Inputer (Tanpa data User/Bidang global)
@@ -41,8 +61,13 @@ const inputerStats = computed(() => [
 <template>
     <Head title="Inputer Dashboard" />
 
+<<<<<<< HEAD
     <div class="space-y-8">
         <div class="bg-[#4F46E5] p-10 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl shadow-indigo-200">
+=======
+    <div class="space-y-10 py-6">
+        <div class="bg-[#4A6CF7] p-10 rounded-[2.5rem] text-white relative overflow-hidden shadow-xl shadow-blue-200">
+>>>>>>> origin
             <div class="relative z-10">
                 <span class="bg-white/20 text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md uppercase tracking-widest mb-4 inline-block">
                     Role: Inputer Data
@@ -111,6 +136,13 @@ const inputerStats = computed(() => [
                         </Link>
                     </div>
                 </div>
+<<<<<<< HEAD
+=======
+
+                <div v-if="recentUploads.length === 0" class="text-center py-6 text-gray-400 text-sm">
+                    Belum ada data upload.
+                </div>
+>>>>>>> origin
             </div>
         </div>
     </div>
