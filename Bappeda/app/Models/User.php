@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use App\Models\Role;
+use App\Models\DataUpload;
+
+class User extends Authenticatable
+{
+    use HasFactory, Notifiable;
+
+    protected $table = 'users';
+    protected $primaryKey = 'id';
+
+    protected $fillable = [
+        'name',           // ❗ WAJIB
+        'nama_depan',
+        'nama_belakang',
+        'username',
+        'email',
+        'password',
+        'role_id',
+        'status_aktif',
+    ];
+
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'status_aktif' => 'boolean',
+        ];
+    }
+
+    /* ================= RELATIONS ================= */
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id', 'id_role');
+    }
+
+    public function dataUploads()
+    {
+        return $this->hasMany(DataUpload::class, 'id_user');
+    }
+
+    /* ================= ACCESSOR ================= */
+
+    public function getNamaLengkapAttribute()
+    {
+        return trim($this->nama_depan.' '.$this->nama_belakang);
+    }
+}
