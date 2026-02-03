@@ -1,93 +1,62 @@
 <?php
 
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DataInputController;
-use App\Http\Controllers\DataOutputController;
-use App\Http\Controllers\DataController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+// Import Konten Baru
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\DataController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Inputer\DataInputController;
+use App\Http\Controllers\Inputer\DataOutputController;
+use App\Http\Controllers\Public\LandingController;
 
 /*
 |--------------------------------------------------------------------------
-| PUBLIC ROUTES (TIDAK PERLU LOGIN)
+| PUBLIC & AUTH ROUTES
 |--------------------------------------------------------------------------
 */
+Route::get('/', [LandingController::class, 'index'])->name('landing');
+Route::get('/dashboard', [LandingController::class, 'dashboard'])->name('dashboard.public');
 
-Route::get('/', function () {
-    return Inertia::render('Landing');
-})->name('landing');
-
-Route::get('/welcome', function () {
-    return Inertia::render('Welcome');
-})->name('welcome');
-
-Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
-
-/*
-|--------------------------------------------------------------------------
-| AUTH ROUTES (DARI BREEZE / AUTH BAWAAN)
-|--------------------------------------------------------------------------
-| JANGAN bikin route /login manual
-| Breeze sudah sediain sendiri
-|--------------------------------------------------------------------------
-*/
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [AuthenticatedSessionController::class, 'create'])
-        ->name('login');
-
-    Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store']);    
 });
 
 Route::middleware('auth')->group(function () {
-    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
-        ->name('logout');
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
 
 /*
 |--------------------------------------------------------------------------
-| PROTECTED ROUTES (WAJIB LOGIN)
+| ADMIN ROUTES (Namespace: App\Http\Controllers\Admin)
 |--------------------------------------------------------------------------
 */
-
-Route::middleware(['auth'])->group(function () {
-
-    // ===== INPUT DATA =====
-    Route::get('/input-data', [DataInputController::class, 'index'])
-        ->name('input-data.index');
-
-    Route::get('/input-data/{data}', [DataInputController::class, 'create'])
-        ->name('input-data.create');
-
-    Route::post('/input-data/{data}', [DataInputController::class, 'store'])
-        ->name('input-data.store');
-
-    // ===== MASTER DATA =====
-    Route::get('/data/create', [DataController::class, 'create'])
-        ->name('data.create');
-
-    Route::post('/data', [DataController::class, 'store'])
-        ->name('data.store');
-
-Route::get(
-    '/input-data/{upload}/mapping',
-    [DataInputController::class, 'mapping']
-)->name('input-data.mapping');
-
-Route::post(
-    '/input-data/{upload}/mapping',
-    [DataInputController::class, 'storeMapping']
-)->name('input-data.mapping.store');
-
-Route::post(
-    '/input-data/{upload}/parse',
-    [DataInputController::class, 'parse']
-)->name('input-data.parse');
-
-Route::get('/input-data/{upload}/export', [DataOutputController::class, 'export'])
-        ->name('input-data.export');
-
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::resource('users', UserController::class);
+    Route::resource('data', DataController::class); // Metadata indikator
 });
 
+/*
+|--------------------------------------------------------------------------
+| INPUTER ROUTES (Namespace: App\Http\Controllers\Inputer)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'role:inputer'])->prefix('inputer')->name('inputer.')->group(function () {
+    // Gunakan rute yang lebih deskriptif
+    Route::get('/list', [DataInputController::class, 'index'])->name('index'); 
+    Route::get('/dashboard', [DataInputController::class, 'dashboard'])->name('dashboard');
+    
+    // Alur Upload & Mapping
+    Route::prefix('upload')->group(function () {
+        Route::get('/{data}', [DataInputController::class, 'create'])->name('create');
+        Route::post('/{data}', [DataInputController::class, 'store'])->name('store');
+        
+        Route::get('/{upload}/mapping', [DataInputController::class, 'mapping'])->name('mapping');
+        Route::post('/{upload}/mapping', [DataInputController::class, 'storeMapping'])->name('mapping.store');
+        Route::post('/{upload}/parse', [DataInputController::class, 'parse'])->name('parse');
+    });
 
+    Route::get('/export/{upload}', [DataOutputController::class, 'export'])->name('export');
+});

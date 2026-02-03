@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Inputer;
 
 use App\Models\DataUpload;
 use App\Models\DataField;
@@ -9,6 +9,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate; 
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Http\Controllers\Controller;
 
 class DataOutputController extends Controller
 {

@@ -27,15 +27,25 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
+
+    protected function redirectToDashboard($user) {
+      return match ($user->role) {
+         'admin' => route('admin.dashboard'),
+         'inputer' => route('inputer.index'),
+         default => route('dashboard.public'),
+      };
+    }
+
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
 
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard');
+        return redirect()->to(
+            $this->redirectToDashboard(auth()->user())
+        );
 
-        
     }
 
     /**
