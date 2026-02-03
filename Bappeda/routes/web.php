@@ -5,7 +5,6 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 // Import Konten Baru
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\DataController;
-use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\TemaController;
 use App\Http\Controllers\Admin\UrusanController;
 use App\Http\Controllers\Admin\BidangController;
@@ -16,13 +15,17 @@ use App\Http\Controllers\Inputer\DataInputController;
 use App\Http\Controllers\Inputer\DataOutputController;
 use App\Http\Controllers\Public\LandingController;
 
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Inputer\InputerDashboardController;
+use App\Http\Controllers\Public\DashboardController;
 /*
 |--------------------------------------------------------------------------
 | PUBLIC & AUTH ROUTES
 |--------------------------------------------------------------------------
 */
-Route::get('/', [LandingController::class, 'index'])->name('landing');
-Route::get('/dashboard', [LandingController::class, 'dashboard'])->name('dashboard.public');
+Route::get('/', [LandingController::class, 'index']);
+Route::get('/dashboard', fn () => inertia('Public/Dashboard'));
+Route::get('/cari', fn () => inertia('Public/Search'));
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -39,7 +42,7 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::resource('users', UserController::class);
     Route::resource('data', DataController::class); // Metadata indikator
     Route::resource('tema', TemaController::class);

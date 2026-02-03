@@ -3,70 +3,41 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Data;
+use App\Models\DataUpload;
+use App\Models\User;
 use Inertia\Inertia;
-use Inertia\Response;
 
 class LandingController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    // public function index()
+    // {
+    //     return Inertia::render('Public/Landing', [
+    //         'stats' => [
+    //             'total_indikator' => Data::count(),
+
+    //             'opd_aktif' => User::whereHas('role', function ($q) {
+    //                 $q->where('nama_role', 'Inputer');
+    //             })
+    //             ->where('status_aktif', true)
+    //             ->count(),
+
+    //             'data_valid' => DataUpload::where('status', 'validated')->count(),
+
+    //             'last_update' => DataUpload::max('updated_at'),
+    //         ],
+    //     ]);
+    // }
+
     public function index()
     {
-        return Inertia::render('Public/Landing');
-    }
-
-    public function dashboard()
-    {
-        return Inertia::render('Public/Dashboard');
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return inertia('Public/Landing', [
+            'stats' => [
+                'total_indikator' => Data::count(),
+                'opd_aktif'       => 5,
+                'data_valid' => DataUpload::where('status', 'validated')->count(),
+                'last_update'     => now(),
+            ],
+        ]);
     }
 }
