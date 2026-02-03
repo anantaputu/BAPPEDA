@@ -62,19 +62,6 @@ const menuGroups = computed(() => {
     }
 
     // Kelompok INPUTER
-<<<<<<< HEAD
-    if (role.value === 'inputer' || role.value === 'admin') {
-        groups.push({
-            label: 'OPERASIONAL',
-            items: [
-                // Mengarah ke halaman daftar indikator untuk input baru
-                { name: 'Input Data', path: '/inputer/data', icon: 'M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-                // Halaman riwayat untuk melihat tabular dan edit
-                // { name: 'Riwayat Input', path: '/input-data/history', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-            ]
-        });
-    }
-=======
    if (role.value === 'inputer' || role.value === 'admin') {
     groups.push({
         label: 'OPERASIONAL',
@@ -88,7 +75,6 @@ const menuGroups = computed(() => {
         ]
     });
 }
->>>>>>> origin
 
     return groups;
 });

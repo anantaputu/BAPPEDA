@@ -25,113 +25,27 @@ const form = useForm({
 });
 
 const submit = () => {
-<<<<<<< HEAD
-    form.post('/data');
-=======
-    // Pastikan route ini benar
-    form.post(route('inputer.data.store'), {
+    // PERBAIKAN: Gunakan URL manual, bukan route()
+    // POST ke /inputer/data (sesuai route resource di Laravel)
+    form.post('/inputer/data', {
         onSuccess: () => {
-            // Opsional: Reset form jika mau
             // form.reset(); 
         },
         onError: (errors) => {
-            console.log('Validasi Gagal:', errors); // Cek Console F12 jika penasaran
+            console.log('Validasi Gagal:', errors);
         }
     });
->>>>>>> origin
 };
 </script>
 
 <template>
     <Head title="Input Data Indikator" />
 
-<<<<<<< HEAD
-    <div class="max-w-2xl mx-auto py-10">
-        <div class="bg-white shadow-sm overflow-hidden">
-            <form @submit.prevent="submit">
-                
-                <div class="flex items-center border-b border-gray-300">
-                    <label class="w-1/3 px-6 py-4 text-gray-800 font-medium">Nama Data</label>
-                    <div class="w-2/3">
-                        <input v-model="form.nama_indikator" type="text" 
-                            class="w-full bg-gray-100 border-none focus:ring-0 px-4 py-4" />
-                    </div>
-                </div>
-
-                <div class="flex border-b border-gray-300">
-                    <label class="w-1/3 px-6 py-4 text-gray-800 font-medium">Deskripsi</label>
-                    <div class="w-2/3">
-                        <textarea v-model="form.deskripsi" rows="4"
-                            class="w-full bg-gray-100 border-none focus:ring-0 px-4 py-4 resize-none"></textarea>
-                    </div>
-                </div>
-
-                <div class="flex items-center border-b border-gray-300">
-                    <label class="w-1/3 px-6 py-4 text-gray-800 font-medium">Tema</label>
-                    <div class="w-2/3">
-                        <select v-model="form.id_tema" class="w-full bg-gray-100 border-none focus:ring-0 px-4 py-4 appearance-none">
-                            <option value="">Pilih Tema</option>
-                            <option v-for="t in tema" :key="t.id_tema" :value="t.id_tema">{{ t.nama_tema }}</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex items-center border-b border-gray-300">
-                    <label class="w-1/3 px-6 py-4 text-gray-800 font-medium">Urusan</label>
-                    <div class="w-2/3">
-                        <select v-model="form.id_urusan" class="w-full bg-gray-100 border-none focus:ring-0 px-4 py-4">
-                            <option value="">Pilih Urusan</option>
-                            <option v-for="u in urusan" :key="u.id_urusan" :value="u.id_urusan">{{ u.nama_urusan }}</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex items-center border-b border-gray-100">
-                    <label class="w-1/3 px-6 py-4 text-gray-800 font-medium">Bidang</label>
-                    <div class="w-2/3">
-                        <select v-model="form.id_bidang" class="w-full bg-gray-50 border-none focus:ring-0 px-4 py-4">
-                            <option value="">Pilih Bidang</option>
-                            <option v-for="b in bidang" :key="b.id_bidang" :value="b.id_bidang">{{ b.nama_bidang }}</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex items-center border-b border-gray-300">
-                    <label class="w-1/3 px-6 py-4 text-gray-800 font-medium">Kata Kunci</label>
-                    <div class="w-2/3">
-                        <input v-model="form.kata_kunci" type="text" 
-                            class="w-full bg-gray-100 border-none focus:ring-0 px-4 py-4" />
-                    </div>
-                </div>
-
-                <div class="flex items-center border-b border-gray-300">
-                    <label class="w-1/3 px-6 py-4 text-gray-800 font-medium">Satuan</label>
-                    <div class="w-2/3">
-                        <input v-model="form.satuan" type="text" 
-                            class="w-full bg-gray-100 border-none focus:ring-0 px-4 py-4" />
-                    </div>
-                </div>
-
-                <div class="flex items-center border-b border-gray-300">
-                    <label class="w-1/3 px-6 py-4 text-gray-800 font-medium">Frekuensi</label>
-                    <div class="w-2/3">
-                        <select v-model="form.id_frekuensi" class="w-full bg-gray-100 border-none focus:ring-0 px-4 py-4">
-                            <option value="">Pilih Frekuensi</option>
-                            <option v-for="f in frekuensi" :key="f.id_frekuensi" :value="f.id_frekuensi">{{ f.nama_frekuensi }}</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="flex items-center border-b border-gray-300 mb-6">
-                    <label class="w-1/3 px-6 py-4 text-gray-800 font-medium">Sumber</label>
-                    <div class="w-2/3">
-                        <input v-model="form.sumber" type="text" 
-                            class="w-full bg-gray-100 border-none focus:ring-0 px-4 py-4" />
-=======
     <div class="max-w-3xl mx-auto py-10">
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-2xl font-extrabold text-gray-800">Tambah Data Baru</h1>
-            <Link :href="route('inputer.index')" class="text-gray-500 font-bold hover:text-blue-600 transition">
+            
+            <Link href="/inputer/data" class="text-gray-500 font-bold hover:text-blue-600 transition">
                 &larr; Kembali
             </Link>
         </div>
@@ -215,19 +129,13 @@ const submit = () => {
                     <div class="w-full sm:w-2/3">
                         <input v-model="form.kata_kunci" type="text" placeholder="Tag pencarian..."
                             class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 font-medium" />
->>>>>>> origin
                     </div>
                 </div>
 
                 <button type="submit" :disabled="form.processing"
-<<<<<<< HEAD
-                    class="w-full bg-[#00AEEF] text-white py-4 font-bold text-lg hover:bg-sky-600 transition tracking-widest uppercase">
-                    {{ form.processing ? 'Memproses...' : 'SIMPAN' }}
-=======
                     class="w-full bg-[#00AEEF] text-white py-5 font-black text-lg hover:bg-sky-600 transition tracking-widest uppercase flex justify-center items-center gap-2 disabled:opacity-70">
                     <svg v-if="form.processing" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     <span>{{ form.processing ? 'MENYIMPAN...' : 'SIMPAN DATA' }}</span>
->>>>>>> origin
                 </button>
             </form>
         </div>

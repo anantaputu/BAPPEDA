@@ -39,11 +39,11 @@ class AdminUserSeeder extends Seeder
         );
 
         User::updateOrCreate(
-            ['email' => 'hajime@bappeda.go.id'],
+            ['email' => 'a@l.q'],
             [
                 'name'      => 'I Putu Ananta Sugiartha',
                 'username'  => 'nanto',
-                'password'      => Hash::make('4nanta'),
+                'password'      => Hash::make('123'),
                 'role_id'       => 2, 
                 'nama_depan'    => 'I Putu Ananta',
                 'nama_belakang' => 'Sugiartha',

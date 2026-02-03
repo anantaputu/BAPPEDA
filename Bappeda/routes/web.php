@@ -59,14 +59,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:inputer'])->prefix('inputer')->name('inputer.')->group(function () {
-<<<<<<< HEAD
-    // Gunakan rute yang lebih deskriptif
-    Route::get('/list', [DataInputController::class, 'index'])->name('index'); 
-    Route::get('/dashboard', [DataInputController::class, 'dashboard'])->name('dashboard');
-    
-    // Alur Upload & Mapping
-    Route::prefix('upload')->group(function () {
-=======
     
     // Dashboard
     Route::get('/dashboard', [DataInputController::class, 'dashboard'])->name('dashboard');
@@ -82,7 +74,6 @@ Route::middleware(['auth', 'role:inputer'])->prefix('inputer')->name('inputer.')
     // --- BAGIAN UPLOAD EXCEL ---
     Route::prefix('upload')->group(function () {
         // Ini tetap pakai method 'create' karena butuh parameter {data}
->>>>>>> origin
         Route::get('/{data}', [DataInputController::class, 'create'])->name('create');
         Route::post('/{data}', [DataInputController::class, 'store'])->name('store');
         
