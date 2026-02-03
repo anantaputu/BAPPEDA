@@ -16,16 +16,17 @@ class Data extends Model
     protected $primaryKey = 'id_data';
 
     protected $fillable = [
-        'nama_indikator',
+       'nama_indikator',
         'deskripsi',
         'id_tema',
         'id_urusan',
         'id_bidang',
         'id_frekuensi',
-        'kata_kunci',
         'satuan',
         'sumber',
-        'status'
+        'kata_kunci',
+        'status',
+        'tahun_data'
     ];
 
     /* ================= RELATIONS ================= */

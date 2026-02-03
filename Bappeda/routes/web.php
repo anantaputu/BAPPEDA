@@ -56,12 +56,21 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'role:inputer'])->prefix('inputer')->name('inputer.')->group(function () {
-    // Gunakan rute yang lebih deskriptif
-    Route::get('/list', [DataInputController::class, 'index'])->name('index'); 
-    Route::get('/dashboard', [DataInputController::class, 'dashboard'])->name('dashboard');
     
-    // Alur Upload & Mapping
+    // Dashboard
+    Route::get('/dashboard', [DataInputController::class, 'dashboard'])->name('dashboard');
+
+    // --- BAGIAN MASTER DATA ---
+    Route::get('/data', [DataInputController::class, 'index'])->name('index'); 
+    
+    // PERBAIKAN: Ganti nama method jadi 'createMasterData'
+    Route::get('/data/create', [DataInputController::class, 'createMasterData'])->name('data.create');
+    
+    Route::post('/data', [DataInputController::class, 'storeNewData'])->name('data.store'); 
+    
+    // --- BAGIAN UPLOAD EXCEL ---
     Route::prefix('upload')->group(function () {
+        // Ini tetap pakai method 'create' karena butuh parameter {data}
         Route::get('/{data}', [DataInputController::class, 'create'])->name('create');
         Route::post('/{data}', [DataInputController::class, 'store'])->name('store');
         
