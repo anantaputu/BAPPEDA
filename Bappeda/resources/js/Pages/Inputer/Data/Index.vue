@@ -80,20 +80,30 @@ const getStatusClass = (status) => {
                             </td>
                             
                             <td class="py-6 px-8 text-right">
-                                <div class="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Link v-if="u.status !== 'valid'" 
-                                          :href="`/inputer/upload/${u.id_upload}/mapping`" 
-                                          class="bg-[#4A6CF7] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-md flex items-center gap-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                                        Lanjut Mapping
-                                    </Link>
+    <div class="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        
+        <Link v-if="u.status !== 'valid'" 
+              :href="`/inputer/upload/${u.id_upload}/mapping`" 
+              class="bg-[#4A6CF7] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-md flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            Lanjut Mapping
+        </Link>
 
-                                    <Link :href="`/inputer/upload/${u.id_upload}/edit`" 
-                                          class="bg-white border border-gray-200 text-gray-500 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 hover:text-gray-900 transition flex items-center gap-2">
-                                        Edit
-                                    </Link>
-                                </div>
-                            </td>
+        <a v-if="u.status === 'valid'" 
+           :href="`/inputer/export/${u.id_upload}`" 
+           target="_blank"
+           class="bg-green-100 border border-green-200 text-green-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-green-600 hover:text-white transition flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12" /></svg>
+            Download
+        </a>
+
+        <Link :href="`/inputer/upload/${u.id_upload}/edit`" 
+              class="bg-white border border-gray-200 text-gray-500 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 hover:text-gray-900 transition flex items-center gap-2">
+            Edit
+        </Link>
+
+    </div>
+</td>
                         </tr>
 
                         <tr v-if="uploads.length === 0">

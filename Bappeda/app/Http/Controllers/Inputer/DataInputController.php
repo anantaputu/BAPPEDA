@@ -187,23 +187,47 @@ class DataInputController extends Controller
         }
     }
 
-    // 7. Simpan Mapping & Generate Field Baru
-    // Simpan Mapping
-   public function storeMapping(Request $request, DataUpload $upload)
+    // 7. Simpan Mapping (DENGAN FITUR BUAT FIELD BARU)
+    public function storeMapping(Request $request, DataUpload $upload)
     {
-
-        $request->validate(['mapping' => 'nullable|array']);
+        // Validate
+        $request->validate([
+            'mapping' => 'nullable|array',
+            // Validasi optional untuk new_fields jika ada
+            'new_fields' => 'nullable|array',
+        ]);
 
         DB::transaction(function () use ($request, $upload) {
             // Hapus mapping lama
             DataFieldMapping::where('id_upload', $upload->id_upload)->delete();
 
-            // Cek apakah ada data mapping yang dikirim
             if ($request->has('mapping') && is_array($request->mapping)) {
                 
                 foreach ($request->mapping as $excelCol => $fieldId) {
-                    if (!$fieldId) continue; 
+                    if (!$fieldId) continue; // Skip jika user pilih "Abaikan"
 
+                    // --- LOGIKA FIELD BARU DIMULAI ---
+                    if ($fieldId === '__new__') {
+                        // Cek apakah data detail field barunya dikirim?
+                        if (empty($request->new_fields[$excelCol])) continue;
+
+                        $newData = $request->new_fields[$excelCol];
+                        
+                        // Buat Field Baru di Database
+                        $field = DataField::create([
+                            'id_data' => $upload->id_data,
+                            'nama_field' => $newData['nama_field'] ?? $excelCol, // Gunakan nama dari input atau fallback ke nama kolom excel
+                            'key_field' => Str::snake($newData['nama_field'] ?? $excelCol), // key_field huruf kecil semua
+                            'tipe_field' => $newData['tipe_field'] ?? 'text',
+                            'wajib' => false,
+                        ]);
+
+                        // Update fieldId menjadi ID dari field yang baru dibuat
+                        $fieldId = $field->id_field;
+                    }
+                    // --- LOGIKA FIELD BARU SELESAI ---
+
+                    // Simpan Mapping
                     DataFieldMapping::create([
                         'id_upload' => $upload->id_upload,
                         'excel_column' => $excelCol,
@@ -215,9 +239,7 @@ class DataInputController extends Controller
 
         return $this->parse($upload);
     }
-
-    // 8. Parsing Data Excel ke JSONB (Finalisasi)
-   // 8. Parsing Data Excel ke JSONB (Finalisasi)
+       // 8. Parsing Data Excel ke JSONB (Finalisasi)
     public function parse(DataUpload $upload)
     {
         // 1. Ambil Mapping
