@@ -29,11 +29,18 @@ class AuthenticatedSessionController extends Controller
      */
 
     protected function redirectToDashboard($user) {
-      return match ($user->role) {
-         'admin' => route('admin.dashboard'),
-         'inputer' => route('inputer.index'),
-         default => route('dashboard.public'),
-      };
+        return match ($user->role_id) {
+            // Sesuai: Route::name('admin.')->get('/dashboard', ...) -> 'admin.dashboard'
+            1 => route('admin.dashboard'),
+
+            // Sesuai: Route::name('inputer.')->get('/data', ...) -> 'inputer.index'
+            // Anda juga bisa pakai 'inputer.dashboard' jika ingin ke dashboard inputer
+            2 => route('inputer.dashboard'),
+
+            // Karena di web.php Anda tidak memberi nama pada Route::get('/', ...),
+            // maka kita gunakan url('/') saja agar aman.
+            default => url('/'), 
+        };
     }
 
     public function store(LoginRequest $request): RedirectResponse

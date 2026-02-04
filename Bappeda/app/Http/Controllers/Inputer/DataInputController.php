@@ -289,7 +289,7 @@ class DataInputController extends Controller
             ->take(5)
             ->get();
 
-        return inertia('Inputer/Data/Dashboard', [
+        return inertia('Inputer/Dashboard', [
             'stats' => $stats,
             'recentUploads' => $recentUploads
         ]);
