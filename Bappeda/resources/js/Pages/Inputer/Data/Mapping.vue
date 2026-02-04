@@ -1,16 +1,16 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
     upload: Object,
-    excelColumns: Object, // Contoh: { A: 'Nama Lengkap', B: 'NIK' }
+    excelColumns: Object, 
     previewData: Array,   
     fields: Array, 
-    autoMap: Object       // Contoh: { A: 15 } (Jika field cocok)
+    autoMap: Object
 });
 
 const showToast = ref(false);
@@ -18,21 +18,21 @@ const toastMessage = ref('');
 const toastType = ref('success');
 
 // --- LOGIKA OTOMATISASI ---
-// Kita siapkan data awal sebelum dimasukkan ke useForm
+// 1. Siapkan mapping awal dari autoMap
 const initialMapping = { ...props.autoMap };
 const initialNewFields = {};
 
-// Loop semua kolom Excel
+// 2. Loop semua kolom Excel
 Object.keys(props.excelColumns).forEach(colKey => {
-    // Jika kolom ini TIDAK punya pasangan di database (tidak ada di autoMap)
+    // Jika kolom ini TIDAK dikenali (tidak ada di autoMap)
     if (!initialMapping[colKey]) {
-        // 1. Otomatis set statusnya jadi "Buat Baru" (__new__)
+        // Otomatis set jadi "Buat Baru"
         initialMapping[colKey] = '__new__';
 
-        // 2. Otomatis isi Nama Field sesuai Header Excel
+        // Otomatis isi Nama Field sesuai Header Excel
         initialNewFields[colKey] = {
-            nama_field: props.excelColumns[colKey], // Ambil teks header (misal: "Nama Lengkap")
-            tipe_field: 'text' // Default tipe data
+            nama_field: props.excelColumns[colKey], 
+            tipe_field: 'text' 
         };
     }
 });
@@ -42,19 +42,15 @@ const form = useForm({
     new_fields: initialNewFields
 });
 
-// Logic saat Dropdown berubah manual oleh user
 const handleSelectChange = (colKey) => {
     // Jika user manual memilih "Buat Field Baru"
     if (form.mapping[colKey] === '__new__') {
         if (!form.new_fields[colKey]) {
             form.new_fields[colKey] = {
-                nama_field: props.excelColumns[colKey], // Auto-fill nama dari Header Excel
+                nama_field: props.excelColumns[colKey], 
                 tipe_field: 'text'
             };
         }
-    } else {
-        // Jika user membatalkan (memilih field lama atau abaikan)
-        // Kita biarkan saja datanya di new_fields tidak apa-apa (tidak akan terkirim/diproses backend jika mapping != __new__)
     }
 };
 

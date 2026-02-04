@@ -2,7 +2,6 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
 
-// Gunakan Layout Utama
 defineOptions({ layout: AppLayout });
 
 // Menerima Data Master yang dikirim dari Controller
@@ -18,8 +17,7 @@ const form = useForm({
 
 // Handle Submit
 const submit = () => {
-    // FIX: Gunakan URL Manual untuk menghindari error route()
-    // URL: /inputer/upload/{id_data}
+    // POST ke /inputer/upload/{id_data}
     form.post(`/inputer/upload/${props.data.id_data}`, {
         forceFormData: true, 
         onProgress: (progress) => {
@@ -80,7 +78,6 @@ const submit = () => {
                                 class="w-full bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 focus:ring-4 focus:ring-blue-100 focus:border-[#4A6CF7] transition font-bold text-gray-700 text-lg placeholder-gray-400"
                             />
                             <p v-if="form.errors.periode" class="text-red-500 text-xs mt-2 font-bold flex items-center gap-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 {{ form.errors.periode }}
                             </p>
                         </div>
@@ -115,7 +112,6 @@ const submit = () => {
                             </div>
 
                             <p v-if="form.errors.file" class="text-red-500 text-xs mt-2 font-bold flex items-center gap-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 {{ form.errors.file }}
                             </p>
                             
@@ -127,19 +123,13 @@ const submit = () => {
                         </div>
 
                         <div class="flex items-center justify-between pt-6 border-t border-gray-100">
-                            <Link 
-                                href="/inputer/data" 
-                                class="text-gray-400 font-bold text-sm hover:text-gray-600 transition px-4 py-2"
-                            >
+                            <Link href="/inputer/data" class="text-gray-400 font-bold text-sm hover:text-gray-600 transition px-4 py-2">
                                 Batal
                             </Link>
                             
-                            <button 
-                                type="submit" 
-                                :disabled="form.processing"
-                                class="bg-[#4A6CF7] text-white px-10 py-4 rounded-xl font-black text-sm hover:bg-blue-700 transition shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-3 transform hover:-translate-y-1"
-                            >
-                                <svg v-if="form.processing" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <button type="submit" :disabled="form.processing"
+                                class="bg-[#4A6CF7] text-white px-10 py-4 rounded-xl font-black text-sm hover:bg-blue-700 transition shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-3 transform hover:-translate-y-1">
+                                <svg v-if="form.processing" class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                 <span>{{ form.processing ? 'MENGUNGGAH...' : 'UPLOAD & LANJUT MAPPING' }}</span>
                                 <svg v-if="!form.processing" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
                             </button>
