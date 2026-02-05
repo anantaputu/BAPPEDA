@@ -84,42 +84,42 @@ const menuGroups = computed(() => {
     <div class="flex min-h-screen bg-[#F8FAFC] font-sans">
         
         <aside v-if="role !== 'anonymous'" 
-               class="w-72 bg-white rounded-[2.5rem] shadow-sm flex flex-col p-8 fixed h-[calc(100vh-3rem)] m-6 z-40">
+               class="w-72 bg-white rounded-[2.5rem] border border-[#A2B5CB]/30 shadow-2xl shadow-[#000B58]/5 flex flex-col p-8 fixed h-[calc(100vh-3rem)] m-6 z-40">
             <div class="flex items-center gap-4 mb-10">
-                <div class="w-12 h-12 flex-shrink-0 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-50 border border-gray-100 overflow-hidden">
+                <div class="w-12 h-12 flex-shrink-0 bg-white rounded-xl flex items-center justify-center border border-[#A2B5CB]/20 shadow-sm overflow-hidden">
                     <img :src="logoPath" alt="Logo" class="w-9 h-9 object-contain">
                 </div>
-                <span class="text-xl font-extrabold text-gray-800 tracking-tight italic">
-                    DATA<span class="text-[#4A6CF7]">BAPPEDA</span>
+                <span class="text-xl font-extrabold text-[#000B58] tracking-tight italic">
+                    DATA<span class="text-[#00139E]">BAPPEDA</span>
                 </span>
             </div>
 
             <div class="flex-1 overflow-y-auto space-y-8 no-scrollbar">
                 <div v-for="group in menuGroups" :key="group.label">
-                    <p class="text-[10px] font-black text-gray-400 tracking-widest mb-4 ml-2 uppercase">{{ group.label }}</p>
+                    <p class="text-[10px] font-black text-[#A2B5CB] tracking-widest mb-4 ml-2 uppercase">{{ group.label }}</p>
                     <div class="space-y-1">
                         <template v-for="item in group.items" :key="item.name">
                             <div v-if="item.children">
                                 <button @click="openMasterData = !openMasterData"
-                                    class="w-full flex items-center justify-between px-4 py-3 text-sm font-bold rounded-xl transition"
-                                    :class="openMasterData ? 'text-[#4A6CF7] bg-blue-50/50' : 'text-gray-500 hover:text-[#4A6CF7]'">
+                                    class="w-full flex items-center justify-between px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300"
+                                    :class="openMasterData ? 'text-[#00139E] bg-[#00139E]/5' : 'text-[#A2B5CB] hover:text-[#000B58] hover:bg-gray-50'">
                                     <div class="flex items-center gap-4">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" /></svg>
                                         {{ item.name }}
                                     </div>
-                                    <svg class="w-4 h-4 transition-transform" :class="openMasterData ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                                    <svg class="w-4 h-4 transition-transform duration-300" :class="openMasterData ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
                                 </button>
-                                <div v-if="openMasterData" class="ml-9 mt-1 space-y-1">
+                                <div v-if="openMasterData" class="ml-9 mt-2 border-l-2 border-[#A2B5CB]/20 space-y-1">
                                     <Link v-for="child in item.children" :key="child.name" :href="child.path"
-                                        class="block px-4 py-2 rounded-lg text-sm font-semibold transition"
-                                        :class="page.url.startsWith(child.path) ? 'text-[#4A6CF7] bg-blue-50' : 'text-gray-500 hover:text-[#4A6CF7]'">
+                                        class="block px-6 py-2 text-sm font-semibold transition-colors duration-200"
+                                        :class="page.url.startsWith(child.path) ? 'text-[#00139E] font-bold' : 'text-[#A2B5CB] hover:text-[#000B58]'">
                                         {{ child.name }}
                                     </Link>
                                 </div>
                             </div>
                             <Link v-else :href="item.path"
-                                class="flex items-center gap-4 px-4 py-3 text-sm font-bold rounded-xl transition"
-                                :class="page.url.startsWith(item.path) ? 'text-[#4A6CF7] bg-blue-50/50' : 'text-gray-500 hover:text-[#4A6CF7]'">
+                                class="flex items-center gap-4 px-4 py-3 text-sm font-bold rounded-xl transition-all duration-300"
+                                :class="page.url.startsWith(item.path) ? 'text-white bg-[#00139E] shadow-lg shadow-[#00139E]/20' : 'text-[#A2B5CB] hover:text-[#000B58] hover:bg-gray-50'">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.icon" /></svg>
                                 {{ item.name }}
                             </Link>
@@ -128,26 +128,26 @@ const menuGroups = computed(() => {
                 </div>
             </div>
 
-            <div class="mt-auto pt-6 border-t border-gray-50">
-                <button @click="confirmLogout" class="w-full flex items-center gap-4 text-gray-400 font-bold text-sm hover:text-red-500 transition-colors px-4 py-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                    Log out
+            <div class="mt-auto pt-6 border-t border-[#A2B5CB]/20">
+                <button @click="confirmLogout" class="w-full flex items-center gap-4 text-[#A2B5CB] font-bold text-sm hover:text-[#FF1414] transition-colors px-4 py-2 group">
+                    <svg class="w-5 h-5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Keluar Sesi
                 </button>
             </div>
         </aside>
 
         <nav v-if="role === 'anonymous'" 
-             class="fixed top-0 w-full bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 z-50">
-            <div class="max-w-[90%] mx-auto h-full flex justify-between items-center">
-                <Link href="/" class="flex items-center gap-3 group cursor-pointer">
-                    <img :src="logoPath" alt="Logo" class="h-10 w-auto object-contain transition-transform group-hover:scale-105">
-                    <span class="text-xl font-black text-[#1E3A8A] tracking-tight">DATA<span class="text-[#3B82F6]">BAPPEDA</span></span>
+             class="fixed top-0 w-full bg-white/90 backdrop-blur-md border-b border-[#A2B5CB]/20 h-20 z-50">
+            <div class="max-w-[80%] mx-auto h-full flex justify-between items-center">
+                <Link href="/" class="flex items-center gap-3 group">
+                    <img :src="logoPath" alt="Logo" class="h-10 w-auto object-contain">
+                    <span class="text-xl font-black text-[#000B58] tracking-tight">DATA<span class="text-[#00139E]">BAPPEDA</span></span>
                 </Link>
                 <div class="flex gap-8 items-center text-sm font-bold">
-                    <Link href="/" class="text-gray-600 hover:text-blue-600 transition">Beranda</Link>
-                    <Link href="/dashboard" class="text-gray-600 hover:text-blue-600 transition">Dashboard</Link>
-                    <Link href="/cari" class="text-gray-600 hover:text-blue-600 transition">Cari</Link>
-                    <Link href="/login" class="bg-[#4A6CF7] text-white px-8 py-2.5 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">Log in</Link>
+                    <Link href="/" class="text-[#A2B5CB] hover:text-[#00139E] transition">Beranda</Link>
+                    <Link href="/dashboard" class="text-[#A2B5CB] hover:text-[#00139E] transition">Dashboard</Link>
+                    <Link href="/cari" class="text-[#A2B5CB] hover:text-[#00139E] transition">Cari</Link>
+                    <Link href="/login" class="bg-[#00139E] text-white px-8 py-2.5 rounded-xl hover:bg-[#000B58] transition shadow-lg shadow-[#00139E]/20">Log in</Link>
                 </div>
             </div>
         </nav>
@@ -171,11 +171,11 @@ const menuGroups = computed(() => {
 
             <div class="flex-1"><slot /></div>
 
-            <footer v-if="role === 'anonymous'" class="bg-white border-t border-gray-100 py-16 mt-20">
-                <div class="max-w-[90%] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+            <footer v-if="role === 'anonymous'" class="w-full bottom-0 bg-white border-t border-[#A2B5CB]/20 py-16 mt-20">
+                <div class="max-w-[80%] mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
                     <div class="space-y-4">
-                        <h2 class="text-3xl font-bold text-gray-900">BAPPEDA Provinsi Nusa Tenggara Barat</h2>
-                        <p class="text-gray-500 text-sm max-w-2xl">Jl. Flamboyan No.2, Mataram Bar., Kec. Selaparang, Kota Mataram, NTB 83126</p>
+                        <h2 class="text-2xl font-black text-[#000B58]">BAPPEDA Provinsi Nusa Tenggara Barat</h2>
+                        <p class="text-[#A2B5CB] text-xs font-medium max-w-xl italic">Jl. Flamboyan No.2, Mataram Bar., Kec. Selaparang, Kota Mataram, NTB 83126</p>
                         <div class="flex items-center gap-6 text-sm font-bold text-gray-600">
                             <span>Contact Us:</span>
                             <div class="flex items-center gap-2"><svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> bappedaprov</div>
