@@ -195,10 +195,24 @@ const menuGroups = computed(() => {
                 </div>
                 <h3 class="text-2xl font-black text-gray-900 mb-3 tracking-tight">Akhiri Sesi?</h3>
                 <p class="text-sm text-gray-400 font-medium mb-10 leading-relaxed px-2">Anda akan keluar dari sistem Dashboard Satu Data BAPPEDA. Pastikan pekerjaan Anda telah disimpan.</p>
-                <div class="flex flex-col gap-4">
-                    <Link href="/logout" method="post" as="button" class="w-full bg-red-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-red-100 hover:bg-red-700 transition-all active:scale-95">Ya, Keluar Sekarang</Link>
-                    <button @click="cancelLogout" class="w-full bg-gray-50 text-gray-400 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-gray-100 transition-all active:scale-95">Kembali ke Sistem</button>
-                </div>
+               <div class="flex flex-col gap-4">
+                <Link 
+                    href="/logout" 
+                    method="post" 
+                    as="button" 
+                    @click="showLogoutModal = false"
+                    class="w-full bg-red-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-red-100 hover:bg-red-700 transition-all active:scale-95"
+                >
+                    Ya, Keluar Sekarang
+                </Link>
+
+                <button 
+                    @click="cancelLogout" 
+                    class="w-full bg-gray-50 text-gray-400 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-gray-100 transition-all active:scale-95"
+                >
+                    Kembali ke Sistem
+                </button>
+            </div>
             </div>
         </div>
     </div>

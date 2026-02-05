@@ -15,7 +15,7 @@ use App\Http\Controllers\Inputer\DataInputController;
 use App\Http\Controllers\Inputer\DataOutputController;
 use App\Http\Controllers\Public\LandingController;
 use App\Http\Controllers\Public\SearchController;
-
+use App\Http\Controllers\Public\DatasetController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Inputer\InputerDashboardController;
 use App\Http\Controllers\Public\DashboardController;
@@ -27,6 +27,7 @@ use App\Http\Controllers\Public\DashboardController;
 Route::get('/', [LandingController::class, 'index']);
 Route::get('/dashboard', [DashboardController::class, 'index']);
 Route::get('/cari', [SearchController::class, 'index'])->name('public.search');
+Route::get('/dataset/{id}', [DatasetController::class, 'show'])->name('dataset.detail');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');

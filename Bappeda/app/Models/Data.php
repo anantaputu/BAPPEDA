@@ -12,9 +12,10 @@ use App\Models\DataUpload;
 
 class Data extends Model
 {
-    protected $table = 'data';
+   protected $table = 'data';
     protected $primaryKey = 'id_data';
-
+    protected $guarded = [];
+    
     protected $fillable = [
        'nama_indikator',
         'deskripsi',
