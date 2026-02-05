@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;    
 use Inertia\Response;
 
-
 class AuthenticatedSessionController extends Controller
 {
     /**
@@ -29,16 +28,20 @@ class AuthenticatedSessionController extends Controller
      * Handle an incoming authentication request.
      */
 
-   protected function redirectToDashboard($user) {
-    // PERBAIKAN: Tambahkan ->nama_role (atau ->name sesuai database Anda)
-    // Dan tambahkan 'default' agar tidak error jika role tidak dikenali
-    
-    return match ($user->role->nama_role) { 
-        'Admin'   => route('admin.dashboard'),
-        'Inputer' => route('inputer.index'), // Sesuaikan dengan nama route Inputer Anda
-        default   => route('dashboard'),     // Pengalihan default jika role tidak ada di daftar
-    };
-}
+    protected function redirectToDashboard($user) {
+        return match ($user->role_id) {
+            // Sesuai: Route::name('admin.')->get('/dashboard', ...) -> 'admin.dashboard'
+            1 => route('admin.dashboard'),
+
+            // Sesuai: Route::name('inputer.')->get('/data', ...) -> 'inputer.index'
+            // Anda juga bisa pakai 'inputer.dashboard' jika ingin ke dashboard inputer
+            2 => route('inputer.dashboard'),
+
+            // Karena di web.php Anda tidak memberi nama pada Route::get('/', ...),
+            // maka kita gunakan url('/') saja agar aman.
+            default => url('/'), 
+        };
+    }
 
     public function store(LoginRequest $request): RedirectResponse
     {

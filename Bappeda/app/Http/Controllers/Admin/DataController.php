@@ -19,9 +19,11 @@ class DataController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Data/Index', [
+            // Menggunakan paginate() alih-alih get()
             'data' => Data::with(['tema', 'urusan', 'bidang', 'frekuensi'])
                 ->orderBy('id_data', 'desc')
-                ->get(),
+                ->paginate(10) // Menampilkan 10 data per halaman
+                ->withQueryString(), // Mempertahankan filter jika ada
         ]);
     }
 

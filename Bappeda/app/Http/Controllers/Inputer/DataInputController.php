@@ -21,20 +21,25 @@ use Inertia\Inertia;
 
 class DataInputController extends Controller
 {
+    // 1. List Metadata (Halaman Utama)
     public function index()
-    {
-        $uploads = DataUpload::with('data')->orderBy('created_at', 'desc')->get();
-        return Inertia::render('Inputer/Data/Index', ['uploads' => $uploads]);
-    }
+{
+    // Ambil data upload, urutkan dari yang terbaru
+    // 'with('data')' penting agar kita bisa ambil nama_indikator dari tabel master
+    $uploads = DataUpload::with('data')
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-    public function dashboard() { 
-        // ... kode dashboard tetap sama ...
-        return Inertia::render('Inputer/Data/Dashboard', [/*...*/]);
-    }
+    return Inertia::render('Inputer/Data/Index', [
+        'uploads' => $uploads
+    ]);
+}
 
-    public function createWizard()
+    // 2. Form Tambah Master Data Baru
+    // (Diganti nama jadi createMasterData agar tidak bentrok dengan upload)
+    public function createMasterData()
     {
-        return Inertia::render('Inputer/Data/Wizard', [
+        return inertia('Inputer/Data/Create', [
             'tema' => Tema::all(),
             'urusan' => Urusan::all(),
             'bidang' => Bidang::all(),
@@ -42,160 +47,258 @@ class DataInputController extends Controller
         ]);
     }
 
-    // STEP 1: Analisa File (Baca Header Excel)
-    public function analyzeFile(Request $request)
+    // 3. Simpan Master Data Baru
+    public function storeNewData(Request $request)
     {
-        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv']);
+        $validated = $request->validate([
+            'nama_indikator' => 'required|string',
+            'deskripsi' => 'nullable|string',
+            'id_tema' => 'required',
+            'id_urusan' => 'required',
+            'id_bidang' => 'required',
+            'id_frekuensi' => 'required',
+            'satuan' => 'required|string',
+            'sumber' => 'nullable|string',
+            'kata_kunci' => 'nullable|string',
+        ]);
 
-        $path = $request->file('file')->store('uploads/temp', 'private');
-        $fullPath = Storage::disk('private')->path($path);
+        $data = Data::create([
+            'nama_indikator' => $validated['nama_indikator'],
+            'deskripsi' => $validated['deskripsi'],
+            'id_tema' => $validated['id_tema'],
+            'id_urusan' => $validated['id_urusan'],
+            'id_bidang' => $validated['id_bidang'],
+            'id_frekuensi' => $validated['id_frekuensi'],
+            'satuan' => $validated['satuan'],
+            'sumber' => $validated['sumber'],
+            'kata_kunci' => $validated['kata_kunci'],
+            'status' => 'aktif',
+            'tahun_data' => date('Y'),
+        ]);
 
+        // ALUR: Setelah simpan Data Master -> Lanjut ke Halaman Upload Excel
+        return redirect()->route('inputer.create', $data->id_data)
+            ->with('success', 'Master Data berhasil dibuat. Silakan upload file Excel.');
+    }
+
+    // 4. Form Upload Excel (Method 'create' yang asli untuk Route /{data})
+    public function create(Data $data)
+    {
+        // Pastikan Anda nanti membuat file Vue: Inputer/Data/Upload.vue
+        // Atau jika ingin menggunakan modal, sesuaikan logika ini.
+        // Di sini kita asumsikan ada halaman khusus untuk upload.
+        return inertia('Inputer/Data/Upload', [
+            'data' => $data
+        ]);
+    }
+
+    // 5. Simpan File Excel (Proses Upload)
+    public function store(Request $request, Data $data)
+    {
+        $request->validate([
+            'periode' => 'required|string',
+            'file' => 'required|file|mimes:xlsx,xls,csv,txt'
+        ]);
+
+        // Cek apakah sudah ada data valid di periode yang sama
+        $existingValid = DataUpload::where('id_data', $data->id_data)
+            ->where('periode', $request->periode)
+            ->where('status', 'valid') 
+            ->exists();
+
+        if ($existingValid) {
+            return back()->withErrors(['periode' => 'Data Valid untuk periode ini sudah ada.']);
+        }
+
+        // Hapus data processing lama jika ada (untuk re-upload)
+        DataUpload::where('id_data', $data->id_data)
+            ->where('periode', $request->periode)
+            ->where('status', 'processing')
+            ->delete();
+
+        $path = $request->file('file')->store('uploads/excel', 'private');
+
+        $upload = DataUpload::create([
+            'id_data' => $data->id_data,
+            'id_user' => Auth::id(),
+            'periode' => $request->periode,
+            'file_path' => $path,
+            'status' => 'processing'
+        ]);
+
+        // Lanjut ke Mapping
+        return redirect()->route('inputer.mapping', $upload->id_upload);
+    }
+
+    // 6. Halaman Mapping
+    public function mapping(DataUpload $upload)
+    {
+        if (!Storage::disk('private')->exists($upload->file_path)) {
+            return back()->withErrors(['file' => 'File tidak ditemukan di server.']);
+        }
+
+        $path = Storage::disk('private')->path($upload->file_path);
+        
         try {
-            $spreadsheet = IOFactory::load($fullPath);
+            $spreadsheet = IOFactory::load($path);
             $sheet = $spreadsheet->getActiveSheet();
-            $rows = $sheet->toArray(null, true, true, true);
+            $allRows = $sheet->toArray(null, true, true, true);
+            
+            if (empty($allRows)) {
+                return back()->withErrors(['file' => 'File Excel kosong.']);
+            }
 
-            if (empty($rows)) throw new \Exception("File kosong");
+            $header = array_shift($allRows); // Ambil baris pertama sebagai header
+            $previewData = array_slice($allRows, 0, 5); // Ambil 5 baris data untuk preview
 
-            $header = array_shift($rows); 
-            $preview = array_slice($rows, 0, 10); // Ambil 10 baris preview
+            $fields = DataField::where('id_data', $upload->id_data)->get();
 
-            return response()->json([
-                'status' => 'success',
-                'temp_path' => $path,
-                'headers' => $header,
-                'preview' => $preview
+            // Auto-mapping sederhana berdasarkan kesamaan nama
+            $autoMap = [];
+            foreach ($header as $colKey => $colName) {
+                if (!$colName) continue;
+                $normCol = $this->normalize($colName);
+
+                foreach ($fields as $field) {
+                    if ($normCol === $this->normalize($field->nama_field) 
+                        || $normCol === $this->normalize($field->key_field)) {
+                        $autoMap[$colKey] = $field->id_field;
+                        break;
+                    }
+                }
+            }
+
+            return inertia('Inputer/Data/Mapping', [
+                'upload'       => $upload,
+                'excelColumns' => $header,
+                'previewData'  => $previewData,
+                'fields'       => $fields,
+                'autoMap'      => $autoMap
             ]);
 
         } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            return back()->withErrors(['file' => 'Gagal membaca file Excel: ' . $e->getMessage()]);
         }
     }
 
-    // STEP 2: SIMPAN TOTAL (Metadata + Mapping + Data)
-    public function storeComplete(Request $request)
+    // 7. Simpan Mapping & Generate Field Baru
+    // Simpan Mapping
+   public function storeMapping(Request $request, DataUpload $upload)
     {
-        $request->validate([
-            'nama_indikator' => 'required|string',
-            'id_tema' => 'required',
-            'mapping' => 'required|array',
-            'file_path' => 'required|string',
-        ]);
 
-        DB::beginTransaction();
-        try {
-            // 1. Pindahkan File
-            $newPath = str_replace('uploads/temp', 'uploads/excel', $request->file_path);
-            if (Storage::disk('private')->exists($request->file_path)) {
-                Storage::disk('private')->move($request->file_path, $newPath);
-            }
+        $request->validate(['mapping' => 'nullable|array']);
 
-            // 2. Buat Metadata
-            $data = Data::create([
-                'nama_indikator' => $request->nama_indikator,
-                'deskripsi' => $request->deskripsi,
-                'id_tema' => $request->id_tema,
-                'id_urusan' => $request->id_urusan,
-                'id_bidang' => $request->id_bidang,
-                'id_frekuensi' => $request->id_frekuensi,
-                'satuan' => $request->satuan,
-                'sumber' => $request->sumber,
-                'kata_kunci' => $request->kata_kunci,
-                'status' => 'aktif',
-            ]);
+        DB::transaction(function () use ($request, $upload) {
+            // Hapus mapping lama
+            DataFieldMapping::where('id_upload', $upload->id_upload)->delete();
 
-            // 3. Buat Data Upload
-            $upload = DataUpload::create([
-                'id_data' => $data->id_data,
-                'id_user' => Auth::id(),
-                'periode' => $request->periode,
-                'file_path' => $newPath,
-                'status' => 'processing'
-            ]);
+            // Cek apakah ada data mapping yang dikirim
+            if ($request->has('mapping') && is_array($request->mapping)) {
+                
+                foreach ($request->mapping as $excelCol => $fieldId) {
+                    if (!$fieldId) continue; 
 
-            // 4. Proses Field & Mapping
-            $fieldIdMap = [];     // Key: Kolom Excel (A,B) -> Value: ID Field DB
-            $fieldTypeMap = [];   // Key: ID Field DB -> Value: Tipe Data (number/text)
-
-            foreach ($request->mapping as $colKey => $action) {
-                // $action berisi: "__new__" atau null
-                if (!$action) continue; // Jika null (abaikan)
-
-                $fieldId = null;
-                $fieldType = 'text';
-
-                // Jika User memilih "Buat Baru"
-                if ($action === '__new__') {
-                    // Ambil detail konfigurasi field baru
-                    $newData = $request->new_fields[$colKey] ?? [];
-                    $fieldName = $newData['nama_field'] ?? $colKey;
-                    $fieldType = $newData['tipe_field'] ?? 'text';
-
-                    $field = DataField::create([
-                        'id_data' => $data->id_data,
-                        'nama_field' => $fieldName,
-                        'key_field' => Str::snake($fieldName),
-                        'tipe_field' => $fieldType,
-                        'wajib' => false
-                    ]);
-                    $fieldId = $field->id_field;
-                }
-
-                // Simpan Mapping ke DB
-                if ($fieldId) {
                     DataFieldMapping::create([
                         'id_upload' => $upload->id_upload,
-                        'excel_column' => $colKey,
+                        'excel_column' => $excelCol,
                         'id_field' => $fieldId
                     ]);
-                    
-                    // Simpan ke memory map untuk parsing
-                    $fieldIdMap[$colKey] = $fieldId;
-                    $fieldTypeMap[$fieldId] = $fieldType;
                 }
             }
+        });
 
-            // 5. Parsing Data (Langsung)
-            $fullPath = Storage::disk('private')->path($newPath);
-            $spreadsheet = IOFactory::load($fullPath);
-            $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
-            array_shift($rows); // Hapus header
+        return $this->parse($upload);
+    }
 
-            $jsonPayload = [];
-            foreach ($rows as $row) {
-                $rowData = [];
-                $hasData = false;
+    // 8. Parsing Data Excel ke JSONB (Finalisasi)
+   public function parse(DataUpload $upload)
+    {
+        // PERBAIKAN: Pastikan ini 'data_mappings' (sesuai database Anda)
+        // BUKAN 'data_field_mappings'
+        $mappings = DB::table('data_mappings') 
+            ->where('id_upload', $upload->id_upload)
+            ->pluck('id_field', 'excel_column'); 
 
-                foreach ($fieldIdMap as $colKey => $fieldId) {
-                    $val = $row[$colKey] ?? null;
-                    $type = $fieldTypeMap[$fieldId];
+        // if ($mappings->isEmpty()) {
+        //     return back()->withErrors(['mapping' => 'Gagal menyimpan mapping atau tabel kosong.']);
+        // }
 
-                    if ($val !== null && trim($val) !== '') {
-                        if ($type === 'number') {
-                            $val = str_replace(',', '.', $val);
-                            $val = preg_replace('/[^0-9.\-]/', '', $val);
-                            if (is_numeric($val)) $val = strpos($val, '.') !== false ? (float)$val : (int)$val;
-                        }
-                        $hasData = true;
-                    }
-                    $rowData[$fieldId] = $val;
+        
+        $fieldsInfo = DataField::where('id_data', $upload->id_data)
+            ->get()
+            ->keyBy('id_field'); 
+
+        $path = Storage::disk('private')->path($upload->file_path);
+        $spreadsheet = IOFactory::load($path);
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        $rows = $sheet->toArray(null, true, true, true);
+        array_shift($rows); // Hapus header
+
+        $jsonPayload = [];
+
+        foreach ($rows as $row) {
+            $rowData = [];
+            $hasData = false;
+
+            foreach ($mappings as $colKey => $fieldId) {
+                $val = $row[$colKey] ?? null;
+                $fieldInfo = $fieldsInfo[$fieldId] ?? null;
+                $type = $fieldInfo->tipe_field ?? 'text';
+                
+                // Sanitasi sederhana
+                if ($val !== null && trim($val) !== '' && $type === 'number') {
+                    $cleanVal = preg_replace('/[^0-9]/', '', $val);
+                    $val = $cleanVal === '' ? null : $cleanVal;
                 }
 
-                if ($hasData) $jsonPayload[] = $rowData;
+                $rowData[$fieldId] = $val;
+                $hasData = true;
             }
 
-            // 6. Update Hasil Akhir
-            $upload->update([
-                'value' => $jsonPayload,
-                'status' => 'valid'
-            ]);
-
-            DB::commit();
-            return response()->json(['status' => 'success']);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            if ($hasData) {
+                $jsonPayload[] = $rowData;
+            }
         }
+
+        // Update DataUpload
+        $upload->update([
+            'value' => $jsonPayload, 
+            'status' => 'valid' 
+        ]);
+
+        return redirect()
+            ->route('inputer.index')
+            ->with('success', 'Data berhasil diproses dan disimpan.');
+    }
+    
+    // 9. Dashboard Statistik
+    public function dashboard()
+    {
+        $userId = Auth::id();
+
+        $stats = [
+            'totalTugas' => Data::where('status', 'aktif')->count(),
+            'pendingMapping' => DataUpload::where('id_user', $userId)->where('status', 'processing')->count(),
+            'suksesUpload' => DataUpload::where('id_user', $userId)->where('status', 'valid')->count(),
+        ];
+
+        $recentUploads = DataUpload::with('data')
+            ->where('id_user', $userId)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return inertia('Inputer/Dashboard', [
+            'stats' => $stats,
+            'recentUploads' => $recentUploads
+        ]);
+    }
+
+    // Helper: Normalize String
+    private function normalize($value)
+    {
+        if (!$value) return '';
+        return Str::slug($value, '');
     }
 }

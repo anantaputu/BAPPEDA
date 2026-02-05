@@ -28,7 +28,7 @@ const getStatusClass = (status) => {
                     <p class="text-gray-500 font-medium text-sm mt-1">Pantau status validasi dan mapping data Anda.</p>
                 </div>
                 
-                <Link href="/inputer/data/create" class="bg-[#4A6CF7] text-white px-8 py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200 flex items-center gap-2 transform hover:-translate-y-1">
+                <Link href="/inputer/wizard" class="bg-[#4A6CF7] text-white px-8 py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200 flex items-center gap-2 transform hover:-translate-y-1">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     INPUT DATA BARU
                 </Link>
@@ -97,7 +97,7 @@ const getStatusClass = (status) => {
             Download
         </a>
 
-        <Link :href="`/inputer/upload/${u.id_upload}/edit`" 
+        <Link :href="`/inputer/edit/${u.id_upload}/edit`" 
               class="bg-white border border-gray-200 text-gray-500 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 hover:text-gray-900 transition flex items-center gap-2">
             Edit
         </Link>
