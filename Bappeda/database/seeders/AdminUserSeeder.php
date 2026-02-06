@@ -39,7 +39,7 @@ class AdminUserSeeder extends Seeder
         );
 
         User::updateOrCreate(
-            ['email' => 'a@l.q'],
+            ['email' => '1@2.3'],
             [
                 'name'      => 'I Putu Ananta Sugiartha',
                 'username'  => 'nanto',

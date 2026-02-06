@@ -16,38 +16,53 @@ use Illuminate\Support\Str;
 
 class DataOutputController extends Controller
 {
-    public function export(DataUpload $upload)
+    // PERUBAHAN 1: Parameter menerima $id (id_data), bukan model binding
+    public function export($id)
     {
-        // 1. Ambil Metadata Field (Header Kolom)
+        // PERUBAHAN 2: Cari Upload Terakhir yang Valid milik Dataset ini
+        $upload = DataUpload::where('id_data', $id)
+            ->where('status', 'valid')
+            ->latest() // Ambil yang paling baru
+            ->first();
+
+        // Validasi jika belum ada file
+        if (!$upload) {
+            return abort(404, 'Belum ada data valid untuk indikator ini.');
+        }
+
+        // --- DARI SINI KE BAWAH LOGIKANYA SAMA, TINGGAL COPY ---
+
+        // 1. Ambil Metadata Field
         $fields = DataField::where('id_data', $upload->id_data)->get();
 
-        // 2. Ambil Data Values (Isi Baris)
-        // Pengecekan aman: Jika di model belum di-cast array, kita decode manual
+        // 2. Ambil Data Values
         $dataRows = is_string($upload->value) ? json_decode($upload->value, true) : $upload->value;
 
         if (empty($dataRows) || !is_array($dataRows)) {
-            return back()->withErrors(['file' => 'Data kosong atau format rusak, tidak ada yang bisa didownload.']);
+            return abort(500, 'Data kosong atau format rusak.');
         }
 
         // 3. Setup Spreadsheet
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
-        
-        // Judul Sheet (Optional)
         $sheet->setTitle('Data Export');
 
-        // --- BAGIAN HEADER (BARIS 1) ---
+        // --- HEADER ---
         $col = 1;
         $rowHeader = 1;
+
+        // Header Nomor Urut
+        $sheet->setCellValue('A1', 'NO');
+        $sheet->getStyle('A1')->getFont()->setBold(true);
+        $col++;
 
         foreach ($fields as $field) {
             $columnLetter = Coordinate::stringFromColumnIndex($col);
             $cellAddress = $columnLetter . $rowHeader;
 
-            // Set Nama Header
             $sheet->setCellValue($cellAddress, $field->nama_field);
             
-            // Style Header: Bold & Warna Abu-abu
+            // Style Header
             $style = $sheet->getStyle($cellAddress);
             $style->getFont()->setBold(true);
             $style->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFEEEEEE');
@@ -56,48 +71,42 @@ class DataOutputController extends Controller
             $col++;
         }
 
-        // --- BAGIAN ISI DATA (BARIS 2 dst) ---
+        // --- ISI DATA ---
         $currentRow = 2;
+        $no = 1;
 
         foreach ($dataRows as $rowData) {
             $col = 1;
             
+            // Kolom Nomor
+            $sheet->setCellValue('A' . $currentRow, $no++);
+            $col++;
+
             foreach ($fields as $field) {
-                // Ambil value berdasarkan ID Field. 
-                // Gunakan (string) ID karena kadang key JSON disimpan sebagai string
+                // Ambil value berdasarkan ID Field
                 $val = $rowData[$field->id_field] ?? $rowData[(string)$field->id_field] ?? ''; 
                 
                 $columnLetter = Coordinate::stringFromColumnIndex($col);
                 $cellAddress = $columnLetter . $currentRow;
 
                 $sheet->setCellValue($cellAddress, $val);
-                
                 $col++;
             }
             $currentRow++;
         }
 
-        // --- FINALISASI TAMPILAN ---
-        
-        // 1. Auto Size Kolom
+        // --- FINISHING ---
         $highestColumn = $sheet->getHighestColumn();
         foreach (range('A', $highestColumn) as $colID) {
             $sheet->getColumnDimension($colID)->setAutoSize(true);
         }
 
-        // 2. Beri Border ke Seluruh Tabel
-        $highestRow = $sheet->getHighestRow();
-        $tableRange = 'A1:' . $highestColumn . $highestRow;
-        $sheet->getStyle($tableRange)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
-
-        // --- DOWNLOAD ---
-        
-        // Load relasi data agar bisa ambil nama indikator untuk nama file
+        // Load relasi data untuk nama file
         $upload->load('data');
         
-        // Nama File: "Data_Jumlah_Penduduk_2024.xlsx"
+        // Nama File yang Rapi
         $safeName = Str::slug($upload->data->nama_indikator ?? 'Data');
-        $fileName = 'Data_' . $safeName . '_' . Str::slug($upload->periode) . '.xlsx';
+        $fileName = 'Data_' . $safeName . '_' . $upload->tahun . '.xlsx';
 
         $writer = new Xlsx($spreadsheet);
 

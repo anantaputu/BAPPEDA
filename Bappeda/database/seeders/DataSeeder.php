@@ -35,40 +35,6 @@ class DataSeeder extends Seeder
             'Rata-rata Lama Sekolah',
         ];
 
-        foreach ($indikatorUtama as $nama) {
-            // Bagian Indikator Utama
-            Data::create([
-                'nama_indikator' => $nama,
-                'deskripsi'      => 'Indikator prioritas pembangunan daerah.',
-                'id_tema'        => fake()->randomElement($tema),
-                'id_urusan'      => fake()->randomElement($urusan),
-                'id_bidang'      => fake()->randomElement($bidang),
-                'id_frekuensi'   => fake()->randomElement($frekuensi),
-                'kata_kunci'     => strtolower(str_replace(' ', ',', $nama)),
-                'satuan'         => 'Persen',
-                'sumber'         => 'BAPPEDA Kota Mataram',
-                'status'         => 'valid',
-                // HAPUS BARIS TAHUN_DATA DI SINI
-            ]);
 
-            // Bagian Loop 100 Data
-            for ($i = 1; $i <= 100; $i++) {
-                Data::create([
-                    'nama_indikator' => rtrim(fake()->sentence(3), '.'),
-                    'deskripsi'      => fake()->paragraph(),
-                    'id_tema'        => fake()->randomElement($tema),
-                    'id_urusan'      => fake()->randomElement($urusan),
-                    'id_bidang'      => fake()->randomElement($bidang),
-                    'id_frekuensi'   => fake()->randomElement($frekuensi),
-                    'kata_kunci'     => fake()->words(3, true),
-                    'satuan'         => fake()->randomElement(['Persen', 'Jiwa', 'Km']),
-                    'sumber'         => 'Dinas ' . fake()->company(),
-                    'status'         => fake()->randomElement(['valid', 'pending', 'invalid']),
-                    // HAPUS BARIS TAHUN_DATA DI SINI JUGA
-                ]);
-            }
-        }
-
-        $this->command->info('Berhasil menambahkan 106 data indikator.');
     }
 }

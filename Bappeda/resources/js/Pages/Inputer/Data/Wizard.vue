@@ -7,16 +7,12 @@ import axios from 'axios';
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
-    tema: Array,
-    urusan: Array,
-    bidang: Array,
-    frekuensi: Array,
+    tema: Array, urusan: Array, bidang: Array, frekuensi: Array,
 });
 
 // STATE
 const step = ref(1); 
 const isLoading = ref(false);
-const fileTempPath = ref('');
 const excelData = reactive({
     headers: {}, 
     preview: []
@@ -24,25 +20,16 @@ const excelData = reactive({
 
 // FORM GLOBAL
 const form = useForm({
-    // Metadata
-    nama_indikator: '',
-    deskripsi: '',
-    id_tema: '',
-    id_urusan: '',
-    id_bidang: '',
-    id_frekuensi: '',
-    satuan: '',
-    sumber: '',
-    kata_kunci: '',
-    periode: new Date().getFullYear().toString(),
+    nama_indikator: '', deskripsi: '', id_tema: '', id_urusan: '', 
+    id_bidang: '', id_frekuensi: '', satuan: '', sumber: '', 
+    kata_kunci: '', periode: new Date().getFullYear().toString(),
     
-    // Technical
     file_path: '',
-    mapping: {},     // { A: "__new__", B: null }
-    new_fields: {}   // { A: { nama_field: "NIK", tipe_field: "text" } }
+    mapping: {}, 
+    new_fields: {}
 });
 
-// STEP 1: ANALISA FILE
+// STEP 1: UPLOAD & ANALYZE
 const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -57,37 +44,19 @@ const handleFileUpload = async (event) => {
         });
 
         if (response.data.status === 'success') {
-            // Simpan Data Sementara
-            fileTempPath.value = response.data.temp_path;
-            excelData.headers = response.data.headers;
-            excelData.preview = response.data.preview;
-            form.file_path = response.data.temp_path;
-
-            // --- AUTO MAPPING LOGIC ---
-            // Secara default, kita anggap semua kolom adalah Field Baru
-            const initialMapping = {};
-            const initialNewFields = {};
-
-            Object.keys(response.data.headers).forEach(key => {
-                const headerName = response.data.headers[key];
-                
-                // Set default action: Buat Baru
-                initialMapping[key] = '__new__';
-                
-                // Set default config: Nama = Header, Tipe = Text
-                initialNewFields[key] = {
-                    nama_field: headerName, 
-                    tipe_field: 'text' 
-                };
-            });
-
-            form.mapping = initialMapping;
-            form.new_fields = initialNewFields;
+            const res = response.data;
             
-            // Auto fill nama indikator dari nama file (opsional)
-            form.nama_indikator = file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ");
+            // 1. Simpan Data Tampilan
+            excelData.headers = res.headers;
+            excelData.preview = res.preview;
 
-            step.value = 2; // Pindah ke Config
+            // 2. Isi Form langsung dari Logika Backend (Tanpa Loop di JS)
+            form.file_path = res.temp_path;
+            form.mapping = res.default_mapping;      // <--- Terima jadi
+            form.new_fields = res.default_new_fields; // <--- Terima jadi
+            form.nama_indikator = res.suggested_name;
+
+            step.value = 2;
         }
     } catch (error) {
         alert('Gagal membaca file: ' + (error.response?.data?.message || error.message));
@@ -96,10 +65,10 @@ const handleFileUpload = async (event) => {
     }
 };
 
-// HANDLER DROPDOWN (Jika user ubah pilihan di header tabel)
+// HANDLER DROPDOWN (UI Helper Kecil)
 const handleMappingChange = (colKey) => {
     if (form.mapping[colKey] === '__new__') {
-        // Jika belum ada config field baru, buat defaultnya
+        // Jika config hilang (case rare), restore default dari header
         if (!form.new_fields[colKey]) {
             form.new_fields[colKey] = {
                 nama_field: excelData.headers[colKey],
@@ -109,7 +78,7 @@ const handleMappingChange = (colKey) => {
     }
 };
 
-// STEP 2: SIMPAN SEMUA
+// STEP 2: SIMPAN FINAL (Tetap Sama)
 const submitAll = async () => {
     isLoading.value = true;
     try {
@@ -120,7 +89,7 @@ const submitAll = async () => {
     } catch (error) {
         if (error.response?.data?.errors) {
             form.errors = error.response.data.errors; 
-            alert('Periksa kembali isian form metadata (bagian atas).');
+            alert('Periksa kembali isian form metadata.');
             window.scrollTo(0,0);
         } else {
             alert('Terjadi kesalahan: ' + (error.response?.data?.message || 'Server Error'));
@@ -130,7 +99,6 @@ const submitAll = async () => {
     }
 };
 </script>
-
 <template>
     <Head title="Input Data Baru" />
 

@@ -16,15 +16,10 @@ return new class extends Migration
 
     $table->unsignedBigInteger('id_data');
     $table->unsignedBigInteger('id_user');
-
     $table->string('periode');      
     $table->string('file_path');    
-
     $table->string('status')->default('processing');
-
     $table->jsonb('value')->nullable();
-
-    $table->text('catatan')->nullable();
     $table->timestamps();
 
     $table->foreign('id_data')

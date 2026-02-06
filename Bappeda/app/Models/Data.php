@@ -29,7 +29,6 @@ class Data extends Model
         'status',
         'tahun_data'
     ];
-
     /* ================= RELATIONS ================= */
 
      public function tema()
