@@ -1,8 +1,12 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import vue from '@vitejs/plugin-vue'; // Import the plugin
+import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
+    server: {
+        host: 'bappeda.test',
+        hmr: { host: 'bappeda.test' },
+    },
     plugins: [
         laravel({
             input: 'resources/js/app.js',

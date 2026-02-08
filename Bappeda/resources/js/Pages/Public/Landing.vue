@@ -12,7 +12,7 @@ const props = defineProps({
 <template>
     <Head title="Selamat Datang" />
 
-    <section class="relative py-40 overflow-hidden w-full"> 
+    <section class="relative py-28 overflow-hidden w-full"> 
         <div class="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[600px] h-[600px] bg-[#A2B5CB]/10 rounded-full blur-3xl -z-10"></div>
         
         <div class="max-w-[80%] mx-auto grid lg:grid-cols-2 gap-16 items-center">
@@ -29,21 +29,21 @@ const props = defineProps({
                     Platform digital BAPPEDA Provinsi Nusa Tenggara Barat untuk mempermudah penyetoran, validasi, dan monitoring data kinerja pembangunan daerah secara real-time.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                    <Link href="/login" class="bg-[#00139E] text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-xl shadow-[#00139E]/20 hover:bg-[#000B58] hover:-translate-y-1 transition-all duration-300">
+                    <Link href="/login" class="bg-[#00139E] text-white px-8 py-4 rounded-2xl text-lg font-bold hover:bg-[#000B58] hover:-translate-y-1 transition-all duration-300">
                         Pelajari lebih lanjut
                     </Link>
-                    <Link href="/cari" class="border-2 border-[#A2B5CB] text-[#000B58] px-8 py-4 rounded-2xl text-lg font-bold hover:bg-[#A2B5CB]/10 transition-all duration-300">
+                    <Link href="/cari" class="border border-gray-300 text-[#000B58] px-8 py-4 rounded-2xl text-lg font-bold hover:bg-[#A2B5CB]/10 transition-all duration-300">
                         Cari Data
                     </Link>
                 </div>
             </div>
 
             <div class="hidden lg:block relative">
-                <div class="absolute inset-0 bg-gradient-to-tr from-[#000B58] to-[#00139E] transform rotate-6 rounded-[3rem] opacity-5 blur-2xl"></div>
-                <div class="relative bg-white border border-[#A2B5CB]/30 p-10 rounded-[3rem] shadow-2xl shadow-[#000B58]/5">
+                <!-- <div class="absolute inset-0 bg-gradient-to-tr from-[#000B58] to-[#00139E] transform rotate-6 rounded-[3rem] opacity-5 blur-2xl"></div> -->
+                <div class="relative bg-white border border-gray-300 p-10 rounded-[3rem]">
                     
                     <div class="flex items-center gap-5 mb-8 border-b border-gray-100 pb-6">
-                        <div class="w-14 h-14 bg-[#000B58] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[#000B58]/20">
+                        <div class="w-14 h-14 bg-[#000B58] rounded-2xl flex items-center justify-center text-white">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                             </svg>
