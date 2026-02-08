@@ -30,7 +30,8 @@ use App\Http\Controllers\Inputer\DataOutputController;
 |--------------------------------------------------------------------------
 */
 Route::get('/', [LandingController::class, 'index']);
-Route::get('/overview', [OverviewController::class, 'index'])->name('public.overview');
+Route::get('/public-dashboard', [DashboardController::class, 'index'])
+    ->name('public.dashboard');
 Route::get('/cari', [SearchController::class, 'index'])->name('public.search');
 Route::get('/dataset/{id}', [DatasetController::class, 'show'])->name('dataset.detail');
 Route::get('/export/data/{id}', [DataOutputController::class, 'export'])->name('public.export');
@@ -54,7 +55,7 @@ Route::middleware('auth')->post('/logout', [AuthenticatedSessionController::clas
 | Mengarahkan user ke dashboard yang sesuai (Admin / Inputer).
 */
 Route::middleware(['auth', 'role:admin|inputer'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [OverviewController::class, 'index'])->name('dashboard');
 });
 
 /*
