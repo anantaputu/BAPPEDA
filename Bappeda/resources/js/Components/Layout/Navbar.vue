@@ -15,7 +15,7 @@ defineProps({ logoPath: String });
             
             <div class="flex gap-8 items-center text-sm font-bold">
                 <Link href="/" class="text-[#A2B5CB] hover:text-[#00139E] transition">Beranda</Link>
-                <Link href="/dashboard" class="text-[#A2B5CB] hover:text-[#00139E] transition">Dashboard</Link>
+                <Link href="/overview" class="text-[#A2B5CB] hover:text-[#00139E] transition">Dashboard</Link>
                 <Link href="/cari" class="text-[#A2B5CB] hover:text-[#00139E] transition">Cari</Link>
                 <Link href="/login" class="bg-[#00139E] text-white px-8 py-2.5 rounded-xl hover:bg-[#000B58] transition">
                     Log in
@@ -24,3 +24,4 @@ defineProps({ logoPath: String });
         </div>
     </nav>
 </template>
+

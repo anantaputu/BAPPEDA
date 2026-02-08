@@ -4,15 +4,29 @@ import { Head, Link } from '@inertiajs/vue3';
 
 defineOptions({ layout: AppLayout });
 
+// 1. Definisikan Props dengan Nilai Default Aman
 const props = defineProps({
-    uploads: Array // Data dikirim dari Controller
+    uploads: {
+        type: Array,
+        default: () => [] // Mencegah crash jika data belum masuk
+    }
 });
 
-// Helper untuk warna badge status
 const getStatusClass = (status) => {
     if (status === 'valid') return 'bg-green-100 text-green-700 border border-green-200';
     if (status === 'processing') return 'bg-amber-100 text-amber-700 border border-amber-200';
     return 'bg-red-100 text-red-700 border border-red-200';
+};
+
+// Fungsi format tanggal aman
+const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+const formatTime = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 };
 </script>
 
@@ -54,7 +68,7 @@ const getStatusClass = (status) => {
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                     </div>
                                     <div>
-                                        <p class="font-extrabold text-gray-900 text-sm mb-1">{{ u.data ? u.data.nama_indikator : 'Data Terhapus' }}</p>
+                                        <p class="font-extrabold text-gray-900 text-sm mb-1">{{ u.data?.nama_indikator || 'Data Terhapus' }}</p>
                                         <p class="text-xs text-gray-400 font-medium">ID Upload: #{{ u.id_upload }}</p>
                                     </div>
                                 </div>
@@ -65,12 +79,8 @@ const getStatusClass = (status) => {
                             </td>
 
                             <td class="py-6 px-4 text-center">
-                                <p class="text-xs font-bold text-gray-500">
-                                    {{ new Date(u.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) }}
-                                </p>
-                                <p class="text-[10px] text-gray-400 mt-1">
-                                    {{ new Date(u.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }}
-                                </p>
+                                <p class="text-xs font-bold text-gray-500">{{ formatDate(u.created_at) }}</p>
+                                <p class="text-[10px] text-gray-400 mt-1">{{ formatTime(u.created_at) }}</p>
                             </td>
                             
                             <td class="py-6 px-4 text-center">
@@ -80,33 +90,18 @@ const getStatusClass = (status) => {
                             </td>
                             
                             <td class="py-6 px-8 text-right">
-    <div class="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-        
-        <Link v-if="u.status !== 'valid'" 
-              :href="`/inputer/upload/${u.id_upload}/mapping`" 
-              class="bg-[#4A6CF7] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-md flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-            Lanjut Mapping
-        </Link>
-
-        <a v-if="u.status === 'valid'" 
-           :href="`/inputer/export/${u.id_upload}`" 
-           target="_blank"
-           class="bg-green-100 border border-green-200 text-green-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-green-600 hover:text-white transition flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0l-4 4m4-4v12" /></svg>
-            Download
-        </a>
-
-        <Link :href="`/inputer/edit/${u.id_upload}/edit`" 
-              class="bg-white border border-gray-200 text-gray-500 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 hover:text-gray-900 transition flex items-center gap-2">
-            Edit
-        </Link>
-
-    </div>
-</td>
+                                <div class="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Link v-if="u.status !== 'valid'" :href="`/inputer/upload/${u.id_upload}/mapping`" class="bg-[#4A6CF7] text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-md flex items-center gap-2">
+                                        Lanjut Mapping
+                                    </Link>
+                                    <a v-if="u.status === 'valid'" :href="`/inputer/export/${u.id_upload}`" target="_blank" class="bg-green-100 border border-green-200 text-green-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-green-600 hover:text-white transition flex items-center gap-2">
+                                        Download
+                                    </a>
+                                </div>
+                            </td>
                         </tr>
 
-                        <tr v-if="uploads.length === 0">
+                        <tr v-if="!uploads || uploads.length === 0">
                             <td colspan="5" class="py-20 text-center">
                                 <div class="flex flex-col items-center justify-center">
                                     <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-4">

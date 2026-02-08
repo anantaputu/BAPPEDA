@@ -4,15 +4,17 @@ import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
     server: {
-        host: 'bappeda.test',
-        hmr: { host: 'bappeda.test' },
+        host: 'localhost',
+        hmr: {
+            host: 'localhost',
+        },
     },
     plugins: [
         laravel({
             input: 'resources/js/app.js',
             refresh: true,
         }),
-        vue({ // Add the plugin here
+        vue({
             template: {
                 transformAssetUrls: {
                     base: null,

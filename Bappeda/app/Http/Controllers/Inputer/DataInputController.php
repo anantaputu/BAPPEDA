@@ -23,17 +23,31 @@ class DataInputController extends Controller
 {
     public function index()
     {
-        $uploads = DataUpload::with('data')->orderBy('created_at', 'desc')->get();
-        return Inertia::render('Inputer/Data/Index', ['uploads' => $uploads]);
-    }
+        $userId = Auth::id();
 
-    public function dashboard() { 
-        // ... kode dashboard tetap sama ...
-        return Inertia::render('Inputer/Data/Dashboard', [/*...*/]);
+        // Statistik
+        $stats = [
+            'total_upload' => DataUpload::where('id_user', $userId)->count(),
+            'valid'        => DataUpload::where('id_user', $userId)->where('status', 'valid')->count(),
+            'pending'      => DataUpload::where('id_user', $userId)->whereIn('status', ['processing', 'pending', 'draft'])->count(),
+        ];
+
+        // Riwayat Upload Terakhir
+        $recentUploads = DataUpload::with('data')
+            ->where('id_user', $userId)
+            ->latest()
+            ->limit(5)
+            ->get();
+
+        return Inertia::render('Inputer/Data/Index', [
+            'stats' => $stats,
+            'recentUploads' => $recentUploads
+        ]);
     }
 
     public function createWizard()
     {
+        // Mengirim data Master untuk Dropdown di Form Wizard
         return Inertia::render('Inputer/Data/Wizard', [
             'tema' => Tema::all(),
             'urusan' => Urusan::all(),
@@ -41,7 +55,6 @@ class DataInputController extends Controller
             'frekuensi' => Frekuensi::all(),
         ]);
     }
-
     // STEP 1: Analisa File (Baca Header Excel)
     public function analyzeFile(Request $request)
     {

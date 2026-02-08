@@ -3,86 +3,36 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
-use App\Models\Data;
-use App\Models\DataUpload;
-use App\Models\Tema;
-use App\Models\Bidang; // Pastikan Model Bidang di-import
-use Illuminate\Support\Facades\DB;
-use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Inputer\InputerDashboardController;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // 1. STATISTIK UTAMA
-        $stats = [
-            'total_dataset' => Data::count(),
-            'data_valid'    => DataUpload::where('status', 'valid')->count(),
-            'total_visual'  => 0,
-            'total_org'     => Data::distinct('sumber')->count('sumber'),
-            'total_upload'  => DataUpload::count(),
-        ];
+        $user = Auth::user();
+        
+        // Ambil Role
+        $roleData = $user->role; 
+        $roleName = is_object($roleData) || is_array($roleData) 
+            ? ($roleData->nama_role ?? $roleData['nama_role'] ?? null)
+            : ($user->nama_role ?? $user->role);
+        
+        $role = strtolower((string)$roleName);
 
-        // 2. CHART BAR (TEMA) - Ini yang sebelumnya missing
-        $themesData = Tema::withCount('data')->get();
-        $chartThemes = [
-            'labels' => $themesData->pluck('nama_tema'),
-            'data'   => $themesData->pluck('data_count'),
-        ];
-
-        // 3. CHART DOUGHNUT (BIDANG) - Logic Baru
-        $bidangData = Bidang::withCount('data')
-            ->orderBy('data_count', 'desc')
-            ->limit(5)
-            ->get();
-
-        $totalTop5 = $bidangData->sum('data_count');
-        $totalAll = Data::count();
-        $othersCount = $totalAll - $totalTop5;
-
-        $bidangLabels = $bidangData->pluck('nama_bidang')->toArray();
-        $bidangCounts = $bidangData->pluck('data_count')->toArray();
-
-        if ($othersCount > 0) {
-            $bidangLabels[] = 'Lainnya';
-            $bidangCounts[] = $othersCount;
+        // --- HANYA REDIRECT, JANGAN RENDER VIEW DI SINI ---
+        
+        if ($role === 'inputer') {
+            // Panggil Controller Inputer yang ASLI
+            return app(InputerDashboardController::class)->index();
         }
 
-        $chartBidang = [
-            'labels' => $bidangLabels,
-            'data'   => $bidangCounts,
-        ];
+        if ($role === 'admin' || $role === 'admin super') {
+            // Panggil Controller Admin yang ASLI
+            return app(AdminDashboardController::class)->index();
+        } 
 
-        // 4. LIST DATASET (Terbaru & Populer)
-        $mapDataset = function ($query) {
-            return $query->with('tema')->limit(3)->get()->map(function ($item) {
-                return [
-                    'id'    => $item->id_data,
-                    'title' => $item->nama_indikator,
-                    'tags'  => ['XLSX', $item->tema->nama_tema ?? 'Umum'], 
-                    'org'   => $item->sumber ?? 'Pemerintah',
-                ];
-            });
-        };
-
-        $latestDatasets = $mapDataset(Data::latest());
-        $popularDatasets = $mapDataset(Data::inRandomOrder());
-
-        // 5. KATEGORI / TOPIK
-        $topics = Tema::limit(6)->get()->map(function($t) {
-            return ['name' => $t->nama_tema];
-        });
-
-        // RETURN KE VUE
-        return Inertia::render('Public/Dashboard', [
-            'stats'       => $stats,
-            'chartThemes' => $chartThemes, // Variabel ini sekarang sudah didefinisikan di poin no 2
-            'chartBidang' => $chartBidang,
-            'datasets'    => [
-                'popular' => $popularDatasets,
-                'latest'  => $latestDatasets,
-            ],
-            'topics'      => $topics
-        ]);
+        abort(403);
     }
 }
