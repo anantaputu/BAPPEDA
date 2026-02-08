@@ -14,7 +14,7 @@ defineEmits(['toggleMasterData', 'logout']);
 </script>
 
 <template>
-    <aside class="w-72 bg-white rounded-[2.5rem] border border-[#A2B5CB]/30 shadow-2xl shadow-[#000B58]/5 flex flex-col p-8 fixed h-[calc(100vh-3rem)] m-6 z-40">
+    <aside class="fixed left-0 top-0 z-40 w-72 bg-white rounded-[2.5rem] border border-[#A2B5CB]/30 shadow-2xl shadow-[#000B58]/5 flex flex-col p-8 h-[calc(100vh-3rem)] m-6">
         <div class="flex items-center gap-4 mb-10">
             <div class="w-12 h-12 flex-shrink-0 bg-white rounded-xl flex items-center justify-center border border-[#A2B5CB]/20 shadow-sm overflow-hidden">
                 <img :src="logoPath" alt="Logo" class="w-9 h-9 object-contain">
