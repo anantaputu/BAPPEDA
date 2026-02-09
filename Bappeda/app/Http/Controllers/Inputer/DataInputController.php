@@ -21,30 +21,46 @@ use Inertia\Inertia;
 
 class DataInputController extends Controller
 {
-    public function index()
-    {
-        $userId = Auth::id();
+   public function index()
+{
+    $user = Auth::user();
+    
+    // Normalisasi Role
+    $roleName = strtolower(
+        is_object($user->role) ? ($user->role->nama_role ?? '') : ($user->nama_role ?? $user->role)
+    );
+    $isAdmin = ($roleName === 'admin');
 
-        // Statistik
-        $stats = [
-            'total_upload' => DataUpload::where('id_user', $userId)->count(),
-            'valid'        => DataUpload::where('id_user', $userId)->where('status', 'valid')->count(),
-            'pending'      => DataUpload::where('id_user', $userId)->whereIn('status', ['processing', 'pending', 'draft'])->count(),
-        ];
+    // --- 1. QUERY BUILDER ---
+    // Siapkan query dasar
+    $query = DataUpload::with(['data', 'user']); // Load 'user' juga biar Admin tahu siapa yg upload
 
-        // Riwayat Upload Terakhir
-        $recentUploads = DataUpload::with('data')
-            ->where('id_user', $userId)
-            ->latest()
-            ->limit(5)
-            ->get();
-
-        return Inertia::render('Inputer/Data/Index', [
-            'stats' => $stats,
-            'recentUploads' => $recentUploads
-        ]);
+    // Jika BUKAN Admin (Inputer biasa), batasi hanya data dia sendiri
+    if (!$isAdmin) {
+        $query->where('id_user', $user->id);
     }
 
+    // --- 2. STATISTIK ---
+    // Clone query agar filter di atas tetap terbawa ke statistik
+    $statsQuery = clone $query; 
+    
+    $stats = [
+        'total_upload' => (clone $statsQuery)->count(),
+        'valid'        => (clone $statsQuery)->where('status', 'valid')->count(),
+        'pending'      => (clone $statsQuery)->whereIn('status', ['processing', 'pending', 'draft'])->count(),
+    ];
+
+    // --- 3. DATA LIST (RECENT) ---
+    $recentUploads = $query->latest()
+        ->limit(10) // Tampilkan 10 terakhir
+        ->get();
+
+    return Inertia::render('Inputer/Data/Index', [
+        'stats' => $stats,
+        'recentUploads' => $recentUploads,
+        'isAdmin' => $isAdmin // Kirim info role ke Vue untuk atur tampilan
+    ]);
+}
     public function createWizard()
     {
         // Mengirim data Master untuk Dropdown di Form Wizard
@@ -155,7 +171,7 @@ class DataInputController extends Controller
                 'satuan' => $request->satuan,
                 'sumber' => $request->sumber,
                 'kata_kunci' => $request->kata_kunci,
-                'tahun_data' => $request->periode,
+                'tahun' => $request->periode,
                 'status' => 'aktif',
             ]);
 

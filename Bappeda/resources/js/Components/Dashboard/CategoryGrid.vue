@@ -7,8 +7,8 @@ defineProps({
 <template>
     <div class="py-8">
         <div class="text-center mb-10">
-            <h2 class="text-xl font-black text-gray-900">Kategori Data Pemerintahan</h2>
-            <p class="text-sm text-gray-500 mt-1">Jelajahi data berdasarkan topik pembangunan utama</p>
+            <h2 class="text-xl font-black text-gray-900">Kategori Sumber Data </h2>
+            <p class="text-sm text-gray-500 mt-1">Data Berdasarkan Bidang Bidang</p>
         </div>
         
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">

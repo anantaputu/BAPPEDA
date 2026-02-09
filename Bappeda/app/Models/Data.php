@@ -27,7 +27,7 @@ class Data extends Model
         'sumber',
         'kata_kunci',
         'status',
-        'tahun_data'
+        'tahun'
     ];
     /* ================= RELATIONS ================= */
 
@@ -51,7 +51,7 @@ class Data extends Model
         return $this->belongsTo(Frekuensi::class, 'id_frekuensi', 'id_frekuensi');
     }
 
-    public function fields()
+    public function cd ()
     {
         return $this->hasMany(DataField::class, 'id_data');
     }

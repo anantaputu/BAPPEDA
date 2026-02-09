@@ -9,7 +9,7 @@ defineProps({ doughnutData: Object, validationData: Object, percentValid: Number
 
 <template>
     <div class="bg-white p-8 rounded-[1.5rem] shadow-sm border border-gray-400 flex flex-col">
-        <h3 class="text-lg font-bold text-gray-800 tracking-tight mb-8">Status Validasi</h3>
+        <h3 class="text-lg font-bold text-gray-800 tracking-tight mb-8">Status Bidang</h3>
         <div class="flex-1 relative flex items-center justify-center px-4">
             <Doughnut :data="doughnutData" :options="{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }" />
             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">

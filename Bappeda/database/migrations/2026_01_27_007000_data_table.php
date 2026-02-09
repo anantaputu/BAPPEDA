@@ -13,21 +13,17 @@ return new class extends Migration
     {
     Schema::create('data', function (Blueprint $table) {
     $table->id('id_data');
-
     $table->string('nama_indikator');
     $table->text('deskripsi')->nullable();
-
     $table->unsignedBigInteger('id_tema');
     $table->unsignedBigInteger('id_urusan');
     $table->unsignedBigInteger('id_bidang');
     $table->unsignedBigInteger('id_frekuensi');
-
-    $table->string('kata_kunci')->nullable();
     $table->string('satuan');
     $table->string('sumber');
-
+    $table->string('kata_kunci')->nullable();
     $table->string('status')->default('aktif');
-
+      $table->year('tahun');
     $table->timestamps();
 
     // Foreign Key

@@ -35,7 +35,7 @@ class InputerDashboardController extends Controller
         // 3. Ambil 5 Riwayat Upload Terakhir
         $recentUploads = DataUpload::with('data') // Eager load relasi ke tabel 'data' (indikator)
             ->where('id_user', $userId)
-            ->latest() // Urutkan dari yang terbaru
+            ->latest() 
             ->limit(5)
             ->get();
 
