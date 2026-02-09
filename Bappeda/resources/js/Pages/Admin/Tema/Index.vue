@@ -18,43 +18,63 @@ const hapus = (id) => {
 <template>
   <Head title="Tema" />
 
-  <div class="bg-white p-8 rounded-2xl max-w-xl">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-xl font-bold">Tema</h2>
-      <Link
-        href="/admin/tema/create"
-        class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold"
-      >
-        + Tambah Tema
-      </Link>
+  <!-- CONTAINER UTAMA (SAMA DENGAN HALAMAN ADMIN LAIN) -->
+  <div class="mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="bg-white border border-gray-400 rounded-2xl shadow-sm p-6">
+
+      <!-- HEADER -->
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-lg font-bold text-gray-800">
+          Manajemen Tema
+        </h2>
+
+        <Link
+          href="/admin/tema/create"
+          class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition"
+        >
+          + Tambah Tema
+        </Link>
+      </div>
+
+      <!-- LIST CONTAINER -->
+      <div class="border border-gray-400 rounded-xl overflow-hidden">
+        <ul class="divide-y divide-gray-200">
+          <li
+            v-for="t in tema"
+            :key="t.id_tema"
+            class="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition"
+          >
+            <span class="text-sm font-medium text-gray-700">
+              {{ t.nama_tema }}
+            </span>
+
+            <div class="flex items-center gap-3">
+              <Link
+                :href="`/admin/tema/${t.id_tema}/edit`"
+                class="px-3 py-1.5 text-sm font-semibold text-blue-600 border border-blue-300 rounded-lg hover:bg-blue-50 transition"
+              >
+                Edit
+              </Link>
+
+              <button
+                @click="hapus(t.id_tema)"
+                class="px-3 py-1.5 text-sm font-semibold text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition"
+              >
+                Hapus
+              </button>
+            </div>
+          </li>
+
+          <li
+            v-if="tema.length === 0"
+            class="px-6 py-12 text-center text-sm text-gray-400"
+          >
+            Belum ada data tema
+          </li>
+        </ul>
+      </div>
+
     </div>
-
-    <ul class="divide-y">
-      <li
-        v-for="t in tema"
-        :key="t.id_tema"
-        class="py-3 flex justify-between items-center"
-      >
-        <span>{{ t.nama_tema }}</span>
-        <div class="space-x-3">
-          <Link
-            :href="`/admin/tema/${t.id_tema}/edit`"
-            class="text-blue-600 font-semibold"
-          >
-            Edit
-          </Link>
-          <button
-            @click="hapus(t.id_tema)"
-            class="text-red-600 font-semibold"
-          >
-            Hapus
-          </button>
-        </div>
-      </li>
-
-      <li v-if="tema.length === 0" class="py-6 text-center text-gray-400">
-        Belum ada tema
-      </li>
-    </ul>
   </div>
 </template>

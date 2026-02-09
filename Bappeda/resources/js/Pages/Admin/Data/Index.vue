@@ -34,7 +34,7 @@ const deleteData = () => {
 <template>
   <Head title="Data Indikator" />
 
-  <div class="bg-white rounded-[2.5rem] p-10 shadow-2xl shadow-gray-100 border border-gray-100 min-h-[70vh]">
+  <div class="bg-white rounded-[2.5rem] p-10 shadow-2xl shadow-gray-100 border border-gray-400 min-h-[70vh]">
     
     <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
       <div>
@@ -58,10 +58,10 @@ const deleteData = () => {
       </Link>
     </div>
 
-    <div class="overflow-hidden rounded-[2rem] border border-gray-100 bg-white">
+    <div class="overflow-hidden rounded-[2rem] border border-gray-400 bg-white">
       <table class="w-full border-collapse">
         <thead>
-          <tr class="bg-gray-50/50 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">
+          <tr class="bg-gray-50/50 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-400">
             <th class="p-8">Nama Indikator</th>
             <th>Sektoral / Tema</th>
             <th>Urusan</th>

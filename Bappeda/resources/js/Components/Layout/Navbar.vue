@@ -4,7 +4,7 @@ defineProps({ logoPath: String });
 </script>
 
 <template>
-    <nav class="fixed top-0 w-full bg-white/20 backdrop-blur-xl border-b border-gray-300 h-20 z-50">
+    <nav class="fixed top-0 w-full bg-white/20 backdrop-blur-xl border-b border-gray-400 h-20 z-50">
         <div class="max-w-[80%] mx-auto h-full flex justify-between items-center">
             <Link href="/" class="flex items-center gap-3 group">
                 <img :src="logoPath" alt="Logo" class="h-10 w-auto object-contain">

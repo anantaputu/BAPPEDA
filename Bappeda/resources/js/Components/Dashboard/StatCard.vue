@@ -10,7 +10,7 @@ defineProps({
 </script>
 
 <template>
-    <div class="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-100 hover:shadow-md transition flex flex-col justify-between h-48">
+    <div class="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-400 hover:shadow-md transition flex flex-col justify-between h-48">
         <div>
             <div class="flex items-center gap-4 mb-4">
                 <div :class="['w-12 h-12 rounded-xl flex items-center justify-center', colors[color].bg, colors[color].text]">

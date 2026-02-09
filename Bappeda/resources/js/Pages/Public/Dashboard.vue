@@ -135,7 +135,7 @@ const topicIcons = [
 <template>
     <Head title="Dashboard Utama" />
 
-    <div class="space-y-8 max-w-[80%] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="space-y-8 max-w-[80%] mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-20">
 
         <section class="bg-[#000B58] rounded-[2rem] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between relative overflow-hidden shadow-xl">
             <div class="text-white z-10 max-w-lg relative">

@@ -3,8 +3,8 @@ defineProps({ title: String, items: Array, type: String });
 </script>
 
 <template>
-    <div class="bg-white rounded-[1.5rem] p-8 shadow-sm border border-gray-100">
-        <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-50">
+    <div class="bg-white rounded-[1.5rem] p-8 shadow-sm border border-gray-400">
+        <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-400">
             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                 <slot name="icon"></slot>
                 {{ title }}

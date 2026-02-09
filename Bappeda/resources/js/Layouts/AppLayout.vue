@@ -83,7 +83,7 @@ const menuGroups = computed(() => {
 </script>
 
 <template>
-    <div class="flex min-h-screen bg-[#F8FAFC] font-sans">
+    <div class="flex min-h-screen bg-white font-sans">
         
         <Navbar v-if="role === 'anonymous'" :logoPath="logoPath" />
 
@@ -98,14 +98,14 @@ const menuGroups = computed(() => {
             @logout="showLogoutModal = true"
         />
 
-        <main :class="[role === 'anonymous' ? 'w-full pt-28' : 'ml-[22rem] p-12 w-full flex flex-col min-h-screen']">
-            <UserHeader v-if="role !== 'anonymous'" />
+        <main :class="[role === 'anonymous' ? 'w-full' : 'ml-[22rem] p-8 w-full flex flex-col min-h-screen']">
+            <!-- <UserHeader v-if="role !== 'anonymous'" /> -->
             
             <div class="flex-1">
                 <slot />
             </div>
 
-            <footer v-if="role === 'anonymous'" class="w-full bg-white border border-gray-300 py-16 mt-20">
+            <footer v-if="role === 'anonymous'" class="w-full bg-white border border-gray-400 py-16 mt-20">
                 <div class="max-w-[80%] mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
                     <div class="space-y-4">
                         <h2 class="text-2xl font-black text-[#000B58]">BAPPEDA Provinsi Nusa Tenggara Barat</h2>

@@ -18,64 +18,82 @@ const submit = () => {
 <template>
     <Head title="Login" />
 
-    <div class="py-32 flex flex-col items-center justify-center bg-white min-h-[60vh]">
-        
-        <div class="w-full max-w-md bg-white p-10 rounded-3xl shadow-2xl shadow-gray-100 border border-gray-100">
-            <h1 class="text-2xl font-black text-center mb-8 text-gray-900 tracking-tight">
-                Login Sistem BAPPEDA
-            </h1>
+    <div class="relative overflow-hidden w-full min-h-screen flex items-center justify-center bg-white py-12">
+        <div class="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[600px] h-[600px] bg-[#A2B5CB]/10 rounded-full blur-3xl -z-10"></div>
+        <div class="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-[500px] h-[500px] bg-[#00139E]/5 rounded-full blur-3xl -z-10"></div>
 
-            <form @submit.prevent="submit" class="space-y-6">
-                <div>
-                    <label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">
-                        Email
-                    </label>
-                    <input
-                        v-model="form.email"
-                        type="email"
-                        class="w-full border-gray-200 rounded-xl px-4 py-3 focus:ring-[#4A6CF7] focus:border-[#4A6CF7]"
-                        placeholder="admin@bappeda.go.id"
-                    />
-                    <div v-if="form.errors.email" class="text-red-600 text-xs mt-1 font-bold">
-                        {{ form.errors.email }}
+        <div class="w-full max-w-xl px-6 relative z-10">
+            <div class="bg-white border border-gray-400 p-10 rounded-[3rem] shadow-2xl shadow-[#000B58]/5">
+                
+                <div class="text-center mb-8">
+                    <span class="inline-block px-4 py-1.5 mb-4 text-[10px] font-black text-[#00139E] bg-[#A2B5CB]/20 rounded-full border border-[#A2B5CB]/30 tracking-widest uppercase">
+                        Akses Sistem
+                    </span>
+                    <h1 class="text-3xl font-black text-[#000B58] leading-tight tracking-tight">
+                        Login <span class="text-[#00139E]">BAPPEDA</span>
+                    </h1>
+                </div>
+
+                <form @submit.prevent="submit" class="space-y-6">
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-[#A2B5CB] ml-2">
+                            Alamat Email
+                        </label>
+                        <input
+                            v-model="form.email"
+                            type="email"
+                            class="w-full bg-gray-50 border border-gray-400 rounded-2xl px-6 py-3.5 font-bold text-[#000B58] focus:outline-none focus:border-[#00139E] focus:ring-4 focus:ring-[#00139E]/5 transition-all duration-300 placeholder:text-gray-300"
+                            placeholder="admin@bappeda.go.id"
+                        />
+                        <div v-if="form.errors.email" class="text-[#FF1414] text-[10px] mt-1 font-black uppercase tracking-tighter ml-2">
+                            {{ form.errors.email }}
+                        </div>
                     </div>
-                </div>
 
-                <div>
-                    <label class="block text-xs font-black uppercase tracking-widest text-gray-400 mb-2">
-                        Password
-                    </label>
-                    <input
-                        v-model="form.password"
-                        type="password"
-                        class="w-full border-gray-200 rounded-xl px-4 py-3 focus:ring-[#4A6CF7] focus:border-[#4A6CF7]"
-                        placeholder="••••••••"
-                    />
-                    <div v-if="form.errors.password" class="text-red-600 text-xs mt-1 font-bold">
-                        {{ form.errors.password }}
+                    <div class="space-y-2">
+                        <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-[#A2B5CB] ml-2">
+                            Kata Sandi
+                        </label>
+                        <input
+                            v-model="form.password"
+                            type="password"
+                            class="w-full bg-gray-50 border border-gray-400 rounded-2xl px-6 py-3.5 font-bold text-[#000B58] focus:outline-none focus:border-[#00139E] focus:ring-4 focus:ring-[#00139E]/5 transition-all duration-300 placeholder:text-gray-300"
+                            placeholder="••••••••"
+                        />
+                        <div v-if="form.errors.password" class="text-[#FF1414] text-[10px] mt-1 font-black uppercase tracking-tighter ml-2">
+                            {{ form.errors.password }}
+                        </div>
                     </div>
-                </div>
 
-                <div class="flex items-center gap-2">
-                    <input
-                        id="remember"
-                        type="checkbox"
-                        class="rounded border-gray-300 text-[#4A6CF7] focus:ring-[#4A6CF7]"
-                        v-model="form.remember"
-                    />
-                    <label for="remember" class="text-sm font-semibold text-gray-600">
-                        Ingat saya
-                    </label>
-                </div>
+                    <div class="flex items-center justify-between px-2">
+                        <div class="flex items-center gap-3 group cursor-pointer">
+                            <input
+                                id="remember"
+                                type="checkbox"
+                                class="w-4 h-4 rounded-lg border-gray-400 text-[#00139E] focus:ring-[#00139E]/20 transition-all cursor-pointer"
+                                v-model="form.remember"
+                            />
+                            <label for="remember" class="text-xs font-black text-[#000B58] cursor-pointer group-hover:text-[#00139E] transition-colors">
+                                Ingat saya
+                            </label>
+                        </div>
+                    </div>
 
-                <button
-                    type="submit"
-                    class="w-full bg-[#4A6CF7] text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-50"
-                    :disabled="form.processing"
-                >
-                    Login
-                </button>
-            </form>
+                    <button
+                        type="submit"
+                        class="w-full bg-[#00139E] text-white py-4 rounded-2xl text-base font-black hover:bg-[#000B58] hover:-translate-y-1 transition-all duration-300 shadow-xl shadow-[#00139E]/20 disabled:opacity-50 disabled:translate-y-0"
+                        :disabled="form.processing"
+                    >
+                        Masuk Ke Dashboard
+                    </button>
+                </form>
+
+                <div class="mt-8 pt-6 border-t border-gray-100 text-center">
+                    <p class="text-[9px] font-bold text-[#A2B5CB] uppercase tracking-widest leading-loose">
+                        BAPPEDA <span class="text-[#000B58]">Provinsi Nusa Tenggara Barat</span>
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
 </template>

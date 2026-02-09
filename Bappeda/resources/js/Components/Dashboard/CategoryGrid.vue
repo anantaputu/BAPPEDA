@@ -15,7 +15,7 @@ defineProps({
             <a href="#" 
                v-for="(topic, index) in topics" 
                :key="index" 
-               class="group bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-100 transition flex flex-col items-center justify-center text-center"
+               class="group bg-white rounded-2xl p-6 border border-gray-400 shadow-sm hover:shadow-md hover:border-blue-400 transition flex flex-col items-center justify-center text-center"
             >
                 <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition duration-300">
                     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">

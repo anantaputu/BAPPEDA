@@ -8,7 +8,7 @@ defineProps({ chartData: Object, chartOptions: Object });
 </script>
 
 <template>
-    <div class="lg:col-span-2 bg-white p-8 rounded-[1.5rem] shadow-sm border border-gray-100">
+    <div class="lg:col-span-2 bg-white p-8 rounded-[1.5rem] shadow-sm border border-gray-400">
         <div class="flex justify-between items-center mb-8">
             <h3 class="text-lg font-bold text-gray-800 tracking-tight">Indikator Per Tema</h3>
             <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tahun 2025</span>
