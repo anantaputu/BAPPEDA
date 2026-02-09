@@ -7,8 +7,15 @@ use App\Models\Tema;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class TemaController extends Controller
+
+class TemaController extends Controller 
 {
+      public function __construct()
+    {
+
+        $this->middleware('role:admin')->only(['edit', 'update', 'destroy']);
+    }
+
     public function index()
     {
         return Inertia::render('Admin/Tema/Index', [

@@ -30,8 +30,7 @@ use App\Http\Controllers\Inputer\DataOutputController;
 |--------------------------------------------------------------------------
 */
 Route::get('/', [LandingController::class, 'index']);
-Route::get('/public-dashboard', [DashboardController::class, 'index'])
-    ->name('public.dashboard');
+Route::get('/public-dashboard', [DashboardController::class, 'index'])->name('public.dashboard');
 Route::get('/cari', [SearchController::class, 'index'])->name('public.search');
 Route::get('/dataset/{id}', [DatasetController::class, 'show'])->name('dataset.detail');
 Route::get('/export/data/{id}', [DataOutputController::class, 'export'])->name('public.export');

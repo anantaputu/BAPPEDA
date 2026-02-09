@@ -16,6 +16,13 @@ class DataController extends Controller
     /**
      * INDEX
      */
+
+    public function __construct()
+    {
+
+        $this->middleware('role:admin')->only(['edit', 'update', 'destroy']);
+    }
+    
     public function index()
     {
         return Inertia::render('Admin/Data/Index', [
