@@ -8,22 +8,28 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
-// Import Model
+// Model yang diimpor
 use App\Models\Data;
 use App\Models\DataUpload;
 use App\Models\Tema;
 use App\Models\Bidang;
+use App\Models\User; // Tambahkan ini
 
 class AdminDashboardController extends Controller
 {
     public function index()
     {
-        // 1. STATISTIK KARTU (STATS)
+        // 1. STATISTIK (Dinamis dari DB)
         $stats = [
             'total_dataset' => Data::count(),
             'data_valid'    => DataUpload::where('status', 'valid')->count(),
-            'total_visual'  => 0, // Bisa diisi logika real jika ada tabel visualisasi
+            'data_pending'  => DataUpload::where('status', 'pending')->count(), // Tambahan info pending
             'total_org'     => Data::distinct('sumber')->count('sumber'),
+            
+            // STATISTIK USER (Sesuai Model User Anda)
+            'total_user'    => User::count(),
+            'user_active'   => User::where('status_aktif', true)->count(),
+            'user_inactive' => User::where('status_aktif', false)->count(),
         ];
 
         // 2. DATA CHART BAR (TEMA)
@@ -33,7 +39,7 @@ class AdminDashboardController extends Controller
             'values' => $themesData->pluck('data_count'), 
         ];
 
-        // 3. DATA CHART DOUGHNUT (BIDANG)
+        // 3. DATA CHART DOUGHNUT (BIDANG) - Top 5 Bidang
         $bidangData = Bidang::withCount('data')
             ->orderBy('data_count', 'desc')
             ->limit(5)
@@ -57,25 +63,25 @@ class AdminDashboardController extends Controller
         ];
 
         // 4. DATA LIST (POPULER & TERBARU)
-        // Helper function untuk format data list
         $mapDataset = function ($query) {
-            return $query->with('tema')->limit(5)->get()->map(function ($item) {
+            return $query->with(['tema', 'bidang'])->limit(5)->get()->map(function ($item) {
                 return [
                     'id'    => $item->id_data,
                     'title' => $item->nama_indikator,
-                    'tags'  => ['XLSX', $item->tema->nama_tema ?? 'Umum'], 
-                    'org'   => $item->sumber ?? 'Pemerintah',
-                    'date'  => $item->created_at->diffForHumans(), // Tambahan info tanggal
+                    // Mengambil label tema secara dinamis
+                    'tags'  => [$item->tema->nama_tema ?? 'Umum', $item->tahun], 
+                    'org'   => $item->sumber ?? 'Bappeda NTB',
+                    'date'  => $item->created_at->diffForHumans(),
                 ];
             });
         };
 
         $datasets = [
-            'popular' => $mapDataset(Data::inRandomOrder()), // Simulasi populer
+            'popular' => $mapDataset(Data::inRandomOrder()), 
             'latest'  => $mapDataset(Data::latest()),
         ];
 
-        // 5. TOPIK
+        // 5. TOPIK / KATEGORI (Dinamis dari Tabel Tema)
         $topics = Tema::limit(6)->get()->map(fn($t) => ['name' => $t->nama_tema]);
 
         $growthRaw = Data::select(
@@ -107,7 +113,52 @@ class AdminDashboardController extends Controller
         'values' => $growthValues
     ];
 
-        // KIRIM SEMUA DATA KE VUE
+        $growthRaw = Data::select(
+        DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"),
+        DB::raw('COUNT(*) as total')
+        )
+        ->where('created_at', '>=', Carbon::now()->subMonths(11)) // 12 bulan terakhir
+        ->groupBy('month')
+        ->orderBy('month', 'asc')
+        ->get()
+        ->pluck('total', 'month');
+
+    // Siapkan array kosong untuk 12 bulan agar grafik tidak loncat jika ada bulan kosong
+    $growthLabels = [];
+    $growthValues = [];
+    
+    for ($i = 11; $i >= 0; $i--) {
+        $date = Carbon::now()->subMonths($i);
+        $monthKey = $date->format('Y-m'); // Key untuk pencocokan: "2023-10"
+        $labelName = $date->locale('id')->isoFormat('MMM Y'); // Label: "Okt 2023"
+        
+        $growthLabels[] = $labelName;
+        // Ambil data dari query, jika tidak ada set 0
+        $growthValues[] = $growthRaw[$monthKey] ?? 0;
+    }
+
+    $growthChart = [
+        'labels' => $growthLabels,
+        'values' => $growthValues
+    ];
+
+        // Log Aktivitas Terbaru (Data Upload)
+        $recentActivities = DataUpload::with(['user', 'data'])
+        ->latest('created_at')
+        ->limit(8)
+        ->get()
+        ->map(function ($log) {
+            return [
+                'id' => $log->id_upload,
+                'user' => $log->user->name ?? 'System',
+                'action' => 'Mengunggah Data', // Secara default dari data_uploads
+                'target' => $log->data->nama_indikator ?? 'Indikator tidak diketahui',
+                'status' => $log->status, // pending, valid, atau rejected
+                'time' => $log->created_at->diffForHumans(),
+                'date_raw' => $log->created_at->format('d M Y, H:i')
+            ];
+        });
+
         return Inertia::render('Admin/Dashboard', [
             'stats'       => $stats,
             'temaChart'   => $temaChart,
@@ -115,6 +166,7 @@ class AdminDashboardController extends Controller
             'datasets'    => $datasets,
             'topics'      => $topics,
             'growthChart' => $growthChart
+            'recentActivities' => $recentActivities,
         ]);
 
 

@@ -1,10 +1,10 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 // Import Komponen Baru
 import Navbar from '@/Components/Layout/Navbar.vue';
 import Sidebar from '@/Components/Layout/Sidebar.vue';
-import UserHeader from '@/Components/Layout/UserHeader.vue';
+// import UserHeader from '@/Components/Layout/UserHeader.vue';
 import LogoutModal from '@/Components/Layout/LogoutModal.vue';
 
 // 1. Inisialisasi Data Global
@@ -13,10 +13,16 @@ const logoPath = '/images/logo.png';
 const activeUrl = computed(() => page.url);
 const showLogoutModal = ref(false);
 
+// Logika untuk menutup modal logout saat URL berubah
+watch(() => page.url, () => {
+    showLogoutModal.value = false;
+});
+
 // 2. Logika Deteksi Role
 const role = computed(() => {
-    const userData = page.props.auth.user;
+    const userData = page.props.auth?.user; // optional chaining
     if (!userData) return 'anonymous';
+    
     const namaRole = userData.role; 
     if (namaRole === 'Admin Super' || namaRole === 'Admin') return 'admin';
     if (namaRole === 'Inputer') return 'inputer';

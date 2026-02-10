@@ -34,7 +34,8 @@ defineEmits(['close']);
                         href="/logout" 
                         method="post" 
                         as="button" 
-                        class="w-full bg-[#FF1414] hover:bg-[#D81111] text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-red-500/20 active:scale-[0.98]"
+                        @click="$emit('close')" 
+                        class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-2xl transition-colors"
                     >
                         Ya, Keluar Sekarang
                     </Link>

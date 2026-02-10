@@ -63,5 +63,7 @@ const top3Data = computed(() => {
                 <span class="text-[9px] text-gray-300 italic">+{{ doughnutData.labels.length - 3 }} bidang lainnya</span>
             </div>
         </div>
+
+        <div class="pb-6"></div>
     </div>
 </template>

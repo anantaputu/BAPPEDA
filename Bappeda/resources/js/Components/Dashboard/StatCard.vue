@@ -1,7 +1,7 @@
 <script setup>
 defineProps({
     label: String,
-    value: String,
+    value: [String, Number],
     icon: String,
     color: String,
     progress: Number,

@@ -13,7 +13,7 @@ defineProps({ chartData: Object, chartOptions: Object });
             <h3 class="text-lg font-bold text-gray-800 tracking-tight">Indikator Per Tema</h3>
             <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tahun 2025</span>
         </div>
-        <div class="h-[300px]">
+        <div class="h-[350px]">
             <Bar :data="chartData" :options="chartOptions" />
         </div>
     </div>

@@ -8,6 +8,7 @@ import StatCard from '@/Components/Dashboard/StatCard.vue';
 import BarChartIndikator from '@/Components/Dashboard/BarChartIndikator.vue';
 import ValidationDoughnut from '@/Components/Dashboard/ValidationDoughnut.vue';
 import GrowthLineChart from '@/Components/Dashboard/GrowthLineChart.vue';
+import ActivityLog from '@/Components/Dashboard/ActivityLog.vue';
 
 defineOptions({ layout: AppLayout });
 
@@ -17,50 +18,62 @@ const props = defineProps({
     errors: Object,
     stats: {
         type: Object,
-        default: () => ({ total_dataset: 0, data_valid: 0, total_visual: 0, total_org: 0 })
+        default: () => ({ 
+            total_dataset: 0, 
+            data_valid: 0, 
+            total_visual: 0, 
+            total_org: 0,
+            total_user: 0,    // Tambahan baru
+            user_active: 0,   // Tambahan baru
+            user_inactive: 0  // Tambahan baru
+        })
     },
-    temaChart: { // Nama harus sama dengan di Controller ('temaChart')
+    temaChart: { 
         type: Object,
         default: () => ({ labels: [], values: [] })
     },
-    bidangChart: Object, // Data Chart Donat
-    datasets: {          // Data List Populer & Terbaru
+    bidangChart: Object,
+    datasets: {
         type: Object,
         default: () => ({ popular: [], latest: [] })
     },
     topics: Array,
-    growthChart: Object
+    growthChart: Object,
+    recentActivities: {
+        type: Array,
+        default: () => []
+    },
 });
 
 // 2. KONFIGURASI STATS CARDS (Dynamic Data)
 const statsCards = computed(() => [
     { 
+        label: 'TOTAL USER', 
+        value: props.stats.total_user || 0, 
+        icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', 
+        color: 'orange', 
+        progress: 100 
+    },
+    { 
+        label: 'USER AKTIF', 
+        value: props.stats.user_active || 0, 
+        icon: 'M9 12l2 2 4-4m5.618-4.016A9 9 0 112.182 12a9 9 0 0115.818-4.016z', 
+        color: 'green', 
+        progress: (props.stats.total_user > 0) ? ((props.stats.user_active / props.stats.total_user) * 100) : 0
+    },
+    { 
         label: 'TOTAL DATASET', 
         value: props.stats.total_dataset || 0, 
         icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4', 
         color: 'blue', 
-        progress: 75 
+        progress: 100 
     },
     { 
         label: 'DATA VALID', 
         value: props.stats.data_valid || 0, 
         icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', 
-        color: 'green', 
-        progress: (props.stats.total_dataset > 0) ? ((props.stats.data_valid / props.stats.total_dataset) * 100) : 0
-    },
-    { 
-        label: 'TOTAL VISUALISASI', 
-        value: props.stats.total_visual || 0, 
-        icon: 'M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z', 
-        color: 'purple', 
-        progress: 40 
-    },
-    { 
-        label: 'SUMBER DATA', 
-        value: props.stats.total_org || 0, 
-        icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', 
         color: 'teal', 
-        progress: 60 
+        progress: (props.stats.total_dataset > 0) ? ((props.stats.data_valid / props.stats.total_dataset) * 100) : 0
     },
 ]);
 
@@ -69,6 +82,7 @@ const colors = {
     green: { bg: 'bg-green-100', text: 'text-green-600', bar: 'bg-green-600' },
     purple: { bg: 'bg-purple-100', text: 'text-purple-600', bar: 'bg-purple-600' },
     teal: { bg: 'bg-teal-100', text: 'text-teal-600', bar: 'bg-teal-600' },
+    orange: { bg: 'bg-orange-100', text: 'text-orange-600', bar: 'bg-orange-600' },
 };
 
 // 3. BAR CHART CONFIG (Fix: Menggunakan props.temaChart)
@@ -154,9 +168,8 @@ const topicIcons = [
 <template>
     <Head title="Dashboard Utama" />
 
-    <div class="space-y-8 mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="space-y-8 mx-auto px-4 sm:px-6 lg:px-8">
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
                 v-for="(stat, index) in statsCards" 
                 :key="index" 
@@ -195,6 +208,10 @@ const topicIcons = [
             
             <div class="h-80 w-full">
                 <GrowthLineChart :chartData="growthChart" />
+            </div>
+
+            <div class="mt-8">
+                <ActivityLog :activities="recentActivities" />
             </div>
         </section>
         
