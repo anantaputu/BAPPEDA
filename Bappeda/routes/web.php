@@ -82,11 +82,11 @@ Route::middleware(['auth', 'role:admin|inputer'])->prefix('inputer')->name('inpu
     Route::get('/data/{id}/edit', [DataInputController::class, 'edit'])->name('data.edit');
     Route::put('/data/{id}', [DataInputController::class, 'update'])->name('data.update');
 
-    Route::get('/wizard', [DataInputController::class, 'createWizard'])->name('wizard');
-    Route::post('/wizard/analyze', [DataInputController::class, 'analyzeFile'])->name('wizard.analyze');
-    Route::post('/wizard/store-all', [DataInputController::class, 'storeComplete'])->name('wizard.store-all');
+    Route::get('/data/wizard', [DataInputController::class, 'createWizard'])->name('wizard');
+    Route::post('/data/wizard/analyze', [DataInputController::class, 'analyzeFile'])->name('wizard.analyze');
+    Route::post('/data/wizard/store-all', [DataInputController::class, 'storeComplete'])->name('wizard.store-all');
 
-    Route::get('/export/{id}', [DataOutputController::class, 'export'])->name('export');
+    Route::get('/data/export/{id}', [DataOutputController::class, 'export'])->name('export');
 });
 
 

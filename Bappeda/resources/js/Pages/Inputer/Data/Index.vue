@@ -47,7 +47,7 @@ const formatDate = (dateString) => {
                 <h2 class="text-4xl font-black text-gray-900 tracking-tight">Dashboard <span class="text-[#00139E]">Data</span></h2>
                 <p class="text-gray-400 font-medium text-sm mt-1 uppercase tracking-widest text-[10px]">Ringkasan aktivitas input data sistem BAPPEDA</p>
             </div>
-            <Link href="/inputer/wizard" class="bg-[#00139E] text-white px-8 py-4 rounded-2xl font-bold text-sm hover:bg-[#000B58] transition-all shadow-xl shadow-blue-500/20 flex items-center gap-3 active:scale-95">
+            <Link href="/inputer/data/wizard" class="bg-[#00139E] text-white px-8 py-4 rounded-2xl font-bold text-sm hover:bg-[#000B58] transition-all shadow-xl shadow-blue-500/20 flex items-center gap-3 active:scale-95">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
                 INPUT DATA BARU
             </Link>

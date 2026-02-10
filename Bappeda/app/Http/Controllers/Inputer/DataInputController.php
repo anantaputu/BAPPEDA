@@ -179,9 +179,15 @@ class DataInputController extends Controller
     {
         // Validasi Config
         $request->validate([
-            'nama_indikator' => 'required',
-            'file_path' => 'required', // Path file temp yang dikirim balik
-            'new_fields' => 'required|array'
+            'nama_indikator' => 'required|string|max:255',
+            'id_tema'        => 'required|exists:tema,id_tema',
+            'id_urusan'      => 'required|exists:urusan,id_urusan',
+            'id_bidang'      => 'required|exists:bidang,id_bidang',
+            'id_frekuensi'   => 'required|exists:frekuensi,id_frekuensi',
+            'file_path'      => 'required|string', 
+            'new_fields'     => 'required|array',
+            'periode'        => 'required', // Ini mapping dari 'tahun' di DB
+            'satuan'         => 'required|string',
         ]);
 
         DB::beginTransaction();
@@ -199,16 +205,16 @@ class DataInputController extends Controller
             // 2. Simpan Metadata Utama
             $data = Data::create([
                 'nama_indikator' => $request->nama_indikator,
-                'deskripsi' => $request->deskripsi,
-                'id_tema' => $request->id_tema,
-                'id_urusan' => $request->id_urusan,
-                'id_bidang' => $request->id_bidang,
-                'id_frekuensi' => $request->id_frekuensi,
-                'satuan' => $request->satuan,
-                'sumber' => $request->sumber,
-                'kata_kunci' => $request->kata_kunci,
-                'tahun' => $request->periode,
-                'status' => 'aktif',
+                'deskripsi'      => $request->deskripsi,
+                'id_tema'        => $request->id_tema,
+                'id_urusan'      => $request->id_urusan,
+                'id_bidang'      => $request->id_bidang,
+                'id_frekuensi'   => $request->id_frekuensi,
+                'satuan'         => $request->satuan,
+                'sumber'         => $request->sumber,
+                'kata_kunci'     => $request->kata_kunci,
+                'tahun'          => $request->periode, // Sesuai kolom di DB
+                'status'         => 'aktif',
             ]);
 
             // 3. Simpan Definisi Kolom (DataField)

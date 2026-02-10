@@ -33,7 +33,7 @@ const handleFileUpload = async (event) => {
     formData.append('file', file);
 
     try {
-        const response = await axios.post('/inputer/wizard/analyze', formData, {
+        const response = await axios.post('/inputer/data/wizard/analyze', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
 
@@ -69,18 +69,40 @@ const handleMappingChange = (colKey) => {
 
 const submitAll = async () => {
     isLoading.value = true;
+
+    form.clearErrors();
+
+    console.log("Data yang dikirim:", form.data());
     try {
-        const response = await axios.post('/inputer/wizard/store-all', form.data());
+        // Payload: ambil data mentah dari form useForm
+        const payload = form.data();
+        
+        // Pastikan endpoint sesuai dengan Route::post Anda
+        const response = await axios.post('/inputer/data/wizard/store-all', payload);
+        
         if (response.data.status === 'success') {
-            router.visit('/inputer/data'); 
+            // Gunakan router.visit untuk redirect bersih via Inertia
+            router.visit('/inputer/data', {
+                method: 'get',
+                onSuccess: () => alert('Dataset berhasil disimpan!')
+            }); 
         }
     } catch (error) {
-        if (error.response?.data?.errors) {
-            form.errors = error.response.data.errors; 
-            alert('Mohon periksa kembali isian form yang berwarna merah.');
+        if (error.response && error.response.status === 422) {
+            // Mapping eror dari Laravel kembali ke objek form.errors
+            const serverErrors = error.response.data.errors;
+            
+            // Set error ke useForm agar muncul di bawah input (teks merah)
+            Object.keys(serverErrors).forEach(key => {
+                form.setError(key, serverErrors[key][0]);
+            });
+
+            alert('Validasi Gagal: Mohon lengkapi isian bertanda bintang (*)');
+            
+            // Scroll otomatis ke field yang bermasalah
             document.getElementById('form-metadata')?.scrollIntoView({ behavior: 'smooth' });
         } else {
-            alert('Terjadi kesalahan: ' + (error.response?.data?.message || 'Server Error'));
+            alert('Gagal menyimpan: ' + (error.response?.data?.message || 'Terjadi kesalahan sistem'));
         }
     } finally {
         isLoading.value = false;
