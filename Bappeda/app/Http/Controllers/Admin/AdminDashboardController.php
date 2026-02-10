@@ -165,8 +165,8 @@ class AdminDashboardController extends Controller
             'bidangChart' => $bidangChart,
             'datasets'    => $datasets,
             'topics'      => $topics,
-            'growthChart' => $growthChart
-            'recentActivities' => $recentActivities,
+            'growthChart' => $growthChart,
+            'recentActivities' => $recentActivities
         ]);
 
 
