@@ -60,7 +60,7 @@ const formatDate = (dateString) => {
                                 </div>
                                 <div>
                                     <p class="text-[10px] text-[#A2B5CB] uppercase tracking-widest font-black">Tahun Data</p>
-                                    <p class="font-black text-[#000B58]">{{ dataset.tahun_data }}</p>
+                                    <p class="font-black text-[#000B58]">{{ dataset.tahun }}</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-4">
@@ -146,39 +146,120 @@ const formatDate = (dateString) => {
 
             <div v-if="activeTab === 'Metadata'" class="animate-in slide-in-from-bottom-4 duration-500">
                 <div class="grid lg:grid-cols-2 gap-8">
-                    <div class="bg-white border border-gray-400 p-12 rounded-[3rem] space-y-8">
-                        <div>
-                            <h4 class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-4">Informasi Indikator</h4>
+                    
+                    <div class="space-y-8">
+                        <div class="bg-white border border-gray-200 p-10 rounded-[2.5rem] shadow-sm">
+                            <h4 class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                                Klasifikasi Data
+                            </h4>
+                            
                             <div class="space-y-4">
-                                <div class="flex justify-between py-3 border-b border-gray-100">
-                                    <span class="text-sm font-bold text-gray-400">Satuan</span>
-                                    <span class="text-sm font-black text-[#000B58]">{{ dataset.satuan }}</span>
+                                <div class="flex justify-between items-center py-3 border-b border-gray-50 hover:bg-gray-50/50 transition px-2 rounded-lg">
+                                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Urusan</span>
+                                    <span class="text-sm font-black text-[#000B58] text-right">{{ dataset.urusan?.nama_urusan || '-' }}</span>
                                 </div>
-                                <div class="flex justify-between py-3 border-b border-gray-100">
-                                    <span class="text-sm font-bold text-gray-400">Frekuensi</span>
+
+                                <div class="flex justify-between items-center py-3 border-b border-gray-50 hover:bg-gray-50/50 transition px-2 rounded-lg">
+                                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Bidang</span>
+                                    <span class="text-sm font-black text-[#000B58] text-right">{{ dataset.bidang?.nama_bidang || '-' }}</span>
+                                </div>
+
+                                <div class="flex justify-between items-center py-3 border-b border-gray-50 hover:bg-gray-50/50 transition px-2 rounded-lg">
+                                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Tema</span>
+                                    <span class="text-sm font-black text-[#000B58] text-right">{{ dataset.tema?.nama_tema || '-' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white border border-gray-200 p-10 rounded-[2.5rem] shadow-sm">
+                            <h4 class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                Atribut Teknis
+                            </h4>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center py-3 border-b border-gray-50 px-2">
+                                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Satuan</span>
+                                    <span class="text-sm font-black text-[#000B58] bg-blue-50 px-3 py-1 rounded-lg">{{ dataset.satuan || '-' }}</span>
+                                </div>
+                                <div class="flex justify-between items-center py-3 border-b border-gray-50 px-2">
+                                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Frekuensi</span>
                                     <span class="text-sm font-black text-[#000B58]">{{ dataset.frekuensi?.nama_frekuensi || 'Tahunan' }}</span>
                                 </div>
-                                <div class="flex justify-between py-3 border-b border-gray-100">
-                                    <span class="text-sm font-bold text-gray-400">Update Terakhir</span>
-                                    <span class="text-sm font-black text-[#000B58]">{{ formatDate(dataset.updated_at) }}</span>
+                                <div class="flex justify-between items-center py-3 border-b border-gray-50 px-2">
+                                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Tahun Data</span>
+                                    <span class="text-sm font-black text-[#000B58]">{{ dataset.tahun || '-' }}</span>
+                                </div>
+                                <div class="flex justify-between items-center py-3 border-b border-gray-50 px-2">
+                                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Status Data</span>
+                                    <span :class="dataset.status === 'aktif' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'" class="px-3 py-1 rounded-full text-[10px] font-black uppercase">
+                                        {{ dataset.status }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="bg-[#000B58] p-12 rounded-[3rem] text-white relative overflow-hidden">
-                        <div class="relative z-10">
-                            <h4 class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-4">Akses Data</h4>
-                            <h3 class="text-2xl font-black mb-6 leading-tight">Gunakan data ini untuk analisis pembangunan daerah Anda.</h3>
-                            <div class="flex items-center gap-3">
-                                <span class="relative flex h-3 w-3">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                                </span>
-                                <span class="text-xs font-black uppercase tracking-widest text-green-400">Publik & Terbuka</span>
+
+                    <div class="space-y-8">
+                        <div class="bg-white border border-gray-200 p-10 rounded-[2.5rem] shadow-sm h-full">
+                            
+                            <div class="mb-10">
+                                <h4 class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
+                                    Deskripsi Lengkap
+                                </h4>
+                                <p class="text-gray-600 text-sm leading-loose font-medium text-justify">
+                                    {{ dataset.deskripsi || 'Tidak ada deskripsi yang tersedia untuk dataset ini.' }}
+                                </p>
                             </div>
+
+                            <div class="mb-10">
+                                <h4 class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                    Sumber Data
+                                </h4>
+                                <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-blue-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>
+                                    </div>
+                                    <span class="text-gray-900 font-bold text-sm">{{ dataset.sumber || 'Pemerintah Provinsi' }}</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-10">
+                                <h4 class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                                    Kata Kunci
+                                </h4>
+                                <div class="flex flex-wrap gap-2">
+                                    <template v-if="dataset.kata_kunci">
+                                        <span v-for="(tag, i) in dataset.kata_kunci.split(',')" :key="i" 
+                                            class="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold border border-blue-100 hover:bg-blue-100 transition cursor-default">
+                                            #{{ tag.trim() }}
+                                        </span>
+                                    </template>
+                                    <span v-else class="text-gray-400 text-xs italic">Tidak ada kata kunci.</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    Timeline Sistem
+                                </h4>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-gray-50 p-3 rounded-xl">
+                                        <p class="text-[10px] font-bold text-gray-400 uppercase">Dibuat</p>
+                                        <p class="text-xs font-black text-gray-700 mt-1">{{ formatDate(dataset.created_at) }}</p>
+                                    </div>
+                                    <div class="bg-gray-50 p-3 rounded-xl">
+                                        <p class="text-[10px] font-bold text-gray-400 uppercase">Update Terakhir</p>
+                                        <p class="text-xs font-black text-gray-700 mt-1">{{ formatDate(dataset.updated_at) }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
-                        <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-2xl"></div>
                     </div>
                 </div>
             </div>

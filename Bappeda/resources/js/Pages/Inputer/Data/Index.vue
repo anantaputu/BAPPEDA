@@ -18,6 +18,10 @@ const props = defineProps({
     isAdmin: {
         type: Boolean,
         default: false
+    },
+    resumeData: {
+        type: Object,
+        default: () => ({})
     }
 });
 
@@ -93,7 +97,7 @@ const formatDate = (dateString) => {
                         <tr class="bg-white border-b border-gray-100">
                             <th class="py-4 px-8 text-[10px] font-black text-gray-400 uppercase tracking-widest w-1/3">Nama Data</th>
                             
-                            <th v-if="isAdmin" class="py-4 px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">
+                            <th class="py-4 px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">
                                 Oleh
                             </th>
 
@@ -106,12 +110,28 @@ const formatDate = (dateString) => {
                     <tbody class="divide-y divide-gray-50">
                         
                         <tr v-for="u in recentUploads" :key="u.id_upload" class="hover:bg-blue-50/30 transition-colors">
-                            <td class="py-4 px-8">
-                                <div class="font-bold text-gray-800 text-sm">{{ u.data ? u.data.nama_indikator : 'Indikator Dihapus' }}</div>
-                                <div class="text-xs text-gray-400">#{{ u.id_upload }}</div>
-                            </td>
-                            
-                            <td v-if="isAdmin" class="py-4 px-4 text-center">
+                            <td class="py-4 pl-4 transition-colors">
+                                <div v-if="u.data">
+                                    <Link 
+                                        :href="`/dataset/${u.data.id_data}`"
+                                        class="font-bold text-gray-700 group-hover:text-blue-600 hover:underline block"
+                                        title="Lihat Detail Dataset"
+                                    >
+                                        {{ u.data.nama_indikator }}
+                                    </Link>
+                                    <span class="text-[10px] text-gray-300">ID: {{ u.data.id_data }}</span>
+                                </div>
+
+                                <div v-else class="flex flex-col">
+                                    <span class="text-red-500 italic text-xs font-bold">
+                                        Relasi Data Putus (NULL)
+                                    </span>
+                                    <span class="text-[10px] text-gray-400">
+                                        Upload ID: {{ u.id_upload }} | id_data: {{ u.id_data }}
+                                    </span>
+                                </div>
+                            </td>                            
+                            <td class="py-4 px-4 text-center">
                                 <div class="flex items-center justify-center gap-2" :title="u.user?.name">
                                     <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px] font-bold ring-2 ring-white shadow-sm">
                                         {{ u.user?.name?.charAt(0).toUpperCase() || '?' }}
@@ -133,10 +153,25 @@ const formatDate = (dateString) => {
                                     {{ u.status }}
                                 </span>
                             </td>
-                            <td class="py-4 px-8 text-right">
-                                <a v-if="u.status === 'valid'" :href="`/inputer/export/${u.id_upload}`" target="_blank" class="text-blue-600 hover:underline text-xs font-bold">Download</a>
-                                <Link v-else :href="`/inputer/upload/${u.id_upload}/mapping`" class="text-amber-600 hover:underline text-xs font-bold">Lanjut Mapping</Link>
-                            </td>
+                          <td class="py-4 px-8 text-right">
+                            <a 
+                                v-if="u.status === 'valid'" 
+                                :href="`/inputer/export/${u.id_upload}`" 
+                                target="_blank" 
+                                class="text-blue-600 hover:underline text-xs font-bold flex items-center justify-end gap-1"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12"/></svg>
+                                Download
+                            </a>
+
+                            <Link 
+                                :href="`/inputer/data/${u.data.id_data}/edit`" 
+                                class="text-amber-600 hover:underline text-xs font-bold flex items-center justify-end gap-1"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                Edit Data
+                            </Link>
+                        </td>
                         </tr>
 
                         <tr v-if="recentUploads.length === 0">

@@ -74,36 +74,22 @@ Route::middleware(['auth', 'role:admin|inputer'])->prefix('admin')->name('admin.
     Route::resource('satuan', SatuanController::class);
 });
 
-/*
-|--------------------------------------------------------------------------
-| 5. INPUTER FEATURES (Wizard & Upload)
-|--------------------------------------------------------------------------
-| INI YANG HILANG TADI.
-| Bisa diakses oleh ADMIN dan INPUTER.
-*/
 Route::middleware(['auth', 'role:admin|inputer'])->prefix('inputer')->name('inputer.')->group(function () {
-    
-    // Dashboard Inputer
+
     Route::get('/dashboard', [InputerDashboardController::class, 'index'])->name('dashboard');
-    
-    // Tabel Riwayat Upload (Data Saya)
+
     Route::get('/data', [DataInputController::class, 'index'])->name('index'); 
-    
-    // Wizard Input Data (Langkah 1 & 2)
+    Route::get('/data/{id}/edit', [DataInputController::class, 'edit'])->name('data.edit');
+    Route::put('/data/{id}', [DataInputController::class, 'update'])->name('data.update');
+
     Route::get('/wizard', [DataInputController::class, 'createWizard'])->name('wizard');
     Route::post('/wizard/analyze', [DataInputController::class, 'analyzeFile'])->name('wizard.analyze');
     Route::post('/wizard/store-all', [DataInputController::class, 'storeComplete'])->name('wizard.store-all');
-    
-    // Export & Edit
+
     Route::get('/export/{id}', [DataOutputController::class, 'export'])->name('export');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 6. KHUSUS ADMIN (Sensitive Data)
-|--------------------------------------------------------------------------
-| Halaman ini BENAR-BENAR HANYA untuk Admin.
-*/
+
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::resource('users', UserController::class); // Kelola User

@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue'; 
 
 // 1. Terima Data dengan Nilai Default yang Aman
@@ -81,6 +81,7 @@ const formatDate = (dateString) => {
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="border-b border-gray-100 text-xs uppercase tracking-widest text-gray-400 font-bold">
+                            <th class="pb-4 pl-4">Uplouder</th>
                             <th class="pb-4 pl-4">Nama Indikator</th>
                             <th class="pb-4">Tahun</th>
                             <th class="pb-4">Status</th>
@@ -90,9 +91,26 @@ const formatDate = (dateString) => {
                     <tbody class="text-sm font-medium text-gray-600">
                         <tr v-for="(upload, index) in safeUploads" :key="index" 
                             class="group hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-                            
-                            <td class="py-4 pl-4 group-hover:text-blue-600 transition-colors">
-                                {{ upload?.data?.nama_indikator ?? 'Indikator Tidak Ditemukan' }}
+                            <td class ="py-4 pl-4 flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold ring-2 ring-white shadow-sm">
+                                      {{ u.user?.name?.charAt(0).toUpperCase() || '?' }}
+                                </div>
+                                <span>{{ u.user?.name || 'Unknown' }}</span>
+                            </td>
+
+                            <td class="py-4 pl-4 transition-colors">
+                                <Link 
+                                    v-if="upload?.data" 
+                                    :href="`/dataset/${upload.data.id_data}`"
+                                    class="font-bold text-gray-700 group-hover:text-blue-600 hover:underline block"
+                                    title="Lihat Detail Dataset"
+                                >
+                                    {{ upload.data.nama_indikator }}
+                                </Link>
+
+                                <span v-else class="text-gray-400 italic text-xs">
+                                    Indikator Tidak Ditemukan
+                                </span>
                             </td>
                             
                             <td class="py-4">{{ upload?.periode ?? '-' }}</td>

@@ -61,16 +61,52 @@ class DataInputController extends Controller
         'isAdmin' => $isAdmin // Kirim info role ke Vue untuk atur tampilan
     ]);
 }
-    public function createWizard()
-    {
-        // Mengirim data Master untuk Dropdown di Form Wizard
-        return Inertia::render('Inputer/Data/Wizard', [
-            'tema' => Tema::all(),
-            'urusan' => Urusan::all(),
-            'bidang' => Bidang::all(),
-            'frekuensi' => Frekuensi::all(),
-        ]);
+    public function createWizard(Request $request)
+{
+    $resumeData = null;
+
+    // 1. CEK APAKAH ADA PARAMETER RESUME (?resume=123)
+    if ($request->has('resume')) {
+        $uploadId = $request->query('resume');
+
+        // 2. CARI DATA UPLOAD MILIK USER INI
+        // Kita load relasi 'data' karena metadata (judul, tema, dll) ada di sana
+        $upload = DataUpload::with('data')
+            ->where('id_upload', $uploadId)
+            ->where('id_user', Auth::id()) 
+            ->first();
+
+        // 3. JIKA DATA DITEMUKAN, SIAPKAN UNTUK DIKIRIM KE VUE
+        if ($upload && $upload->data) {
+            $resumeData = [
+                'id_upload'      => $upload->id_upload,
+                'file_path'      => $upload->file_path, 
+                'nama_indikator' => $upload->data->nama_indikator,
+                'deskripsi'      => $upload->data->deskripsi,
+                'id_tema'        => $upload->data->id_tema,
+                'id_urusan'      => $upload->data->id_urusan,
+                'id_bidang'      => $upload->data->id_bidang,
+                'id_frekuensi'   => $upload->data->id_frekuensi,
+                'satuan'         => $upload->data->satuan,
+                'sumber'         => $upload->data->sumber,
+                'kata_kunci'     => $upload->data->kata_kunci,
+                'periode'        => $upload->periode, 
+            ];
+        }
     }
+
+    // 4. KIRIM KE VUE (Wizard.vue)
+    return Inertia::render('Inputer/Data/Wizard', [
+        // Master Data Dropdown
+        'tema'       => Tema::all(),
+        'urusan'     => Urusan::all(),
+        'bidang'     => Bidang::all(),
+        'frekuensi'  => Frekuensi::all(),
+        // Data Resume (Bisa null jika input baru)
+        'resumeData' => $resumeData 
+    ]);
+}
+
     // STEP 1: Analisa File (Baca Header Excel)
     public function analyzeFile(Request $request)
     {
@@ -259,4 +295,45 @@ class DataInputController extends Controller
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
+
+    public function edit($id)
+{
+    // Cari data berdasarkan ID
+    $data = Data::findOrFail($id);
+
+    // Cek Authorization (Opsional: Pastikan user berhak mengedit data ini)
+    // if ($data->id_user !== Auth::id()) abort(403); 
+
+    return Inertia::render('Inputer/Data/Edit', [
+        'dataIndikator' => $data,
+        // Kirim data master untuk dropdown select
+        'tema'      => Tema::all(),
+        'urusan'    => Urusan::all(),
+        'bidang'    => Bidang::all(),
+        'frekuensi' => Frekuensi::all(),
+    ]);
+}
+
+public function update(Request $request, $id)
+{
+    // Validasi Input
+    $validated = $request->validate([
+        'nama_indikator' => 'required|string|max:255',
+        'deskripsi'      => 'nullable|string',
+        'id_tema'        => 'required|exists:tema,id_tema',
+        'id_urusan'      => 'required|exists:urusan,id_urusan',
+        'id_bidang'      => 'required|exists:bidang,id_bidang',
+        'id_frekuensi'   => 'required|exists:frekuensi,id_frekuensi',
+        'satuan'         => 'required|string',
+        'sumber'         => 'required|string',
+        'status'         => 'required|in:aktif,nonaktif',
+    ]);
+
+    // Update Database
+    $data = Data::findOrFail($id);
+    $data->update($validated);
+
+    // Redirect kembali ke Dashboard Inputer dengan pesan sukses
+    return redirect()->route('inputer.dashboard')->with('message', 'Data berhasil diperbarui!');
+}
 }
