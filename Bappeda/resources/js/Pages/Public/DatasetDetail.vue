@@ -1,23 +1,153 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue'; // Tambahkan onMounted
+import { Line } from 'vue-chartjs';
+import { 
+    Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, 
+    Title, Tooltip, Legend, Filler 
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
     dataset: Object,
-    tableData: Object 
+    tableData: Object, 
 });
 
 const activeTab = ref('Data');
-const tabs = ['Data', 'Metadata'];
+const tabs = ['Data', 'Metadata', 'Infografis'];
+
+// 1. STATE UNTUK PILIHAN DATA
+// Secara default, pilih data baris pertama (index 0) agar chart tidak kosong
+const selectedIndices = ref([0]); 
+
+// 2. PALET WARNA UNTUK MULTI-LINE
+const chartColors = [
+    '#00139E', '#FF1414', '#00D2FC', '#F8B400', '#54D62C', '#9D4EDD', '#FF6B6B'
+];
+
+// 3. LOGIKA CHART YANG DIPERBARUI (MULTI DATASET)
+const chartConfig = computed(() => {
+    if (!props.tableData?.data || props.tableData.data.length === 0) return null;
+    if (selectedIndices.value.length === 0) return null; // Jika tidak ada yg dicentang
+
+    // Ambil tahun dari baris pertama (asumsi semua baris punya kolom tahun yang sama)
+    const firstRow = props.tableData.data[0];
+    const yearKeys = Object.keys(firstRow)
+        .filter(key => /^\d{4}$/.test(key) || key.toLowerCase().includes('tahun'))
+        .sort();
+
+    // Buat Datasets berdasarkan baris yang DIPILIH (Centang)
+    const datasets = selectedIndices.value.map((rowIndex, colorIdx) => {
+        const row = props.tableData.data[rowIndex];
+        
+        // Ambil Nama Data (Biasanya kolom ke-2 atau cari key yg mengandung 'nama')
+        // Kita cari key yang bukan tahun dan bukan nomor
+        const nameKey = Object.keys(row).find(k => k.toLowerCase().includes('nama')) || 'Data';
+        const labelName = row[nameKey];
+
+        // Ambil Data Angka
+        const dataValues = yearKeys.map(key => {
+            let val = row[key];
+            if (typeof val === 'string') {
+                val = val.replace(',', '.').split(' ')[0]; // Bersihkan format "5,4 (2023)"
+            }
+            return parseFloat(val) || 0;
+        });
+
+        // Tentukan Warna (Looping palette jika lebih dari 7)
+        const color = chartColors[colorIdx % chartColors.length];
+
+        return {
+            label: labelName, // Nama Indikator muncul di Tooltip
+            data: dataValues,
+            borderColor: color,
+            backgroundColor: color, // Untuk titik
+            borderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#fff',
+            pointBorderColor: color,
+            pointBorderWidth: 2,
+            tension: 0.4,
+            fill: false // Multi line biasanya tidak pakai fill agar tidak tumpang tindih
+        };
+    });
+
+    return {
+        labels: yearKeys,
+        datasets: datasets
+    };
+});
+
+// Helper: Toggle Checkbox
+const toggleSelection = (index) => {
+    if (selectedIndices.value.includes(index)) {
+        // Jangan biarkan kosong total (opsional, biar chart gak hilang)
+        if (selectedIndices.value.length > 1) {
+            selectedIndices.value = selectedIndices.value.filter(i => i !== index);
+        }
+    } else {
+        selectedIndices.value.push(index);
+    }
+};
 
 const formatDate = (dateString) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('id-ID', {
-        day: 'numeric', month: 'long', year: 'numeric'
-    });
+    
+    const date = new Date(dateString);
+
+    // Cek validitas tanggal
+    if (isNaN(date.getTime())) return '-';
+
+    return date.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short', // 'short' = Feb, 'long' = Februari
+        year: 'numeric',
+        hour: '2-digit',   // Menampilkan Jam
+        minute: '2-digit', // Menampilkan Menit
+        hour12: false      // false = Format 24 jam (14:30), true = AM/PM
+    }).replace(/\./g, ':'); // Opsional: Ganti pemisah titik dengan titik dua jika browser bawaan pakai titik
+};
+
+// Opsi Chart (Aktifkan Legend agar user tahu warna garis apa punya siapa)
+const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: { 
+            display: true, // Tampilkan Legend di atas chart
+            position: 'top',
+            labels: {
+                usePointStyle: true,
+                boxWidth: 8,
+                font: { size: 10, weight: 'bold' }
+            }
+        }, 
+        tooltip: {
+            mode: 'index', // Tooltip muncul untuk semua garis di tahun yg sama
+            intersect: false,
+            backgroundColor: '#000B58',
+            titleFont: { size: 13 },
+            bodyFont: { size: 12 },
+            padding: 10,
+            cornerRadius: 8,
+            displayColors: true
+        }
+    },
+    scales: {
+        y: {
+            grid: { color: '#f3f4f6', borderDash: [5, 5] },
+            ticks: { font: { size: 10, weight: 'bold' }, color: '#9ca3af' }
+        },
+        x: {
+            grid: { display: false },
+            ticks: { font: { size: 11, weight: 'bold' }, color: '#000B58' }
+        }
+    }
 };
 </script>
 
@@ -263,6 +393,77 @@ const formatDate = (dateString) => {
                     </div>
                 </div>
             </div>
+
+        <div v-if="activeTab === 'Infografis'" class="animate-in slide-in-from-bottom-4 duration-500">
+    <div class="grid lg:grid-cols-4 gap-8">
+        
+        <div class="lg:col-span-3 bg-white border border-gray-400 p-8 rounded-[3rem] shadow-xl shadow-blue-900/5 relative overflow-hidden flex flex-col">
+            
+            <div class="relative z-10 flex justify-between items-end mb-6">
+                <div>
+                    <h4 class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        Tren Data
+                    </h4>
+                    <h3 class="text-2xl font-black text-[#000B58]">Perbandingan Data</h3>
+                </div>
+                <div class="bg-[#00139E] text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg shadow-blue-900/20">
+                    Satuan: {{ dataset.satuan || 'N/A' }}
+                </div>
+            </div>
+
+            <div class="relative w-full h-[450px]">
+                <Line v-if="chartConfig" :data="chartConfig" :options="chartOptions" />
+                
+                <div v-else class="flex flex-col items-center justify-center h-full text-gray-400 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
+                    <svg class="w-10 h-10 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <p class="text-xs font-bold">Silakan centang data di samping untuk ditampilkan.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-1 space-y-6">
+            <div class="bg-gray-50 border border-gray-200 p-6 rounded-[2.5rem] h-full max-h-[600px] flex flex-col">
+                <h4 class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                    Pilih Data
+                </h4>
+
+                <div class="overflow-y-auto pr-2 space-y-3 custom-scrollbar flex-1">
+                    <div 
+                        v-for="(row, index) in tableData.data" 
+                        :key="index"
+                        @click="toggleSelection(index)"
+                        class="p-3 rounded-xl border transition-all cursor-pointer group flex items-start gap-3"
+                        :class="selectedIndices.includes(index) 
+                            ? 'bg-white border-blue-200 shadow-md' 
+                            : 'bg-transparent border-transparent hover:bg-white hover:border-gray-200'"
+                    >
+                        <div class="mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-colors"
+                             :class="selectedIndices.includes(index) ? 'bg-[#00139E] border-[#00139E]' : 'bg-white border-gray-300'">
+                            <svg v-if="selectedIndices.includes(index)" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-bold text-gray-700 leading-tight group-hover:text-[#00139E] transition-colors">
+                                {{ row['Nama Data'] || row['Nama Indikator'] || row[Object.keys(row)[1]] }}
+                            </p>
+                            <div v-if="selectedIndices.includes(index)" 
+                                 class="mt-1.5 h-1 w-8 rounded-full"
+                                 :style="{ backgroundColor: chartColors[selectedIndices.indexOf(index) % chartColors.length] }">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="text-[10px] text-gray-400 text-center mt-4 pt-4 border-t border-gray-200">
+                    Klik item untuk menampilkan/menyembunyikan garis pada grafik.
+                </p>
+            </div>
+        </div>
+
+    </div>
+</div>
         </section>
     </div>
 </template>

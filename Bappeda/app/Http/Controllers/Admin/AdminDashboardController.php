@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 // Import Model
 use App\Models\Data;
@@ -76,13 +78,46 @@ class AdminDashboardController extends Controller
         // 5. TOPIK
         $topics = Tema::limit(6)->get()->map(fn($t) => ['name' => $t->nama_tema]);
 
+        $growthRaw = Data::select(
+        DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"),
+        DB::raw('COUNT(*) as total')
+        )
+        ->where('created_at', '>=', Carbon::now()->subMonths(11)) // 12 bulan terakhir
+        ->groupBy('month')
+        ->orderBy('month', 'asc')
+        ->get()
+        ->pluck('total', 'month');
+
+    // Siapkan array kosong untuk 12 bulan agar grafik tidak loncat jika ada bulan kosong
+    $growthLabels = [];
+    $growthValues = [];
+    
+    for ($i = 11; $i >= 0; $i--) {
+        $date = Carbon::now()->subMonths($i);
+        $monthKey = $date->format('Y-m'); // Key untuk pencocokan: "2023-10"
+        $labelName = $date->locale('id')->isoFormat('MMM Y'); // Label: "Okt 2023"
+        
+        $growthLabels[] = $labelName;
+        // Ambil data dari query, jika tidak ada set 0
+        $growthValues[] = $growthRaw[$monthKey] ?? 0;
+    }
+
+    $growthChart = [
+        'labels' => $growthLabels,
+        'values' => $growthValues
+    ];
+
         // KIRIM SEMUA DATA KE VUE
         return Inertia::render('Admin/Dashboard', [
             'stats'       => $stats,
             'temaChart'   => $temaChart,
             'bidangChart' => $bidangChart,
             'datasets'    => $datasets,
-            'topics'      => $topics
+            'topics'      => $topics,
+            'growthChart' => $growthChart
         ]);
+
+
+
     }
 }

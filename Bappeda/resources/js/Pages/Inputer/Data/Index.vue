@@ -119,17 +119,8 @@ const formatDate = (dateString) => {
                                     >
                                         {{ u.data.nama_indikator }}
                                     </Link>
-                                    <span class="text-[10px] text-gray-300">ID: {{ u.data.id_data }}</span>
                                 </div>
 
-                                <div v-else class="flex flex-col">
-                                    <span class="text-red-500 italic text-xs font-bold">
-                                        Relasi Data Putus (NULL)
-                                    </span>
-                                    <span class="text-[10px] text-gray-400">
-                                        Upload ID: {{ u.id_upload }} | id_data: {{ u.id_data }}
-                                    </span>
-                                </div>
                             </td>                            
                             <td class="py-4 px-4 text-center">
                                 <div class="flex items-center justify-center gap-2" :title="u.user?.name">

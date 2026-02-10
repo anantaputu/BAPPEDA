@@ -7,6 +7,7 @@ import { computed } from 'vue';
 import StatCard from '@/Components/Dashboard/StatCard.vue';
 import BarChartIndikator from '@/Components/Dashboard/BarChartIndikator.vue';
 import ValidationDoughnut from '@/Components/Dashboard/ValidationDoughnut.vue';
+import GrowthLineChart from '@/Components/Dashboard/GrowthLineChart.vue';
 
 defineOptions({ layout: AppLayout });
 
@@ -27,7 +28,8 @@ const props = defineProps({
         type: Object,
         default: () => ({ popular: [], latest: [] })
     },
-    topics: Array
+    topics: Array,
+    growthChart: Object
 });
 
 // 2. KONFIGURASI STATS CARDS (Dynamic Data)
@@ -91,28 +93,47 @@ const barChartOptions = {
 };
 
 // 4. DOUGHNUT CHART CONFIG (Fix: Menggunakan Data Asli)
+// 4. DOUGHNUT CHART CONFIG (Fix: Menggunakan Data Bidang yang Benar)
+// ... imports tetap sama ...
+
+// 4. DOUGHNUT CHART CONFIG (PERBAIKAN: Gunakan data Bidang)
 const doughnutData = computed(() => {
-    // Jika bidangChart ada isinya, pakai itu. Jika tidak, pakai dummy agar tidak error.
-    const labels = props.bidangChart?.labels || ['Valid', 'Proses'];
-    const values = props.bidangChart?.values || [props.stats.data_valid, props.stats.total_dataset - props.stats.data_valid];
+    // Cek apakah ada data dari controller
+    const hasData = props.bidangChart?.labels?.length > 0;
     
+    const labels = hasData ? props.bidangChart.labels : ['Kosong'];
+    const values = hasData ? props.bidangChart.values : [1]; // Dummy value biar chart muncul
+    
+    // Palette Warna
+    const backgroundColors = [
+        '#4A6CF7', // Biru
+        '#F8B400', // Kuning
+        '#FF6B6B', // Merah
+        '#2BCBBA', // Tosca
+        '#9D4EDD', // Ungu
+        '#FF9F43', // Orange
+        '#E2E8F0'  // Abu (untuk lainnya/kosong)
+    ];
+
     return {
         labels: labels,
         datasets: [{
             data: values,
-            backgroundColor: ['#00139E', '#E2E8F0', '#4A6CF7', '#85E6C5', '#F8B400', '#FF6B6B'],
-            borderWidth: 0,
+            backgroundColor: backgroundColors.slice(0, labels.length),
+            borderWidth: 2,
+            borderColor: '#ffffff',
+            hoverOffset: 4,
             cutout: '75%'
         }]
     };
 });
 
-// Data untuk teks tengah Donut Chart
+// Data untuk teks tengah (Total Keseluruhan)
 const validationData = computed(() => ({
-    valid: props.stats.data_valid || 0,
     total: props.stats.total_dataset || 0
 }));
 
+// percentValid tidak lagi dibutuhkan di Child baru, boleh dihapus
 const percentValid = computed(() => {
     return validationData.value.total > 0 
         ? Math.round((validationData.value.valid / validationData.value.total) * 100) 
@@ -133,7 +154,7 @@ const topicIcons = [
 <template>
     <Head title="Dashboard Utama" />
 
-    <div class="space-y-8 mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="space-y-8 mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
@@ -144,17 +165,39 @@ const topicIcons = [
             />
         </section>
 
+        
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <BarChartIndikator 
-                :chartData="barChartData" 
-                :chartOptions="barChartOptions" 
+            :chartData="barChartData" 
+            :chartOptions="barChartOptions" 
             />
             <ValidationDoughnut 
-                :doughnutData="doughnutData" 
-                :validationData="validationData" 
-                :percentValid="percentValid" 
+            :doughnutData="doughnutData" 
+            :validationData="validationData" 
+            :percentValid="percentValid" 
             />
         </section>
+        <section class="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+                <div>
+                    <h3 class="font-bold text-gray-800 text-lg flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                        Tren Pertumbuhan Data
+                    </h3>
+                    <p class="text-sm text-gray-400 mt-1">Jumlah dataset baru yang diinput setiap bulan.</p>
+                </div>
+                
+                <div class="bg-blue-50 px-4 py-2 rounded-xl text-blue-600 font-bold text-xs flex items-center gap-2 self-start sm:self-center">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                    12 Bulan Terakhir
+                </div>
+            </div>
+            
+            <div class="h-80 w-full">
+                <GrowthLineChart :chartData="growthChart" />
+            </div>
+        </section>
+        
         <div class="h-12"></div>
     </div>
 </template>
