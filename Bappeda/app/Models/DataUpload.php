@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Data;;
+use App\Models\Data;
 use App\Models\User;
 
 class DataUpload extends Model

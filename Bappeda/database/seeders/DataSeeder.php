@@ -20,20 +20,20 @@ class DataSeeder extends Seeder
         $frekuensi  = Frekuensi::pluck('id_frekuensi')->toArray();
 
         // Safety check agar tidak error jika tabel master kosong
-        if (empty($tema) || empty($urusan) || empty($bidang) || empty($frekuensi)) {
-            $this->command->warn('Seeder dibatalkan: master data (Tema/Urusan/Bidang/Frekuensi) masih kosong.');
-            return;
-        }
+        // if (empty($tema) || empty($urusan) || empty($bidang) || empty($frekuensi)) {
+        //     $this->command->warn('Seeder dibatalkan: master data (Tema/Urusan/Bidang/Frekuensi) masih kosong.');
+        //     return;
+        // }
 
-        // 1. Tambahkan data spesifik utama (opsional, data yang Anda buat sebelumnya)
-        $indikatorUtama = [
-            'Persentase Kemiskinan',
-            'Tingkat Pengangguran Terbuka',
-            'Indeks Pembangunan Manusia',
-            'Pertumbuhan Ekonomi',
-            'Angka Harapan Hidup',
-            'Rata-rata Lama Sekolah',
-        ];
+        // // 1. Tambahkan data spesifik utama (opsional, data yang Anda buat sebelumnya)
+        // $indikatorUtama = [
+        //     'Persentase Kemiskinan',
+        //     'Tingkat Pengangguran Terbuka',
+        //     'Indeks Pembangunan Manusia',
+        //     'Pertumbuhan Ekonomi',
+        //     'Angka Harapan Hidup',
+        //     'Rata-rata Lama Sekolah',
+        // ];
 
 
     }

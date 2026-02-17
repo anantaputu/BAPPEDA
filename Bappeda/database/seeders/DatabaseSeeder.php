@@ -23,7 +23,6 @@ class DatabaseSeeder extends Seeder
         UrusanSeeder::class,
         BidangSeeder::class,
         FrekuensiSeeder::class,
-        DataSeeder::class,
         ]);
     }
 

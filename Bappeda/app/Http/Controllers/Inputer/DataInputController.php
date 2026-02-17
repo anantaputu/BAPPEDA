@@ -3,337 +3,138 @@
 namespace App\Http\Controllers\Inputer;
 
 use App\Http\Controllers\Controller;
-use App\Models\Data;
-use App\Models\DataUpload;
-use App\Models\DataField;
-use App\Models\DataFieldMapping;
-use App\Models\Tema;
-use App\Models\Urusan;
-use App\Models\Bidang;
-use App\Models\Frekuensi;
+use App\Models\{Data, Tema, Urusan, Bidang, Frekuensi};
+use App\Services\DataUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use Inertia\Inertia;
 
 class DataInputController extends Controller
 {
-   public function index()
-{
-    $user = Auth::user();
-    
-    // Normalisasi Role
-    $roleName = strtolower(
-        is_object($user->role) ? ($user->role->nama_role ?? '') : ($user->nama_role ?? $user->role)
-    );
-    $isAdmin = ($roleName === 'admin');
+    protected $uploadService;
 
-    // --- 1. QUERY BUILDER ---
-    // Siapkan query dasar
-    $query = DataUpload::with(['data', 'user']); // Load 'user' juga biar Admin tahu siapa yg upload
-
-    // Jika BUKAN Admin (Inputer biasa), batasi hanya data dia sendiri
-    if (!$isAdmin) {
-        $query->where('id_user', $user->id);
-    }
-
-    // --- 2. STATISTIK ---
-    // Clone query agar filter di atas tetap terbawa ke statistik
-    $statsQuery = clone $query; 
-    
-    $stats = [
-        'total_upload' => (clone $statsQuery)->count(),
-        'valid'        => (clone $statsQuery)->where('status', 'valid')->count(),
-        'pending'      => (clone $statsQuery)->whereIn('status', ['processing', 'pending', 'draft'])->count(),
-    ];
-
-    // --- 3. DATA LIST (RECENT) ---
-    $recentUploads = $query->latest()
-        ->limit(10) // Tampilkan 10 terakhir
-        ->get();
-
-    return Inertia::render('Inputer/Data/Index', [
-        'stats' => $stats,
-        'recentUploads' => $recentUploads,
-        'isAdmin' => $isAdmin // Kirim info role ke Vue untuk atur tampilan
-    ]);
-}
-    public function createWizard(Request $request)
-{
-    $resumeData = null;
-
-    // 1. CEK APAKAH ADA PARAMETER RESUME (?resume=123)
-    if ($request->has('resume')) {
-        $uploadId = $request->query('resume');
-
-        // 2. CARI DATA UPLOAD MILIK USER INI
-        // Kita load relasi 'data' karena metadata (judul, tema, dll) ada di sana
-        $upload = DataUpload::with('data')
-            ->where('id_upload', $uploadId)
-            ->where('id_user', Auth::id()) 
-            ->first();
-
-        // 3. JIKA DATA DITEMUKAN, SIAPKAN UNTUK DIKIRIM KE VUE
-        if ($upload && $upload->data) {
-            $resumeData = [
-                'id_upload'      => $upload->id_upload,
-                'file_path'      => $upload->file_path, 
-                'nama_indikator' => $upload->data->nama_indikator,
-                'deskripsi'      => $upload->data->deskripsi,
-                'id_tema'        => $upload->data->id_tema,
-                'id_urusan'      => $upload->data->id_urusan,
-                'id_bidang'      => $upload->data->id_bidang,
-                'id_frekuensi'   => $upload->data->id_frekuensi,
-                'satuan'         => $upload->data->satuan,
-                'sumber'         => $upload->data->sumber,
-                'kata_kunci'     => $upload->data->kata_kunci,
-                'periode'        => $upload->periode, 
-            ];
-        }
-    }
-
-    // 4. KIRIM KE VUE (Wizard.vue)
-    return Inertia::render('Inputer/Data/Wizard', [
-        // Master Data Dropdown
-        'tema'       => Tema::all(),
-        'urusan'     => Urusan::all(),
-        'bidang'     => Bidang::all(),
-        'frekuensi'  => Frekuensi::all(),
-        // Data Resume (Bisa null jika input baru)
-        'resumeData' => $resumeData 
-    ]);
-}
-
-    // STEP 1: Analisa File (Baca Header Excel)
-    public function analyzeFile(Request $request)
+    public function __construct(DataUploadService $uploadService)
     {
-        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv']);
-
-        $path = $request->file('file')->store('uploads/temp', 'private');
-        $fullPath = Storage::disk('private')->path($path);
-
-        try {
-            $spreadsheet = IOFactory::load($fullPath);
-            $sheet = $spreadsheet->getActiveSheet();
-            
-            // Baca Excel dengan index kolom Huruf (A, B, C...)
-            $rows = $sheet->toArray(null, true, true, true);
-
-            if (empty($rows)) throw new \Exception("File kosong");
-
-            // Ambil Header (Baris 1) & Bersihkan kolom kosong
-            $headerRaw = array_shift($rows);
-            $headers = array_filter($headerRaw, function($val) {
-                return !empty($val);
-            });
-
-            // Ambil Preview (5 Baris)
-            $previewRaw = array_slice($rows, 0, 5);
-            $preview = [];
-            foreach($previewRaw as $row) {
-                // Hanya ambil data pada kolom yang memiliki header
-                $preview[] = array_intersect_key($row, $headers);
-            }
-
-            // --- LOGIKA MAPPING DI PINDAH KE SINI (BACKEND) ---
-            $defaultMapping = [];
-            $defaultNewFields = [];
-
-            foreach ($headers as $colKey => $headerName) {
-                // Default: Semua kolom dianggap "Field Baru" (__new__)
-                $defaultMapping[$colKey] = '__new__';
-
-                // Default: Config field baru (Nama sesuai header, tipe text)
-                $defaultNewFields[$colKey] = [
-                    'nama_field' => $headerName,
-                    'tipe_field' => 'text'
-                ];
-            }
-
-            // Tebak Nama Indikator dari Nama File
-            $filename = pathinfo($request->file('file')->getClientOriginalName(), PATHINFO_FILENAME);
-            $suggestedName = Str::title(str_replace(['_', '-'], ' ', $filename));
-
-            return response()->json([
-                'status' => 'success',
-                'temp_path' => $path,
-                'headers' => $headers,
-                'preview' => $preview,
-                // Kirim data yang sudah matang ke Vue
-                'default_mapping' => $defaultMapping,
-                'default_new_fields' => $defaultNewFields,
-                'suggested_name' => $suggestedName
-            ]);
-
-        } catch (\Exception $e) {
-            Storage::disk('private')->delete($path);
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
+        $this->uploadService = $uploadService;
     }
-    
-    // --- LOGIKA 2: SIMPAN DATA (Baca Ulang File & Insert DB) ---
-    public function storeComplete(Request $request)
+
+    // ==========================================
+    // HELPER: Mengurangi kode berulang (DRY)
+    // ==========================================
+    private function getMetadata()
     {
-        // Validasi Config
-        $request->validate([
-            'nama_indikator' => 'required',
-            'file_path' => 'required', // Path file temp yang dikirim balik
-            'new_fields' => 'required|array'
+        return [
+            'tema'      => Tema::all(),
+            'urusan'    => Urusan::all(),
+            'bidang'    => Bidang::all(),
+            'frekuensi' => Frekuensi::all(),
+        ];
+    }
+
+    // ==========================================
+    // 1. RENDER HALAMAN (VIEWS)
+    // ==========================================
+    public function index()
+    {
+        $user = Auth::user();
+        $isAdmin = (strtolower($user->role->nama_role ?? $user->role) === 'admin');
+
+        $query = Data::with(['tema', 'urusan', 'values']); 
+        if (!$isAdmin) $query->where('id_user', $user->id);
+
+        return Inertia::render('Inputer/Data/Index', [
+            'stats' => [
+                'total_upload' => (clone $query)->count(),
+                'valid'        => (clone $query)->where('status', 'aktif')->count(),
+                'pending'      => (clone $query)->where('status', 'nonaktif')->count(),
+            ],
+            'recentUploads' => $query->latest()->limit(10)->get(),
+            'isAdmin'       => $isAdmin
         ]);
+    }
 
-        DB::beginTransaction();
-        try {
-            // 1. Pindahkan File dari Temp ke Permanent
-            $oldPath = $request->file_path;
-            $newPath = str_replace('uploads/temp', 'uploads/excel', $oldPath);
-            
-            if (Storage::disk('private')->exists($oldPath)) {
-                Storage::disk('private')->move($oldPath, $newPath);
-            } else {
-                throw new \Exception("File expired atau tidak ditemukan. Silakan upload ulang.");
-            }
+    public function createSingle()
+    {
+        return Inertia::render('Inputer/Data/SingleInput', $this->getMetadata());
+    }
 
-            // 2. Simpan Metadata Utama
-            $data = Data::create([
-                'nama_indikator' => $request->nama_indikator,
-                'deskripsi' => $request->deskripsi,
-                'id_tema' => $request->id_tema,
-                'id_urusan' => $request->id_urusan,
-                'id_bidang' => $request->id_bidang,
-                'id_frekuensi' => $request->id_frekuensi,
-                'satuan' => $request->satuan,
-                'sumber' => $request->sumber,
-                'kata_kunci' => $request->kata_kunci,
-                'tahun' => $request->periode,
-                'status' => 'aktif',
-            ]);
-
-            // 3. Simpan Definisi Kolom (DataField)
-            $columnMap = []; // Mapping: Huruf Excel (A) => ID Field Database (15)
-            $typeMap = [];   // Mapping: ID Field => Tipe Data (number/text)
-
-            foreach ($request->new_fields as $colKey => $config) {
-                // $colKey = 'A', $config = ['nama_field' => '...', 'tipe_field' => '...']
-                
-                $field = DataField::create([
-                    'id_data' => $data->id_data,
-                    'nama_field' => $config['nama_field'],
-                    'key_field' => Str::slug($config['nama_field'], '_'),
-                    'tipe_field' => $config['tipe_field'] ?? 'text',
-                ]);
-
-                $columnMap[$colKey] = $field->id_field;
-                $typeMap[$field->id_field] = $config['tipe_field'] ?? 'text';
-            }
-
-            // 4. Baca Ulang File Excel untuk Ambil Semua Data
-            $fullPath = Storage::disk('private')->path($newPath);
-            $spreadsheet = IOFactory::load($fullPath);
-            $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
-            
-            array_shift($rows); // Buang Baris Header (Baris 1)
-
-            // 5. Susun JSON Data
-            $jsonPayload = [];
-            foreach ($rows as $row) {
-                $rowData = [];
-                $hasData = false;
-
-                foreach ($columnMap as $colKey => $fieldId) {
-                    $val = $row[$colKey] ?? null;
-                    
-                    // Bersihkan & Format Data
-                    if ($val !== null && trim($val) !== '') {
-                        $hasData = true;
-                        
-                        // Jika tipe number, bersihkan format angka (misal: "1.000,50" -> 1000.50)
-                        if (($typeMap[$fieldId] ?? 'text') === 'number') {
-                            // Hapus titik ribuan, ganti koma desimal jadi titik
-                            // Logic sederhana: hapus semua non-angka/koma/titik/minus
-                            $valClean = preg_replace('/[^0-9,\.\-]/', '', $val);
-                            // Asumsi standar Indonesia: titik = ribuan, koma = desimal
-                            // Jika ada koma, ganti jadi titik agar dibaca float oleh PHP
-                            if (strpos($valClean, ',') !== false && strpos($valClean, '.') !== false) {
-                                // Ada titik dan koma (misal 1.000,50) -> hapus titik, ganti koma
-                                $valClean = str_replace('.', '', $valClean);
-                                $valClean = str_replace(',', '.', $valClean);
-                            } elseif (strpos($valClean, ',') !== false) {
-                                // Hanya koma (10,5) -> ganti titik
-                                $valClean = str_replace(',', '.', $valClean);
-                            }
-                            $val = $valClean; 
-                        }
-                    }
-                    
-                    $rowData[$fieldId] = $val;
-                }
-
-                // Hanya simpan baris yang tidak kosong total
-                if ($hasData) {
-                    $jsonPayload[] = $rowData;
-                }
-            }
-
-            // 6. Simpan Data Upload (JSON)
-            DataUpload::create([
-                'id_data' => $data->id_data,
-                'id_user' => Auth::id(),
-                'periode' => $request->periode,
-                'file_path' => $newPath,
-                'value' => $jsonPayload, // Simpan array hasil parsing
-                'status' => 'valid'
-            ]);
-
-            DB::commit();
-            return response()->json(['status' => 'success']);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
+    public function createMulti()
+    {
+        return Inertia::render('Inputer/Data/MultiInput', $this->getMetadata());
     }
 
     public function edit($id)
-{
-    // Cari data berdasarkan ID
-    $data = Data::findOrFail($id);
+    {
+        return Inertia::render('Inputer/Data/Edit', array_merge(
+            ['dataIndikator' => Data::findOrFail($id)],
+            $this->getMetadata()
+        ));
+    }
 
-    // Cek Authorization (Opsional: Pastikan user berhak mengedit data ini)
-    // if ($data->id_user !== Auth::id()) abort(403); 
+    public function katalog(Request $request)
+    {
+        $query = Data::with(['tema', 'urusan', 'bidang']);
+        if ($request->filled('search')) $query->where('nama_indikator', 'like', '%' . $request->search . '%');
+        if ($request->filled('tema')) $query->where('id_tema', $request->tema);
 
-    return Inertia::render('Inputer/Data/Edit', [
-        'dataIndikator' => $data,
-        // Kirim data master untuk dropdown select
-        'tema'      => Tema::all(),
-        'urusan'    => Urusan::all(),
-        'bidang'    => Bidang::all(),
-        'frekuensi' => Frekuensi::all(),
-    ]);
-}
+        return Inertia::render('Inputer/Data/Katalog', [
+            'indicators' => $query->latest()->paginate(15)->withQueryString(),
+            'filters'    => $request->only(['search', 'tema']),
+            'listTema'   => Tema::all()
+        ]);
+    }
 
-public function update(Request $request, $id)
-{
-    // Validasi Input
-    $validated = $request->validate([
-        'nama_indikator' => 'required|string|max:255',
-        'deskripsi'      => 'nullable|string',
-        'id_tema'        => 'required|exists:tema,id_tema',
-        'id_urusan'      => 'required|exists:urusan,id_urusan',
-        'id_bidang'      => 'required|exists:bidang,id_bidang',
-        'id_frekuensi'   => 'required|exists:frekuensi,id_frekuensi',
-        'satuan'         => 'required|string',
-        'sumber'         => 'required|string',
-        'status'         => 'required|in:aktif,nonaktif',
-    ]);
+    // ==========================================
+    // 2. AKSI PROSES DATA (POST / PUT)
+    // ==========================================
+    public function storeSingle(Request $request)
+    {
+        $request->validate([
+            'nama_indikator' => 'required|string|max:255',
+            'id_tema' => 'required', 'id_urusan' => 'required', 'id_bidang' => 'required',
+            'tahun' => 'required|integer', 'nilai' => 'required',
+        ]);
 
-    // Update Database
-    $data = Data::findOrFail($id);
-    $data->update($validated);
+        try {
+            $this->uploadService->processSingleData($request->all(), Auth::id());
+            return redirect()->route('inputer.dashboard')->with('message', 'Indikator berhasil ditambahkan!');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
+    }
 
-    // Redirect kembali ke Dashboard Inputer dengan pesan sukses
-    return redirect()->route('inputer.dashboard')->with('message', 'Data berhasil diperbarui!');
-}
+    public function previewExcel(Request $request)
+    {
+        $request->validate(['file' => 'required|file|mimes:xlsx,xls,csv,txt']);
+        try {
+            $result = $this->uploadService->getPreviewData($request->file('file'));
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
+    }
+
+    public function storeBulk(Request $request)
+    {
+        try {
+            $this->uploadService->processBulkData($request->input('dataset'), $request->input('years'), Auth::id());
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'nama_indikator' => 'required|string|max:255',
+            'deskripsi'      => 'nullable|string',
+            'id_tema'        => 'required', 'id_urusan' => 'required', 'id_bidang' => 'required',
+            'satuan'         => 'required|string',
+            'status'         => 'required|in:aktif,nonaktif',
+        ]);
+
+        Data::findOrFail($id)->update($validated);
+        return redirect()->route('inputer.dashboard')->with('message', 'Data berhasil diperbarui!');
+    }
 }

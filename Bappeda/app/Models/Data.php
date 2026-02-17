@@ -9,6 +9,7 @@ use App\Models\Bidang;
 use App\Models\Frekuensi;
 use App\Models\DataField;
 use App\Models\DataUpload;
+use App\Models\DataValue;
 
 class Data extends Model
 {
@@ -60,4 +61,11 @@ class Data extends Model
     {
         return $this->hasMany(DataUpload::class, 'id_data');
     }
+
+    public function values()
+    {
+        return $this->hasMany(DataValue::class, 'id_data', 'id_data');
+    }
+
+    
 }

@@ -47,10 +47,17 @@ const formatDate = (dateString) => {
                 <h2 class="text-4xl font-black text-gray-900 tracking-tight">Dashboard <span class="text-[#00139E]">Data</span></h2>
                 <p class="text-gray-400 font-medium text-sm mt-1 uppercase tracking-widest text-[10px]">Ringkasan aktivitas input data sistem BAPPEDA</p>
             </div>
-            <Link href="/inputer/wizard" class="bg-[#00139E] text-white px-8 py-4 rounded-2xl font-bold text-sm hover:bg-[#000B58] transition-all shadow-xl shadow-blue-500/20 flex items-center gap-3 active:scale-95">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
-                INPUT DATA BARU
-            </Link>
+           <div class="flex flex-col sm:flex-row gap-4">
+                <Link href="/inputer/data/input-single" class="bg-white text-[#00139E] border-2 border-[#00139E] px-6 py-3.5 rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-blue-50 transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    Input Single Data
+                </Link>
+
+                <Link href="/inputer/data/input-multi" class="bg-[#00139E] text-white px-6 py-3.5 rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-[#000B58] transition-all shadow-xl shadow-blue-500/20 flex items-center justify-center gap-2 active:scale-95">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12" /></svg>
+                    Upload Multi (Excel)
+                </Link>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">

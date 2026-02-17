@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('data_uploads', function (Blueprint $table) {
     $table->id('id_upload');
 
-    $table->unsignedBigInteger('id_data');
+    $table->unsignedBigInteger('id_data')->nullable();
     $table->unsignedBigInteger('id_user');
     $table->string('periode');      
     $table->string('file_path');    

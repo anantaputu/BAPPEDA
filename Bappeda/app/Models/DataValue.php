@@ -3,27 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\DataUpload;
-use App\Models\DataField;
 
 class DataValue extends Model
 {
     protected $table = 'data_values';
-    protected $primaryKey = 'id_value';
+    protected $guarded = [];
 
-    protected $fillable = [
-        'id_upload',
-        'id_field',
-        'nilai'
-    ];
-
-    public function upload()
+    public function data()
     {
-        return $this->belongsTo(DataUpload::class, 'id_upload');
-    }
-
-    public function field()
-    {
-        return $this->belongsTo(DataField::class, 'id_field');
+        return $this->belongsTo(Data::class, 'id_data', 'id_data');
     }
 }

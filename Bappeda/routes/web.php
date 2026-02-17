@@ -34,6 +34,9 @@ Route::get('/public-dashboard', [DashboardController::class, 'index'])->name('pu
 Route::get('/cari', [SearchController::class, 'index'])->name('public.search');
 Route::get('/dataset/{id}', [DatasetController::class, 'show'])->name('dataset.detail');
 Route::get('/export/data/{id}', [DataOutputController::class, 'export'])->name('public.export');
+Route::get('/katalog', [App\Http\Controllers\Public\DatasetController::class, 'index'])->name('public.katalog');
+Route::get('/data-spreadsheet', [App\Http\Controllers\Public\DatasetController::class, 'spreadsheetView'])->name('public.spreadsheet');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -82,11 +85,18 @@ Route::middleware(['auth', 'role:admin|inputer'])->prefix('inputer')->name('inpu
     Route::get('/data/{id}/edit', [DataInputController::class, 'edit'])->name('data.edit');
     Route::put('/data/{id}', [DataInputController::class, 'update'])->name('data.update');
 
-    Route::get('/wizard', [DataInputController::class, 'createWizard'])->name('wizard');
-    Route::post('/wizard/analyze', [DataInputController::class, 'analyzeFile'])->name('wizard.analyze');
-    Route::post('/wizard/store-all', [DataInputController::class, 'storeComplete'])->name('wizard.store-all');
+    // Route::get('/wizard', [DataInputController::class, 'createWizard'])->name('wizard');
+    Route::post('/data', [DataInputController::class, 'store'])->name('data.store');
 
     Route::get('/export/{id}', [DataOutputController::class, 'export'])->name('export');
+    
+    Route::get('/data/input-single', [DataInputController::class, 'createSingle'])->name('createSingle');
+    Route::post('/data/store-single', [DataInputController::class, 'storeSingle'])->name('storeSingle');
+
+    // --- 2. JALUR MULTI DATA (EXCEL) ---
+    Route::get('/data/input-multi', [DataInputController::class, 'createMulti'])->name('createMulti');
+    Route::post('/data/preview-excel', [DataInputController::class, 'previewExcel'])->name('previewExcel');
+    Route::post('/data/store-bulk', [DataInputController::class, 'storeBulk'])->name('storeBulk');
 });
 
 

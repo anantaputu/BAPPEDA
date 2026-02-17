@@ -77,62 +77,69 @@ const formatDate = (dateString) => {
                 Aktivitas Upload Terkini
             </h3>
             
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="border-b border-gray-100 text-xs uppercase tracking-widest text-gray-400 font-bold">
-                            <th class="pb-4 pl-4">Uplouder</th>
-                            <th class="pb-4 pl-4">Nama Indikator</th>
-                            <th class="pb-4">Tahun</th>
-                            <th class="pb-4">Status</th>
-                            <th class="pb-4 text-right pr-4">Tanggal</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-sm font-medium text-gray-600">
-                        <tr v-for="(upload, index) in safeUploads" :key="index" 
-                            class="group hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-                            <td class ="py-4 pl-4 flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold ring-2 ring-white shadow-sm">
-                                      {{ u.user?.name?.charAt(0).toUpperCase() || '?' }}
-                                </div>
-                                <span>{{ u.user?.name || 'Unknown' }}</span>
-                            </td>
+           <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+        <thead>
+            <tr class="border-b border-gray-100 text-xs uppercase tracking-widest text-gray-400 font-bold">
+                <th class="pb-4 pl-4">Nama Indikator</th>
+                <th class="pb-4">Tahun</th>
+                <th class="pb-4">Status</th>
+                <th class="pb-4">Tanggal</th>
+                <th class="pb-4 text-right pr-4">Aksi</th>
+            </tr>
+        </thead>
+        <tbody class="text-sm font-medium text-gray-600">
+            <tr v-for="(upload, index) in safeUploads" :key="index" 
+                class="group hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+                
+                <td class="py-4 pl-4 transition-colors">
+                    <Link 
+                        v-if="upload?.id_data" 
+                        :href="`/dataset/${upload.id_data}`"
+                        class="font-bold text-gray-700 group-hover:text-blue-600 hover:underline block"
+                        title="Lihat Detail Dataset"
+                    >
+                        {{ upload.nama_indikator }}
+                    </Link>
 
-                            <td class="py-4 pl-4 transition-colors">
-                                <Link 
-                                    v-if="upload?.data" 
-                                    :href="`/dataset/${upload.data.id_data}`"
-                                    class="font-bold text-gray-700 group-hover:text-blue-600 hover:underline block"
-                                    title="Lihat Detail Dataset"
-                                >
-                                    {{ upload.data.nama_indikator }}
-                                </Link>
+                    <span v-else class="text-gray-400 italic text-xs">
+                        Indikator Tidak Ditemukan
+                    </span>
+                </td>
+                
+                <td class="py-4">
+                    {{ upload?.tahun || '-' }}
+                </td>
+                
+                <td class="py-4">
+                    <span v-if="upload?.status === 'aktif' || upload?.status === 'valid'" class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-black uppercase">Valid</span>
+                    <span v-else class="px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-[10px] font-black uppercase">Proses</span>
+                </td>
+                
+                <td class="py-4 font-mono text-xs text-gray-400">
+                    {{ formatDate(upload?.created_at) }}
+                </td>
 
-                                <span v-else class="text-gray-400 italic text-xs">
-                                    Indikator Tidak Ditemukan
-                                </span>
-                            </td>
-                            
-                            <td class="py-4">{{ upload?.periode ?? '-' }}</td>
-                            
-                            <td class="py-4">
-                                <span v-if="upload?.status === 'valid'" class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-black uppercase">Valid</span>
-                                <span v-else class="px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-[10px] font-black uppercase">Proses</span>
-                            </td>
-                            
-                            <td class="py-4 text-right pr-4 font-mono text-xs text-gray-400">
-                                {{ formatDate(upload?.created_at) }}
-                            </td>
-                        </tr>
+                <td class="py-4 text-right pr-4">
+                    <Link 
+                        v-if="upload?.id_data" 
+                        :href="`/dataset/${upload.id_data}`"
+                        class="inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 border border-transparent rounded-xl hover:bg-blue-600 hover:text-white transition-all duration-200"
+                    >
+                        Detail
+                        <svg class="w-3 h-3 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </Link>
+                </td>
+            </tr>
 
-                        <tr v-if="safeUploads.length === 0">
-                            <td colspan="4" class="py-12 text-center text-gray-400 italic">
-                                Belum ada data yang diupload.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            <tr v-if="safeUploads.length === 0">
+                <td colspan="5" class="py-12 text-center text-gray-400 italic">
+                    Belum ada data yang diupload.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
         </div>
 
     </AppLayout>
