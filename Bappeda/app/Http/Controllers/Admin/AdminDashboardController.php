@@ -166,7 +166,7 @@ class AdminDashboardController extends Controller
             'datasets'    => $datasets,
             'topics'      => $topics,
             'growthChart' => $growthChart,
-            'recentActivities' => $recentActivities
+            'recentActivities' => $recentActivities,
         ]);
 
 
