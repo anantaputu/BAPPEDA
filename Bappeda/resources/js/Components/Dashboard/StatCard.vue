@@ -10,20 +10,22 @@ defineProps({
 </script>
 
 <template>
-    <div class="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-400 hover:shadow-md transition flex flex-col justify-between h-48">
-        <div>
-            <div class="flex items-center gap-4 mb-4">
-                <div :class="['w-12 h-12 rounded-xl flex items-center justify-center', colors[color].bg, colors[color].text]">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="icon" />
-                    </svg>
-                </div>
-                <h3 class="text-[11px] font-black text-gray-400 uppercase tracking-wider">{{ label }}</h3>
+    <div class="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-400 hover:shadow-md transition flex flex-col h-48">
+        <div class="flex items-center gap-4 mb-2">
+            <div :class="['w-10 h-10 rounded-xl flex items-center justify-center shrink-0', colors[color].bg, colors[color].text]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="icon" />
+                </svg>
             </div>
-            <p class="text-4xl font-black text-gray-800">{{ value }}</p>
+            <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-wider leading-tight">{{ label }}</h3>
         </div>
-        <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mt-4">
-            <div :class="['h-full rounded-full', colors[color].bar]" :style="{ width: progress + '%' }"></div>
+
+        <div class="flex-1 flex items-center justify-center">
+            <p class="text-5xl font-black text-gray-800 tracking-tight">
+                {{ value }}
+            </p>
         </div>
+
+        <div class="h-2"></div>
     </div>
 </template>

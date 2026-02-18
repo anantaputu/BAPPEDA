@@ -5,8 +5,16 @@ import { Head, Link } from '@inertiajs/vue3';
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
-    stats: Object
-})
+    stats: {
+        type: Object,
+        default: () => ({
+            last_update: '-',
+            total_indikator: 0,
+            opd_aktif: 0,
+            data_valid: 0
+        })
+    }
+});
 </script>
 
 <template>
@@ -54,7 +62,7 @@ const props = defineProps({
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-6 mb-10">
+                    <div class="grid grid-cols-2 gap-6 mb-10">
                         <div class="bg-gray-50/50 p-5 rounded-[2rem] border border-gray-400 text-center">
                             <div class="text-3xl font-black text-[#00139E] mb-1">{{ props.stats.total_indikator }}</div>
                             <div class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-tighter">Indikator</div>
@@ -63,19 +71,19 @@ const props = defineProps({
                             <div class="text-3xl font-black text-[#000B58] mb-1">{{ props.stats.opd_aktif }}</div>
                             <div class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-tighter">OPD Aktif</div>
                         </div>
-                        <div class="bg-gray-50/50 p-5 rounded-[2rem] border border-gray-400 text-center">
+                        <!-- <div class="bg-gray-50/50 p-5 rounded-[2rem] border border-gray-400 text-center">
                             <div class="text-3xl font-black text-[#FF1414] mb-1">{{ props.stats.data_valid }}</div>
                             <div class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-tighter">Tervalidasi</div>
-                        </div>
+                        </div> -->
                     </div>
 
-                    <div class="space-y-5 mb-10">
+                    <!-- <div class="space-y-5 mb-10">
                         <div class="flex gap-3 items-center">
                             <div class="h-2.5 bg-[#00139E]/20 rounded-full w-1/3"></div>
                             <div class="h-2.5 bg-gray-100 rounded-full w-2/3"></div>
                         </div>
                         <div class="h-2.5 bg-gray-50 rounded-full w-full"></div>
-                    </div>
+                    </div> -->
 
                     <div class="pt-6 border-t border-gray-40 flex justify-between items-center">
                         <div class="flex items-center gap-3">
@@ -91,7 +99,7 @@ const props = defineProps({
         </div>
     </section>
 
-    <section class="py-32 bg-gray-50/50">
+    <section class="py-32">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center max-w-2xl mx-auto mb-24">
                 <h2 class="text-4xl md:text-5xl font-black text-[#000B58] mb-6">Layanan Unggulan</h2>

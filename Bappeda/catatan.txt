@@ -1,0 +1,4 @@
+Catatan Penting: Ada sedikit tumpang tindih pada prefix /admin yang digunakan untuk resource master data (bisa diakses Inputer) dan /admin untuk dashboard (hanya Admin). Pastikan middleware role:admin|inputer pada Shared Resources tidak tertukar dengan role:admin pada manajemen user. -> ini untuk route
+
+
+Perbaiki lagi untuk statCard, karena masih perlu di lihat lagi apa yang mau di visualisasiin

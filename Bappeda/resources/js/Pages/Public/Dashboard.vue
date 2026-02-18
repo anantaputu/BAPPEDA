@@ -22,7 +22,10 @@ const props = defineProps({
         type: Object,
         default: () => ({ labels: [], values: [] })
     },
-    bidangChart: Object,
+    bidangChart: {
+        type: Object,
+        default: () => ({ labels: [], values: [] })
+    },
     datasets: {
         type: Object,
         default: () => ({ popular: [], latest: [] })
@@ -30,6 +33,7 @@ const props = defineProps({
     topics: Array
 });
 
+// --- KPI / STAT CARDS (Sesuai Struktur Asli Anda) ---
 const statsCards = computed(() => [
     { 
         label: 'TOTAL DATASET', 
@@ -68,7 +72,7 @@ const colors = {
     teal: { bg: 'bg-teal-100', text: 'text-teal-600', bar: 'bg-teal-600' },
 };
 
-// PERBAIKAN: Hapus duplikasi properti
+// --- BAR CHART (Sesuai Struktur Asli Anda) ---
 const barChartData = computed(() => ({
     labels: props.temaChart?.labels || [],
     datasets: [{
@@ -84,20 +88,45 @@ const barChartOptions = {
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: {
-        y: { grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 } } },
-        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        y: { 
+            beginAtZero: true,
+            grid: { 
+                display: false
+            },
+            border: {
+                display: true,
+                color: '#000000',
+                width: 1
+            },
+            ticks: { 
+                precision: 0,
+                font: { size: 10 },
+                stepSize: 1 
+            } 
+        },
+        x: { 
+            grid: { display: false },
+            border: {
+                display: true,
+                color: '#000000',
+                width: 1
+            },
+            ticks: { font: { size: 10 } } 
+        }
     }
 };
 
+// --- DOUGHNUT CHART (Sesuai Struktur Asli Anda) ---
 const doughnutData = computed(() => {
-    const labels = props.bidangChart?.labels || ['Valid', 'Belum Valid'];
-    const values = props.bidangChart?.values || [props.stats.data_valid, Math.max(0, props.stats.total_dataset - props.stats.data_valid)];
+    // Gunakan data dari bidangChart jika ada, jika tidak fallback ke rasio validasi
+    const labels = props.bidangChart?.labels?.length > 0 ? props.bidangChart.labels : ['Valid', 'Belum Valid'];
+    const values = props.bidangChart?.values?.length > 0 ? props.bidangChart.values : [props.stats.data_valid, Math.max(0, props.stats.total_dataset - props.stats.data_valid)];
     
     return {
         labels: labels,
         datasets: [{
             data: values,
-            backgroundColor: ['#00139E', '#E2E8F0', '#4A6CF7', '#85E6C5', '#F8B400', '#FF6B6B'],
+            backgroundColor: ['red', 'green', 'blue', '#85E6C5', '#F8B400', '#FF6B6B'],
             borderWidth: 0,
             cutout: '75%'
         }]
@@ -115,19 +144,14 @@ const percentValid = computed(() => {
         : 0;
 });
 
+// --- TOPIC ICONS (Tetap menggunakan array manual Anda) ---
 const topicIcons = [
      { name: 'Bidang A', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0z' },
-
     { name: 'Bidang B', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-
     { name: 'Bidang C', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
-
     { name: 'Bidang D', icon: 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-
     { name: 'Bidang E', icon: 'M12 14l9-5-9-5-9 5 9 5z' },
-
     { name: 'Bidang F', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' },
-
 ];
 </script>
 
@@ -155,7 +179,8 @@ const topicIcons = [
                         <span class="text-blue-200 group-hover:text-white transition">Cari dataset...</span>
                     </Link>
                 </div>
-            </div> <div class="absolute top-0 right-0 w-96 h-96 bg-[#00139E]/40 rounded-full blur-3xl -mr-20 -mt-40 pointer-events-none"></div>
+            </div> 
+            <div class="absolute top-0 right-0 w-96 h-96 bg-[#00139E]/40 rounded-full blur-3xl -mr-20 -mt-40 pointer-events-none"></div>
             <div class="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none"></div>
         </section>
 
