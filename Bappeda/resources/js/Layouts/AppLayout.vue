@@ -64,23 +64,23 @@ const menuGroups = computed(() => {
         groups.push({
             label: 'DATA REFERENSI', // Label baru agar cocok untuk keduanya
             items: [
+                {
+                       name: 'Input Data Baru', 
+
+                    path: '/inputer/data', // Route ini sekarang aman untuk admin
+                    icon: 'M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' 
+                },
                 { 
                     name: 'Master Data',
                     icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
                     children: [
-                        { name: 'Data Indikator', path: '/admin/data' },
                         { name: 'Tema', path: '/admin/tema' },
                         { name: 'Urusan', path: '/admin/urusan' },
                         { name: 'Bidang', path: '/admin/bidang' },
                         { name: 'Frekuensi', path: '/admin/frekuensi' },
                     ]
                 },
-                {
-                       name: 'Input Data Baru', 
-
-                    path: '/inputer/data', // Route ini sekarang aman untuk admin
-                    icon: 'M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' 
-                }
+                
             ]
         });
     }

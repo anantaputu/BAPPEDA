@@ -2,3 +2,59 @@ Catatan Penting: Ada sedikit tumpang tindih pada prefix /admin yang digunakan un
 
 
 Perbaiki lagi untuk statCard, karena masih perlu di lihat lagi apa yang mau di visualisasiin
+
+
+Tata Cara Merge Github
+
+Amankan Pekerjaan Lokal
+- git add .
+- git commit -m "Pesan commit perubahan saya"
+
+Tarik Perubahan dari GitHub (Fetch & Pull)
+- git pull origin main
+
+Cara Mengatasi Merge Conflict
+1. Cari File yang Berkonflik
+2. Identifikasi Blok Konflik
+3. Cari tanda khusus yang disisipkan Git. Anda bisa menggunakan Ctrl + F (atau Cmd + F di Mac) lalu ketik <<<<<<< untuk menemukannya dengan cepat.
+	Strukturnya akan terlihat seperti ini di editor Anda:
+	Plaintext
+
+	<<<<<<< HEAD
+	Kode yang ANDA tulis (perubahan lokal)
+	=======
+	Kode yang TEMAN anda tulis (perubahan dari GitHub)
+	>>>>>>> [nomor_commit_atau_nama_branch]
+
+4. Edit Manual (Paling Penting!)
+
+	Di Sublime Text, Anda harus menghapus baris penanda tersebut secara manual. Pilih kode mana yang ingin dipertahankan:
+
+    Jika ingin ambil punya Anda saja: Hapus baris <<<<<<< HEAD, lalu hapus semua blok dari ======= sampai >>>>>>>.
+
+    Jika ingin ambil punya teman saja: Hapus blok dari <<<<<<< HEAD sampai =======, lalu hapus baris >>>>>>>.
+
+    Jika ingin KEDUANYA ada: Hapus baris <<<<<<< HEAD, =======, dan >>>>>>>. Susun baris kode Anda dan teman Anda agar berurutan dengan benar secara logika pemrograman.
+
+	Pastikan setelah Anda selesai, tidak ada lagi karakter <<<<, ====, atau >>>> yang tersisa di dalam file tersebut.
+4. Simpan dan Tandai Selesai
+
+	Setelah file rapi dan tersimpan (Ctrl + S), kembali ke Terminal/Command Prompt dan jalankan:
+Bash
+
+# Beritahu Git bahwa file ini sudah diperbaiki
+git add [nama_file_tadi]
+
+# Jika semua file konflik sudah di-add, selesaikan merge-nya
+git commit -m "Fix merge conflict manually in Sublime Text"
+
+# Kirim ke GitHub
+git push origin main
+
+Pro Tip: Gunakan "Sublime Merge"
+
+Jika Anda sering mengalami konflik yang rumit, saya sangat menyarankan mengunduh Sublime Merge (aplikasi terpisah dari pengembang yang sama).
+
+Aplikasi ini khusus dibuat untuk menangani Git dengan tampilan visual yang sangat jelas (3-way merge), sehingga Anda cukup klik kanan pada blok kode yang ingin diambil tanpa perlu menghapus tanda <<<<<<< secara manual.
+
+Apakah ada bagian kode yang saat ini sedang membuat Anda bingung bagaimana cara menggabungkannya? Saya bisa bantu bantu cek logika kodenya.

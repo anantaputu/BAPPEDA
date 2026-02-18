@@ -89,6 +89,12 @@ class DataUploadService
                     ]
                 );
 
+                // TAMBAHKAN INI: Catat log upload untuk setiap indikator dalam bulk
+                DataUpload::updateOrCreate(
+                    ['id_user' => $userId, 'id_data' => $dataMaster->id_data, 'tahun' => date('Y')],
+                    ['status' => 'valid'] // Karena di atas statusnya langsung 'aktif'
+                );
+
                 foreach ($years as $tahun) {
                     $nilai = $row['values'][$tahun] ?? null;
                     if ($nilai !== null && trim((string)$nilai) !== '') {
@@ -106,11 +112,14 @@ class DataUploadService
             throw new Exception("Gagal menyimpan bulk data: " . $e->getMessage());
         }
     }
+
+
+    // 4. FUNGSI SIMPAN SINGLE
     public function processSingleData($formData, $userId)
     {
         DB::beginTransaction();
         try {
-            // 1. Simpan atau Update Master Data (Tabel: data)
+            // 1. Simpan Master Data
             $dataMaster = Data::updateOrCreate(
                 ['nama_indikator' => trim($formData['nama_indikator'])],
                 [
@@ -122,12 +131,12 @@ class DataUploadService
                     'satuan'       => $formData['satuan'] ?? '-',
                     'deskripsi'    => $formData['deskripsi'] ?? null,
                     'sumber'       => $formData['sumber'] ?? null,
-                    'status'       => 'aktif', // Langsung aktif
+                    'status'       => 'aktif',
                     'tahun'        => $formData['tahun']
                 ]
             );
 
-            // 2. Bersihkan Nilai (Ubah koma jadi titik untuk desimal database)
+            // 2. Bersihkan Nilai
             $nilaiClean = preg_replace('/[^0-9,\.\-]/', '', $formData['nilai']);
             if (strpos($nilaiClean, ',') !== false && strpos($nilaiClean, '.') !== false) {
                 $nilaiClean = str_replace('.', '', $nilaiClean);
@@ -136,19 +145,25 @@ class DataUploadService
                 $nilaiClean = str_replace(',', '.', $nilaiClean);
             }
 
-            // 3. Simpan Nilainya ke tabel anak (Tabel: data_values)
+            // 3. Simpan Nilai ke data_values
             DataValue::updateOrCreate(
-                [
-                    'id_data' => $dataMaster->id_data, 
-                    'tahun'   => $formData['tahun']
-                ],
-                [
-                    'nilai'   => (float) $nilaiClean
-                ]
+                ['id_data' => $dataMaster->id_data, 'tahun' => $formData['tahun']],
+                ['nilai' => (float) $nilaiClean]
             );
 
+            // 4. TAMBAHKAN INI: Catat log ke tabel data_uploads
+            // Supaya muncul di dashboard "Riwayat Aktivitas Saya"
+            DataUpload::create([
+                'id_user'   => $userId,
+                'id_data'   => $dataMaster->id_data,
+                'periode'   => $formData['tahun'],
+                'status'    => 'valid',
+                'file_path' => 'manual_input', // BERIKAN NILAI DEFAULT DISINI
+                'value'     => ['nilai' => $formData['nilai']],
+            ]);
+
             DB::commit();
-            return $dataMaster; // Kembalikan objek data jika dibutuhkan
+            return $dataMaster;
 
         } catch (Exception $e) {
             DB::rollBack();

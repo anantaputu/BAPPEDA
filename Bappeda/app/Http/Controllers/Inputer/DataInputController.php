@@ -18,9 +18,6 @@ class DataInputController extends Controller
         $this->uploadService = $uploadService;
     }
 
-    // ==========================================
-    // HELPER: Mengurangi kode berulang (DRY)
-    // ==========================================
     private function getMetadata()
     {
         return [
@@ -37,18 +34,31 @@ class DataInputController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $isAdmin = (strtolower($user->role->nama_role ?? $user->role) === 'admin');
+        $isAdmin = (strtolower($user->role->nama_role ?? '') === 'admin');
 
-        $query = Data::with(['tema', 'urusan', 'values']); 
-        if (!$isAdmin) $query->where('id_user', $user->id);
+        // PERBAIKAN: Query harus ke model DataUpload agar riwayatnya muncul
+        // Kita panggil relasi 'data' (untuk nama indikator) dan 'user' (untuk operator)
+        $query = \App\Models\DataUpload::with(['data', 'user']); 
+
+        // Jika bukan admin, hanya lihat upload miliknya sendiri
+        if (!$isAdmin) {
+            $query->where('id_user', $user->id);
+        }
+
+        // Ambil riwayat terbaru
+        $recentUploads = $query->latest()->limit(10)->get();
+
+        // Query terpisah untuk statistik (opsional jika masih ingin menghitung di backend)
+        $statsQuery = \App\Models\Data::query();
+        if (!$isAdmin) $statsQuery->where('id_user', $user->id);
 
         return Inertia::render('Inputer/Data/Index', [
             'stats' => [
-                'total_upload' => (clone $query)->count(),
-                'valid'        => (clone $query)->where('status', 'aktif')->count(),
-                'pending'      => (clone $query)->where('status', 'nonaktif')->count(),
+                'total_upload' => (clone $statsQuery)->count(),
+                'valid'        => (clone $statsQuery)->where('status', 'aktif')->count(),
+                'pending'      => (clone $statsQuery)->where('status', 'nonaktif')->count(),
             ],
-            'recentUploads' => $query->latest()->limit(10)->get(),
+            'recentUploads' => $recentUploads,
             'isAdmin'       => $isAdmin
         ]);
     }
@@ -91,13 +101,20 @@ class DataInputController extends Controller
     {
         $request->validate([
             'nama_indikator' => 'required|string|max:255',
-            'id_tema' => 'required', 'id_urusan' => 'required', 'id_bidang' => 'required',
-            'tahun' => 'required|integer', 'nilai' => 'required',
+            'id_tema'        => 'required',
+            'id_urusan'      => 'required',
+            'id_bidang'      => 'required',
+            'id_frekuensi'   => 'required',
+            'tahun'          => 'required|integer',
+            'nilai'          => 'required',
+            'satuan'         => 'required|string',
+            'sumber'         => 'required|string', // Pastikan kolom ini divalidasi
+            'deskripsi'      => 'nullable|string',
         ]);
 
         try {
             $this->uploadService->processSingleData($request->all(), Auth::id());
-            return redirect()->route('inputer.dashboard')->with('message', 'Indikator berhasil ditambahkan!');
+            return redirect()->route('inputer.dashboard')->with('message', 'Data Berhasil Disimpan!');
         } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
@@ -129,8 +146,12 @@ class DataInputController extends Controller
         $validated = $request->validate([
             'nama_indikator' => 'required|string|max:255',
             'deskripsi'      => 'nullable|string',
-            'id_tema'        => 'required', 'id_urusan' => 'required', 'id_bidang' => 'required',
+            'id_tema'        => 'required',
+            'id_urusan'      => 'required',
+            'id_bidang'      => 'required',
+            'id_frekuensi'   => 'required', // Tambahkan frekuensi di update
             'satuan'         => 'required|string',
+            'sumber'         => 'nullable|string',
             'status'         => 'required|in:aktif,nonaktif',
         ]);
 

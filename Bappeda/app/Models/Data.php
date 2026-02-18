@@ -18,7 +18,7 @@ class Data extends Model
     protected $guarded = [];
     
     protected $fillable = [
-       'nama_indikator',
+        'nama_indikator',
         'deskripsi',
         'id_tema',
         'id_urusan',

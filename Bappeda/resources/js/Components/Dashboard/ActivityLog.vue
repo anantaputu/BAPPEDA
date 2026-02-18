@@ -1,5 +1,5 @@
 <script setup>
-import { Link } from '@inertiajs/vue3'; // <--- PERBAIKAN: Impor ini wajib ada
+import { Link } from '@inertiajs/vue3';
 
 defineProps({ 
     activities: {
@@ -10,7 +10,8 @@ defineProps({
 
 const getStatusClass = (status) => {
     const map = {
-        'valid': 'bg-emerald-50 text-emerald-600 border-emerald-100',
+        // Status disesuaikan agar tetap profesional
+        'valid': 'bg-blue-50 text-[#00139E] border-blue-100', // Gunakan Biru Royal untuk valid
         'pending': 'bg-amber-50 text-amber-600 border-amber-100',
         'rejected': 'bg-rose-50 text-rose-600 border-rose-100',
     };
@@ -65,7 +66,6 @@ const getStatusClass = (status) => {
 </template>
 
 <style scoped>
-/* Tambahkan sedikit animasi fade-in untuk list */
 .flex-1 {
     animation: fadeIn 0.5s ease-out;
 }

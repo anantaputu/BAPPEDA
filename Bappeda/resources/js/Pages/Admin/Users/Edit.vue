@@ -33,12 +33,12 @@ const submit = () => {
     <Head title="Edit Pengguna" />
 
     <div class="max-w-4xl mx-auto">
-        <Link href="/admin/users" class="flex items-center gap-2 text-[#A2B5CB] hover:text-[#00139E] transition-colors mb-6 group">
+        <!-- <Link href="/admin/users" class="flex items-center gap-2 text-[#A2B5CB] hover:text-[#00139E] transition-colors mb-6 group">
             <svg class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
             <span class="font-bold uppercase tracking-widest text-[10px]">Kembali ke Manajemen User</span>
-        </Link>
+        </Link> -->
 
         <div class="bg-white rounded-[2.5rem] p-12 shadow-2xl shadow-gray-100 border border-gray-400">
             <div class="mb-10">

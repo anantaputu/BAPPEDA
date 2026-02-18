@@ -3,48 +3,80 @@
 namespace App\Http\Controllers\Inputer;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
-use App\Models\DataUpload; // Pastikan Model DataUpload di-import
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use App\Models\DataUpload; 
 
 class InputerDashboardController extends Controller
 {
-    /**
-     * Menampilkan Halaman Dashboard Inputer
-     */
     public function index()
     {
-        // 1. Ambil ID User yang sedang login
         $userId = Auth::id();
 
-        // 2. Ambil Statistik Khusus User Ini
+        // 1. STATISTIK (Hanya milik user login)
         $stats = [
-            // Hitung semua upload milik user ini
-            'total_upload' => DataUpload::where('id_user', $userId)->count(),
-            
-            // Hitung data yang statusnya 'valid'
-            'valid'        => DataUpload::where('id_user', $userId)->where('status', 'valid')->count(),
-            
-            // Hitung data yang statusnya masih 'processing', 'pending', atau 'draft'
-            'pending'      => DataUpload::where('id_user', $userId)
+            'total_input'   => DataUpload::where('id_user', $userId)->count(),
+            'data_approved' => DataUpload::where('id_user', $userId)->where('status', 'valid')->count(),
+            'data_pending'  => DataUpload::where('id_user', $userId)
                                 ->whereIn('status', ['processing', 'pending', 'draft'])
                                 ->count(),
+            'data_rejected' => DataUpload::where('id_user', $userId)->where('status', 'rejected')->count(),
         ];
 
-        // 3. Ambil 5 Riwayat Upload Terakhir
-        $recentUploads = DataUpload::with('data') // Eager load relasi ke tabel 'data' (indikator)
-            ->where('id_user', $userId)
-            ->latest() 
-            ->limit(5)
-            ->get();
+        // 2. LOGIKA GROWTH CHART (Pola Admin)
+        // Gunakan DATE_FORMAT(created_at, '%Y-%m') jika Anda menggunakan MySQL
+        $growthRaw = DataUpload::select(
+            DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"), 
+            DB::raw('COUNT(*) as total')
+        )
+        ->where('id_user', $userId) 
+        ->where('created_at', '>=', Carbon::now()->subMonths(11))
+        ->groupBy('month')
+        ->orderBy('month', 'asc')
+        ->get()
+        ->pluck('total', 'month');
 
-        // 4. Kirim data ke Tampilan Vue (Inputer/Dashboard.vue)
+        $growthLabels = [];
+        $growthValues = [];
+        
+        for ($i = 11; $i >= 0; $i--) {
+            $date = Carbon::now()->subMonths($i);
+            $monthKey = $date->format('Y-m'); 
+            $labelName = $date->locale('id')->isoFormat('MMM Y'); 
+            
+            $growthLabels[] = $labelName;
+            $growthValues[] = $growthRaw[$monthKey] ?? 0;
+        }
+
+        // Ini adalah object yang akan diterima oleh GrowthLineChart
+        $growthChart = [
+            'labels' => $growthLabels,
+            'values' => $growthValues
+        ];
+
+        // 3. LOG AKTIVITAS TERBARU
+        $myRecentActivities = DataUpload::with(['data'])
+            ->where('id_user', $userId)
+            ->latest('created_at')
+            ->limit(8)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id_upload,
+                    'user' => Auth::user()->name,
+                    'action' => 'Mengunggah Data',
+                    'target' => $log->data->nama_indikator ?? 'Indikator tidak diketahui',
+                    'status' => $log->status,
+                    'time' => $log->created_at->diffForHumans(),
+                ];
+            });
+
         return Inertia::render('Inputer/Dashboard', [
             'stats' => $stats,
-            'recentUploads' => $recentUploads
+            'growthChart' => $growthChart,
+            'myRecentActivities' => $myRecentActivities,
         ]);
     }
-
-    // ... method create, store, dll biarkan kosong atau hapus jika tidak dipakai
 }

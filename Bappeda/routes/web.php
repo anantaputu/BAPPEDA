@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\BidangController;
 use App\Http\Controllers\Admin\FrekuensiController;
 use App\Http\Controllers\Admin\KataKunciController;
 use App\Http\Controllers\Admin\SatuanController;
+use App\Http\Controllers\Admin\LogActivityController;
 
 use App\Http\Controllers\Inputer\InputerDashboardController;
 use App\Http\Controllers\Inputer\DataInputController;
@@ -102,5 +103,6 @@ Route::middleware(['auth', 'role:admin|inputer'])->prefix('inputer')->name('inpu
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-    Route::resource('users', UserController::class); // Kelola User
+    Route::get('/logs', [LogActivityController::class, 'index'])->name('admin.logs');
+    Route::resource('users', UserController::class);
 });
