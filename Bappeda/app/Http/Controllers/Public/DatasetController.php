@@ -14,35 +14,60 @@ class DatasetController extends Controller
 {
 
     public function spreadsheetView(Request $request)
-{
-    // 1. Ambil semua data indikator beserta nilai tahunannya
-    $query = Data::with(['tema', 'urusan', 'bidang', 'values'])
-        ->where('status', 'aktif');
+    {
+        // 1. Query Dasar
+        $query = Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'values'])
+            ->where('status', 'aktif');
 
-    // Filter jika ada (Tema/Urusan/Bidang)
-    if ($request->filled('tema')) $query->where('id_tema', $request->tema);
+        // 2. Terapkan Filter (Jika user memilih dari dropdown)
+        if ($request->filled('tema')) $query->where('id_tema', $request->tema);
+        if ($request->filled('urusan')) $query->where('id_urusan', $request->urusan);
+        if ($request->filled('bidang')) $query->where('id_bidang', $request->bidang);
+        if ($request->filled('frekuensi')) $query->where('id_frekuensi', $request->frekuensi);
+        if ($request->filled('search')) $query->where('nama_indikator', 'like', '%' . $request->search . '%');
 
-    $allData = $query->get();
+        $allData = $query->get();
 
-    // 2. Ambil semua list tahun yang unik dari seluruh indikator untuk jadi Header Kolom
-    $years = \App\Models\DataValue::whereIn('id_data', $allData->pluck('id_data'))
-                ->distinct()
-                ->orderBy('tahun', 'asc')
-                ->pluck('tahun');
+        // 3. Ambil Header Kolom Waktu (Tahun/Bulan/Hari)
+        // Kita ambil dari data yang sudah difilter agar kolomnya relevan
+        $timeColumns = \App\Models\DataValue::whereIn('id_data', $allData->pluck('id_data'))
+            ->distinct()
+            ->select('tahun') // Asumsi kolom waktu di DB bernama 'tahun' atau 'dimensi'
+            // Gunakan logic sorting yang cerdas (agar Jan 2024 urut, atau 2024, 2025 urut)
+            ->orderBy('tahun', 'asc') 
+            ->pluck('tahun');
 
-    // 3. Kelompokkan data berdasarkan Tema untuk tampilan "Grouping"
-    $groupedData = $allData->groupBy(function($item) {
-        return $item->tema->nama_tema ?? 'Tanpa Tema';
-    });
+        // 4. Logika Grouping Dinamis
+        // Default group by 'tema', tapi user bisa ganti jadi 'urusan' atau 'bidang'
+        $groupByParam = $request->input('group_by', 'tema');
+        
+        $groupedData = $allData->groupBy(function($item) use ($groupByParam) {
+            switch ($groupByParam) {
+                case 'urusan':
+                    return $item->urusan->nama_urusan ?? 'Tanpa Urusan';
+                case 'bidang':
+                    return $item->bidang->nama_bidang ?? 'Tanpa Bidang';
+                case 'frekuensi':
+                    return $item->frekuensi->nama_frekuensi ?? 'Tanpa Frekuensi';
+                default:
+                    return $item->tema->nama_tema ?? 'Tanpa Tema';
+            }
+        });
 
-    return Inertia::render('Public/SpreadsheetView', [
-        'groupedData' => $groupedData,
-        'allYears'    => $years,
-        'listTema'    => \App\Models\Tema::all(),
-        'filters'     => $request->only(['tema'])
-    ]);
-}
-
+        // 5. Kirim ke Vue
+        return Inertia::render('Public/SpreadsheetView', [
+            'groupedData' => $groupedData,
+            'timeColumns' => $timeColumns,
+            'filters'     => $request->all(),
+            // Kirim semua opsi untuk dropdown filter
+            'metadata'    => [
+                'tema'      => \App\Models\Tema::all(),
+                'urusan'    => \App\Models\Urusan::all(),
+                'bidang'    => \App\Models\Bidang::all(),
+                'frekuensi' => \App\Models\Frekuensi::all(),
+            ]
+        ]);
+    }
     
     public function index(Request $request)
 {
