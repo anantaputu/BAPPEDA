@@ -34,8 +34,8 @@ Route::get('/public-dashboard', [DashboardController::class, 'index'])->name('pu
 Route::get('/cari', [SearchController::class, 'index'])->name('public.search');
 Route::get('/dataset/{id}', [DatasetController::class, 'show'])->name('dataset.detail');
 Route::get('/export/data/{id}', [DataOutputController::class, 'export'])->name('public.export');
-Route::get('/katalog', [App\Http\Controllers\Public\DatasetController::class, 'index'])->name('public.katalog');
-Route::get('/data-spreadsheet', [App\Http\Controllers\Public\DatasetController::class, 'spreadsheetView'])->name('public.spreadsheet');
+Route::get('/katalog', [App\Http\Controllers\Public\DatasetController::class, 'index'])->name('public.katalog');// ini ga penting nanta cuman kek search gitu
+Route::get('/data-spreadsheet', [App\Http\Controllers\Public\DatasetController::class, 'spreadsheetView'])->name('public.spreadsheet');// ini kumpulan data yang ditampilkan dalam bentuk spreadsheet, bisa untuk lihat data per indikator dengan semua tahunannya sekaligus
 
 
 /*

@@ -122,7 +122,7 @@ class DataUploadService
                     'satuan'       => $formData['satuan'] ?? '-',
                     'deskripsi'    => $formData['deskripsi'] ?? null,
                     'sumber'       => $formData['sumber'] ?? null,
-                    'status'       => 'aktif', // Langsung aktif
+                    'status'       => 'aktif', 
                     'tahun'        => $formData['tahun']
                 ]
             );
