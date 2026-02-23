@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import axios from 'axios';
 
 defineOptions({ layout: AppLayout });
@@ -10,18 +10,44 @@ const props = defineProps({
     tema: Array, 
     urusan: Array, 
     bidang: Array, 
-    frekuensi: Array,
+    frekuensi: Array, 
 });
 
 const fileExcel = ref(null);
 const isLoading = ref(false);
 const isPreviewing = ref(false);
 
-// State untuk menampung data dari Excel yang siap diedit di layar
 const previewData = ref([]);
-const yearColumns = ref([]); // Menampung header tahun (contoh: ['2024', '2025', '2026'])
+const timeColumns = ref([]);  
+const extraColumns = ref([]); 
 
-// 1. FUNGSI UPLOAD & PREVIEW (BACA EXCEL)
+// 1. STATE GLOBAL FREKUENSI
+// Diambil dari id_frekuensi pertama (biasanya Tahunan), atau null
+const globalFrekuensi = ref(props.frekuensi?.length > 0 ? props.frekuensi[0].id_frekuensi : null);
+
+// Watcher: Jika pengguna mengubah globalFrekuensi di atas tabel,
+// otomatis semua baris di bawahnya akan berubah
+watch(globalFrekuensi, (newVal) => {
+    previewData.value.forEach(row => {
+        row.id_frekuensi = newVal;
+    });
+});
+
+// FORMATTER UNTUK HEADER WAKTU (BULAN/HARI/MINGGU)
+const formatHeader = (label) => {
+    if (label === null || label === undefined) return '-';
+    try {
+        let str = String(label).trim();
+        if (/^\d{4}-\d{2}$/.test(str)) {
+            const [y, m] = str.split('-');
+            return new Date(y, m - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        }
+        return str.replace(/\b\w/g, char => char.toUpperCase());
+    } catch (e) {
+        return String(label);
+    }
+};
+
 const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -33,46 +59,69 @@ const handleFileUpload = async (event) => {
     formData.append('file', file);
 
     try {
-        // Kirim ke backend HANYA untuk dibaca, belum disimpan ke DB
-        const response = await axios.post('/inputer/data/preview-excel', formData);
+        const response = await axios.post('/inputer/data/preview-excel', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
         
-        previewData.value = response.data.rows; // Data per baris
-        yearColumns.value = response.data.years; // Header tahun
+        // Atur nilai global frekuensi saat file pertama kali dibaca
+        globalFrekuensi.value = props.frekuensi?.length > 0 ? props.frekuensi[0].id_frekuensi : null;
+
+        previewData.value = response.data.rows.map(row => {
+            let indikatorAsli = row.nama_indikator; 
+            let namaDataBaru = indikatorAsli;
+            
+            const keyNamaData = Object.keys(row.extra_fields || {}).find(k => k.toUpperCase().includes('NAMA DATA'));
+            
+            if (keyNamaData && row.extra_fields[keyNamaData]) {
+                namaDataBaru = row.extra_fields[keyNamaData]; 
+            }
+
+            return {
+                ...row,
+                nama_indikator: namaDataBaru, 
+                kode_indikator: indikatorAsli, 
+                id_frekuensi: globalFrekuensi.value // Ambil dari state global
+            }
+        });
+
+        timeColumns.value = response.data.years || []; 
+        extraColumns.value = (response.data.extra_headers || []).filter(h => !h.toUpperCase().includes('NAMA DATA')); 
+        
         isPreviewing.value = true;
     } catch (error) {
-        alert('Gagal membaca file Excel. Pastikan format tabel benar.');
-        console.error(error);
+        console.error("Error Detail:", error);
+        let msg = 'Gagal membaca file Excel.';
+        if (error.response?.data?.error) msg = error.response.data.error;
+        alert(msg);
     } finally {
         isLoading.value = false;
     }
 };
 
-// 2. FUNGSI SIMPAN FINAL KE DATABASE
 const submitFinalData = async () => {
-    // Validasi: Pastikan semua baris sudah dipilih Tema, Urusan, dan Bidangnya
-    const isAllValid = previewData.value.every(row => row.id_tema && row.id_urusan && row.id_bidang);
+    const isAllValid = previewData.value.every(row => row.id_tema && row.id_urusan && row.id_bidang && row.id_frekuensi);
     
     if (!isAllValid) {
-        alert("Mohon lengkapi pilihan Tema, Urusan, dan Bidang untuk SETIAP BARIS data sebelum menyimpan.");
+        alert("Mohon lengkapi Tema, Urusan, dan Bidang untuk SETIAP BARIS data, serta pastikan Frekuensi Global telah dipilih.");
         return;
     }
 
     isLoading.value = true;
-
     try {
-        // Kirim array data yang sudah diedit ke backend
         await axios.post('/inputer/data/store-bulk', {
             dataset: previewData.value,
-            years: yearColumns.value
+            years: timeColumns.value 
         });
-
-        alert('Semua dataset berhasil disimpan ke database!');
-        router.visit('/inputer/dashboard'); // Redirect ke dashboard
+        alert('Sukses! Data berhasil disimpan.');
+        router.visit('/inputer/dashboard');
     } catch (error) {
-        alert('Terjadi kesalahan saat menyimpan data.');
-        console.error(error);
-    } finally {
-        isLoading.value = false;
+        isLoading.value = false; 
+        if (error.response) {
+            const serverMessage = error.response.data.message || error.response.data.error;
+            alert(`Gagal menyimpan data: ${serverMessage ? serverMessage : 'Terjadi kesalahan pada server (Error 500)'}`);
+        } else {
+            alert('Terjadi kesalahan pada aplikasi: ' + error.message);
+        }
     }
 };
 </script>
@@ -80,86 +129,99 @@ const submitFinalData = async () => {
 <template>
     <Head title="Upload Multi Data" />
 
-    <div class="min-h-screen py-10 px-6 mx-auto max-w-[95%]">
+    <div class="min-h-screen py-10 px-4 md:px-8 mx-auto max-w-[98%]">
         <div class="mb-10 text-center">
-            <h2 class="text-3xl font-black text-[#000B58] tracking-tight uppercase">Upload & Konfigurasi Multi Data</h2>
-            <p class="text-gray-500 font-medium mt-2">Unggah file Excel, lalu sesuaikan metadata untuk setiap baris indikator.</p>
+            <h2 class="text-3xl font-black text-[#000B58] tracking-tight uppercase">Upload Multi Data</h2>
+            <p class="text-gray-500 font-medium mt-2">Upload Excel dan atur metadata (Tema, Urusan, Frekuensi) sekaligus.</p>
         </div>
 
-        <div v-if="!isPreviewing" class="flex flex-col items-center justify-center bg-white border-2 border-dashed border-gray-300 rounded-[2rem] p-16 text-center max-w-3xl mx-auto">
-            <svg class="w-16 h-16 text-gray-300 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
-            <h2 class="text-xl font-black uppercase text-gray-700 mb-2">Pilih File Excel Anda</h2>
-            <p class="text-sm text-gray-400 mb-6">Pastikan file memiliki kolom Nama Indikator dan Tahun.</p>
-            
+        <div v-if="!isPreviewing" class="flex flex-col items-center justify-center bg-white border-2 border-dashed border-[#00139E]/30 rounded-[2.5rem] p-16 text-center max-w-3xl mx-auto hover:border-[#00139E] transition-colors">
+            <div class="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6 text-[#00139E]">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+            </div>
+            <h2 class="text-xl font-black uppercase text-[#000B58] mb-2">Pilih File Excel</h2>
             <div class="relative">
                 <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".xlsx, .xls, .csv" @change="handleFileUpload" />
-                <button :disabled="isLoading" class="bg-[#00139E] text-white px-10 py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-900 transition-all shadow-xl">
-                    {{ isLoading ? 'Membaca File...' : 'Cari File (.xlsx)' }}
+                <button :disabled="isLoading" class="bg-[#00139E] text-white px-12 py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#000B58] shadow-xl">
+                    {{ isLoading ? 'Membaca...' : 'Cari File' }}
                 </button>
             </div>
         </div>
 
-        <div v-if="isPreviewing" class="bg-white rounded-[2rem] shadow-xl border border-gray-200 overflow-hidden animate-fade-in">
-            <div class="bg-gray-50 px-8 py-6 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-black text-[#000B58] uppercase">Preview Data & Konfigurasi</h3>
-                <span class="bg-emerald-100 text-emerald-700 px-4 py-1.5 rounded-full text-xs font-black uppercase">{{ previewData.length }} Baris Ditemukan</span>
+        <div v-if="isPreviewing" class="bg-white rounded-[2rem] shadow-xl border border-gray-200 overflow-hidden flex flex-col max-h-[75vh] animate-fade-in">
+            <div class="bg-gray-50 px-8 py-4 border-b border-gray-200 flex flex-wrap justify-between items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <h3 class="text-lg font-black text-[#000B58] uppercase">Konfigurasi Data</h3>
+                    <span class="bg-blue-100 text-blue-800 px-4 py-1.5 rounded-full text-xs font-black">{{ previewData.length }} Baris</span>
+                </div>
+                
+                <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200">
+                    <label class="text-xs font-black text-gray-500 uppercase tracking-widest">Frekuensi File:</label>
+                    <select v-model="globalFrekuensi" class="bg-emerald-50 border-emerald-200 text-emerald-800 rounded-lg text-xs font-bold py-1.5 pl-3 pr-8 focus:ring-emerald-500 focus:border-emerald-500 outline-none cursor-pointer">
+                        <option :value="null">Pilih...</option>
+                        <option v-for="f in frekuensi" :key="f.id_frekuensi" :value="f.id_frekuensi">{{ f.nama_frekuensi }}</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left table-auto">
-                    <thead>
-                        <tr class="bg-[#000B58] text-white">
-                            <th class="p-4 text-[10px] uppercase font-black tracking-widest whitespace-nowrap">Indikator</th>
-                            <th class="p-4 text-[10px] uppercase font-black tracking-widest w-48">Tema *</th>
-                            <th class="p-4 text-[10px] uppercase font-black tracking-widest w-48">Urusan *</th>
-                            <th class="p-4 text-[10px] uppercase font-black tracking-widest w-48">Bidang *</th>
-                            <th class="p-4 text-[10px] uppercase font-black tracking-widest text-center w-24">Satuan</th>
-                            <th v-for="year in yearColumns" :key="year" class="p-4 text-[10px] uppercase font-black tracking-widest text-center bg-blue-900">
-                                {{ year }}
+            <div class="overflow-auto flex-1 custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-[#000B58] text-white sticky top-0 z-30">
+                        <tr>
+                            <th class="p-4 text-[10px] uppercase font-black w-[300px] sticky left-0 bg-[#000B58] z-20 shadow-md border-r border-white/10">
+                                Indikator
+                            </th>
+                            <th class="p-3 text-[10px] uppercase font-black w-[150px]">Tema *</th>
+                            <th class="p-3 text-[10px] uppercase font-black w-[150px]">Urusan *</th>
+                            <th class="p-3 text-[10px] uppercase font-black w-[150px]">Bidang *</th>
+                            
+                            <th class="p-3 text-[10px] uppercase font-black text-center w-[80px]">Satuan</th>
+                            
+                            <th v-for="(h, index) in extraColumns" :key="'extra-' + index" class="p-3 text-[10px] uppercase font-black text-center text-amber-300 bg-[#000840] border-l border-white/20">
+                                {{ h }}
+                            </th>
+                            
+                            <th v-for="(t, index) in timeColumns" :key="'time-' + index" class="p-3 text-[10px] uppercase font-black text-center bg-blue-900 border-l border-white/20 min-w-[100px]">
+                                {{ formatHeader(t) }}
                             </th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
-                        <tr v-for="(row, index) in previewData" :key="index" class="hover:bg-blue-50/30 transition-colors">
-                            <td class="p-4 text-sm font-bold text-gray-800">{{ row.nama_indikator }}</td>
+                        <tr v-for="(row, index) in previewData" :key="index" class="hover:bg-blue-50 transition-colors">
+                            <td class="p-4 text-xs font-bold text-gray-800 sticky left-0 bg-white shadow-sm border-r border-gray-200">
+                                {{ row.nama_indikator }}
+                            </td>
                             
-                            <td class="p-2">
-                                <select v-model="row.id_tema" class="w-full bg-gray-50 border-gray-200 rounded-lg text-xs font-bold focus:ring-[#00139E]">
-                                    <option :value="null" disabled>Pilih Tema</option>
-                                    <option v-for="t in tema" :value="t.id_tema">{{ t.nama_tema }}</option>
-                                </select>
-                            </td>
-                            <td class="p-2">
-                                <select v-model="row.id_urusan" class="w-full bg-gray-50 border-gray-200 rounded-lg text-xs font-bold focus:ring-[#00139E]">
-                                    <option :value="null" disabled>Pilih Urusan</option>
-                                    <option v-for="u in urusan" :value="u.id_urusan">{{ u.nama_urusan }}</option>
-                                </select>
-                            </td>
-                            <td class="p-2">
-                                <select v-model="row.id_bidang" class="w-full bg-gray-50 border-gray-200 rounded-lg text-xs font-bold focus:ring-[#00139E]">
-                                    <option :value="null" disabled>Pilih Bidang</option>
-                                    <option v-for="b in bidang" :value="b.id_bidang">{{ b.nama_bidang }}</option>
-                                </select>
-                            </td>
-
-                            <td class="p-4 text-xs font-medium text-center text-gray-500">{{ row.satuan }}</td>
+                            <td class="p-2"><select v-model="row.id_tema" class="w-full bg-gray-50 border-gray-200 rounded-md text-[10px] font-bold py-2 focus:ring-[#00139E]"><option :value="null">Pilih Tema</option><option v-for="t in tema" :key="t.id_tema" :value="t.id_tema">{{ t.nama_tema }}</option></select></td>
+                            <td class="p-2"><select v-model="row.id_urusan" class="w-full bg-gray-50 border-gray-200 rounded-md text-[10px] font-bold py-2 focus:ring-[#00139E]"><option :value="null">Pilih Urusan</option><option v-for="u in urusan" :key="u.id_urusan" :value="u.id_urusan">{{ u.nama_urusan }}</option></select></td>
+                            <td class="p-2"><select v-model="row.id_bidang" class="w-full bg-gray-50 border-gray-200 rounded-md text-[10px] font-bold py-2 focus:ring-[#00139E]"><option :value="null">Pilih Bidang</option><option v-for="b in bidang" :key="b.id_bidang" :value="b.id_bidang">{{ b.nama_bidang }}</option></select></td>
                             
-                            <td v-for="year in yearColumns" :key="year" class="p-4 text-sm font-black text-center text-[#00139E]">
-                                {{ row.values[year] !== undefined ? row.values[year] : '-' }}
+                            <td class="p-3 text-[10px] text-center font-bold text-gray-500 uppercase">{{ row.satuan }}</td>
+                            
+                            <td v-for="(h, eIndex) in extraColumns" :key="'data-extra-' + eIndex" class="p-3 text-[10px] text-center font-bold text-amber-700 bg-amber-50/30 border-l border-gray-200">
+                                {{ row.extra_fields[h] || '-' }}
+                            </td>
+                            
+                            <td v-for="(t, tIndex) in timeColumns" :key="'data-time-' + tIndex" class="p-3 text-xs text-center font-black text-blue-900 bg-gray-50/50 border-l border-gray-200">
+                                {{ row.values[t] || '-' }}
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <div class="p-8 bg-gray-50 border-t border-gray-200 flex justify-end gap-4">
-                <button @click="isPreviewing = false" class="px-8 py-4 text-xs font-black text-gray-500 uppercase hover:bg-gray-200 rounded-xl transition-all">Batal</button>
-                <button @click="submitFinalData" :disabled="isLoading" class="bg-emerald-600 text-white px-10 py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl disabled:opacity-50 flex items-center gap-2">
-                    <svg v-if="isLoading" class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                    {{ isLoading ? 'Menyimpan Semua Data...' : 'Simpan Semua Indikator' }}
+            <div class="p-4 bg-white border-t border-gray-200 flex justify-end gap-3 z-40">
+                <button @click="isPreviewing = false" class="px-6 py-3 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Batal</button>
+                <button @click="submitFinalData" :disabled="isLoading" class="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black text-xs uppercase hover:bg-emerald-700 shadow-lg transition-colors">
+                    {{ isLoading ? 'Menyimpan...' : 'Simpan Data' }}
                 </button>
             </div>
         </div>
-
     </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar { height: 10px; width: 10px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }
+</style>

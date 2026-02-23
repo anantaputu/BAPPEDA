@@ -76,7 +76,7 @@ class DataInputController extends Controller
     public function edit($id)
     {
         return Inertia::render('Inputer/Data/Edit', array_merge(
-            ['dataIndikator' => Data::findOrFail($id)],
+            ['dataIndikator' => Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'values'])->findOrFail($id)],
             $this->getMetadata()
         ));
     }
@@ -97,28 +97,37 @@ class DataInputController extends Controller
     // ==========================================
     // 2. AKSI PROSES DATA (POST / PUT)
     // ==========================================
-    public function storeSingle(Request $request)
-    {
-        $request->validate([
-            'nama_indikator' => 'required|string|max:255',
-            'id_tema'        => 'required',
-            'id_urusan'      => 'required',
-            'id_bidang'      => 'required',
-            'id_frekuensi'   => 'required',
-            'tahun'          => 'required|integer',
-            'nilai'          => 'required',
-            'satuan'         => 'required|string',
-            'sumber'         => 'required|string', // Pastikan kolom ini divalidasi
-            'deskripsi'      => 'nullable|string',
-        ]);
+   public function storeSingle(Request $request)
+{
+    $request->validate([
+        'nama_indikator' => 'required|string|max:255',
+        'id_tema'        => 'required',
+        'id_urusan'      => 'required',
+        'id_bidang'      => 'required',
+        'id_frekuensi'   => 'required',
+        'satuan'         => 'required|string',
+        'sumber'         => 'required|string',
+        'deskripsi'      => 'nullable|string',
+        'values'         => 'required|array|min:1',
+        
+        // Validasi tiap item di dalam array values
+        'values.*.tahun' => 'required', // String agar support "Januari 2024"
+        'values.*.nilai' => 'required', 
+    ]);
 
-        try {
-            $this->uploadService->processSingleData($request->all(), Auth::id());
-            return redirect()->route('inputer.dashboard')->with('message', 'Data Berhasil Disimpan!');
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => $e->getMessage()]);
-        }
+    try {
+        // Panggil service yang sudah kita perbaiki sebelumnya
+        $this->uploadService->processSingleData($request->all(), Auth::id());
+        
+        return redirect()->route('inputer.dashboard')
+            ->with('message', 'Data Indikator Berhasil Disimpan!');
+            
+    } catch (\Exception $e) {
+        // Log error untuk debugging jika masih gagal
+        \Log::error('Gagal Simpan Single: ' . $e->getMessage());
+        return back()->withErrors(['error' => 'Gagal menyimpan: ' . $e->getMessage()]);
     }
+}
 
     public function previewExcel(Request $request)
     {
@@ -141,21 +150,36 @@ class DataInputController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+  public function update(Request $request, $id)
     {
-        $validated = $request->validate([
+        // 1. Validasi murni di Controller
+        $request->validate([
             'nama_indikator' => 'required|string|max:255',
-            'deskripsi'      => 'nullable|string',
             'id_tema'        => 'required',
             'id_urusan'      => 'required',
             'id_bidang'      => 'required',
-            'id_frekuensi'   => 'required', // Tambahkan frekuensi di update
+            'id_frekuensi'   => 'required',
             'satuan'         => 'required|string',
             'sumber'         => 'nullable|string',
             'status'         => 'required|in:aktif,nonaktif',
+            'deskripsi'      => 'nullable|string',
+            
+            // Validasi Array Nilai
+            'values'         => 'required|array|min:1',
+            'values.*.tahun' => 'required|string',
+            'values.*.nilai' => 'required',
         ]);
 
-        Data::findOrFail($id)->update($validated);
-        return redirect()->route('inputer.dashboard')->with('message', 'Data berhasil diperbarui!');
+        try {
+            // 2. Lempar data ke Service yang baru kita buat
+            $this->uploadService->updateSingleData($id, $request->all(), Auth::id());
+            
+            return redirect()->route('inputer.dashboard')
+                ->with('message', 'Data berhasil diperbarui!');
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal Update Single: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Gagal memperbarui data: ' . $e->getMessage()]);
+        }
     }
 }

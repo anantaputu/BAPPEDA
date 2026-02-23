@@ -28,7 +28,8 @@ class Data extends Model
         'sumber',
         'kata_kunci',
         'status',
-        'tahun'
+        'tahun',
+        'informasi_tambahan',
     ];
     /* ================= RELATIONS ================= */
 

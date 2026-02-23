@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import debounce from 'lodash/debounce';
 
 defineOptions({ layout: AppLayout });
@@ -9,21 +9,27 @@ defineOptions({ layout: AppLayout });
 const props = defineProps({
     groupedData: Object,
     timeColumns: Array,
-    metadata: Object, // Berisi list Tema, Urusan, Bidang, Frekuensi
+    metadata: Object, 
     filters: Object
 });
 
-// State untuk Filter
+// 1. CARI ID FREKUENSI "TAHUNAN" SEBAGAI DEFAULT AWAL
+const getTahunanId = () => {
+    if (!props.metadata?.frekuensi) return '';
+    const tahunan = props.metadata.frekuensi.find(f => f.nama_frekuensi.toLowerCase() === 'tahunan');
+    return tahunan ? tahunan.id_frekuensi : '';
+};
+
+// 2. STATE FILTER (Set default frekuensi ke Tahunan jika kosong)
 const form = ref({
     search: props.filters.search || '',
     tema: props.filters.tema || '',
     urusan: props.filters.urusan || '',
     bidang: props.filters.bidang || '',
-    frekuensi: props.filters.frekuensi || '',
-    group_by: props.filters.group_by || 'tema' // Default grouping
+    frekuensi: props.filters.frekuensi || getTahunanId(), // Default otomatis "Tahunan"
+    group_by: props.filters.group_by || 'tema' 
 });
 
-// Fungsi Reload Data saat filter berubah
 const updateView = debounce(() => {
     router.get('/data-spreadsheet', form.value, { 
         preserveState: true, 
@@ -32,21 +38,70 @@ const updateView = debounce(() => {
     });
 }, 500);
 
-// Watch semua perubahan di form
 watch(form, () => { updateView(); }, { deep: true });
 
-// Helper ambil nilai
+// ==========================================
+// 3. FILTER KOLOM CERDAS (PENGHILANG KOLOM KOSONG)
+// ==========================================
+const filteredTimeColumns = computed(() => {
+    if (!props.timeColumns) return [];
+    
+    // Cari nama frekuensi yang sedang dipilih di dropdown
+    const selectedFreq = props.metadata.frekuensi.find(f => f.id_frekuensi === form.value.frekuensi);
+    const freqName = selectedFreq ? selectedFreq.nama_frekuensi.toLowerCase() : '';
+
+    return props.timeColumns.filter(col => {
+        const strCol = String(col).trim();
+        // Cek apakah isi kolom murni 4 digit angka (Misal: "2024", "2025")
+        const isTahunAngka = /^\d{4}$/.test(strCol); 
+
+        if (freqName.includes('tahun')) {
+            // JIKA TAHUNAN: Hanya tampilkan kolom yang berupa angka 4 digit
+            return isTahunAngka;
+        } else if (freqName.includes('bulan') || freqName.includes('minggu') || freqName.includes('hari')) {
+            // JIKA BULANAN/MINGGUAN: Sembunyikan angka tahun murni, tampilkan teks bulan/minggu
+            return !isTahunAngka;
+        }
+        
+        // Jika "Semua Waktu" dipilih, tampilkan semua
+        return true; 
+    });
+});
+
+// HELPER: AMBIL NILAI
 const getValue = (values, timeKey) => {
-    const found = values.find(v => v.tahun == timeKey); // Sesuaikan 'tahun' dengan nama kolom DB Anda
+    if (!values) return '-';
+    const found = values.find(v => String(v.tahun).trim() === String(timeKey).trim()); 
     return found ? found.nilai : '-';
 };
 
-// Helper Label Grouping
-const getGroupLabel = (key) => {
+const getGroupLabel = () => {
     if (form.value.group_by === 'urusan') return '🏛️ Urusan Pemerintahan';
     if (form.value.group_by === 'bidang') return '🏢 Bidang / Instansi';
     if (form.value.group_by === 'frekuensi') return '⏰ Frekuensi Data';
     return '📂 Tema Sektoral';
+};
+
+// FORMATTER WAKTU
+const formatTimeHeader = (timeString) => {
+    if (timeString === null || timeString === undefined) return '-';
+    try {
+        let str = String(timeString).trim(); 
+        if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+            return new Date(str).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+        if (/^\d{4}-\d{2}$/.test(str)) {
+            const [year, month] = str.split('-');
+            return new Date(year, month - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }); 
+        }
+        if (/^\d{4}-W\d{2}$/.test(str)) {
+            const [year, week] = str.split('-W');
+            return `Minggu ${parseInt(week)}, ${year}`; 
+        }
+        return str.replace(/\b\w/g, char => char.toUpperCase());
+    } catch (e) {
+        return String(timeString).toUpperCase(); 
+    }
 };
 </script>
 
@@ -83,7 +138,7 @@ const getGroupLabel = (key) => {
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Filter Urusan</label>
                         <select v-model="form.urusan" class="w-full rounded-xl border-gray-300 text-xs font-bold text-gray-600">
                             <option value="">Semua Urusan</option>
-                            <option v-for="u in metadata.urusan" :value="u.id_urusan">{{ u.nama_urusan }}</option>
+                            <option v-for="u in metadata.urusan" :key="u.id_urusan" :value="u.id_urusan">{{ u.nama_urusan }}</option>
                         </select>
                     </div>
 
@@ -91,15 +146,15 @@ const getGroupLabel = (key) => {
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Filter Bidang</label>
                         <select v-model="form.bidang" class="w-full rounded-xl border-gray-300 text-xs font-bold text-gray-600">
                             <option value="">Semua Bidang</option>
-                            <option v-for="b in metadata.bidang" :value="b.id_bidang">{{ b.nama_bidang }}</option>
+                            <option v-for="b in metadata.bidang" :key="b.id_bidang" :value="b.id_bidang">{{ b.nama_bidang }}</option>
                         </select>
                     </div>
 
                     <div>
                         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block">Filter Frekuensi</label>
                         <select v-model="form.frekuensi" class="w-full rounded-xl border-gray-300 text-xs font-bold text-gray-600">
-                            <option value="">Semua Waktu</option>
-                            <option v-for="f in metadata.frekuensi" :value="f.id_frekuensi">{{ f.nama_frekuensi }}</option>
+                            <option value="">Semua Waktu (Campur)</option>
+                            <option v-for="f in metadata.frekuensi" :key="f.id_frekuensi" :value="f.id_frekuensi">{{ f.nama_frekuensi }}</option>
                         </select>
                     </div>
 
@@ -114,15 +169,16 @@ const getGroupLabel = (key) => {
                                 <th class="p-4 text-[10px] uppercase font-black tracking-widest w-[400px] border-r border-white/10 sticky left-0 bg-[#000B58] z-20 shadow-lg">Nama Indikator</th>
                                 <th class="p-4 text-[10px] uppercase font-black tracking-widest w-[100px] text-center border-r border-white/10">Satuan</th>
                                 <th class="p-4 text-[10px] uppercase font-black tracking-widest w-[100px] text-center border-r border-white/10">Frekuensi</th>
-                                <th v-for="col in timeColumns" :key="col" class="p-4 text-[10px] uppercase font-black tracking-widest w-[100px] text-center border-r border-white/10 whitespace-nowrap">
-                                    {{ col }}
+                                
+                                <th v-for="(col, index) in filteredTimeColumns" :key="'header-' + index" class="p-4 text-[10px] uppercase font-black tracking-widest min-w-[120px] text-center border-r border-white/10 whitespace-nowrap bg-[#00139E]">
+                                    {{ formatTimeHeader(col) }}
                                 </th>
                             </tr>
                         </thead>
                         <tbody>
                             <template v-for="(groupItems, groupName) in groupedData" :key="groupName">
                                 <tr class="bg-gray-100 sticky top-[49px] z-10">
-                                    <td :colspan="timeColumns.length + 3" class="p-3 text-xs font-black text-[#00139E] uppercase tracking-widest border-b border-gray-300 shadow-sm">
+                                    <td :colspan="filteredTimeColumns.length + 3" class="p-3 text-xs font-black text-[#00139E] uppercase tracking-widest border-b border-gray-300 shadow-sm">
                                         {{ getGroupLabel() }}: {{ groupName }}
                                     </td>
                                 </tr>
@@ -142,19 +198,19 @@ const getGroupLabel = (key) => {
                                         {{ item.satuan }}
                                     </td>
                                     
-                                    <td class="p-3 text-[10px] font-bold text-center border-r border-gray-100" 
-                                        :class="item.frekuensi?.nama_frekuensi === 'Tahunan' ? 'text-green-600 bg-green-50' : 'text-amber-600 bg-amber-50'">
+                                    <td class="p-3 text-[10px] font-bold text-center border-r border-gray-100 uppercase" 
+                                        :class="item.frekuensi?.nama_frekuensi === 'Tahunan' ? 'text-emerald-600 bg-emerald-50' : 'text-amber-600 bg-amber-50'">
                                         {{ item.frekuensi?.nama_frekuensi || '-' }}
                                     </td>
 
-                                    <td v-for="col in timeColumns" :key="col" class="p-3 text-xs font-bold text-gray-800 text-center border-r border-gray-100">
+                                    <td v-for="(col, index) in filteredTimeColumns" :key="'data-' + index" class="p-3 text-xs font-black text-gray-800 text-center border-r border-gray-100">
                                         {{ getValue(item.values, col) }}
                                     </td>
                                 </tr>
                             </template>
                             
                             <tr v-if="Object.keys(groupedData).length === 0">
-                                <td :colspan="timeColumns.length + 3" class="p-10 text-center text-gray-400 font-bold italic">
+                                <td :colspan="filteredTimeColumns.length + 3" class="p-10 text-center text-gray-400 font-bold italic">
                                     Data tidak ditemukan dengan filter tersebut.
                                 </td>
                             </tr>
@@ -163,14 +219,13 @@ const getGroupLabel = (key) => {
                 </div>
             </div>
             
-            <p class="text-[10px] text-gray-400 mt-4 italic">* Gunakan scroll horizontal untuk melihat tahun lainnya. Gunakan filter 'Frekuensi' untuk memisahkan data Tahunan dan Bulanan.</p>
+            <p class="text-[10px] text-gray-400 mt-4 italic">* Gunakan scroll horizontal untuk melihat tahun lainnya. Tabel otomatis memfilter kolom (Bulan/Tahun) berdasarkan menu Frekuensi.</p>
 
         </div>
     </div>
 </template>
 
 <style scoped>
-/* Scrollbar Kustom agar elegan */
 .custom-scrollbar::-webkit-scrollbar { height: 12px; width: 12px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; border: 3px solid #f1f5f9; }

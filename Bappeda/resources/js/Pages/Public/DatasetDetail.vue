@@ -13,70 +13,73 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
-    dataset: Object,      // Metadata Indikator Utama
-    tableData: Object,    // Paginasi Data (Berasal dari JSON data_uploads)
-    allData: Array,       // Full Data untuk Chart (Berasal dari JSON data_uploads)
-    customSatuan: String  // Satuan
+    dataset: Object,      
+    tableData: Object,    
+    allData: Array,       
+    customSatuan: String  
 });
 
-const activeTab = ref('Metadata');
-const tabs = ['Metadata', 'Infografis'];
+const activeTab = ref('Data');
+const tabs = ['Data', 'Metadata', 'Infografis'];
 const selectedIndices = ref([0]); 
 const chartColors = ['#00139E', '#FF1414', '#00D2FC', '#F8B400', '#54D62C', '#9D4EDD', '#FF6B6B'];
 
-// --- 1. JARING PENGAMAN TABEL (Mengatasi jika tableData null/undefined) ---
+// --- 1. DATA TABEL ---
 const tableRows = computed(() => {
     if (props.tableData && props.tableData.data) return props.tableData.data;
     if (Array.isArray(props.tableData)) return props.tableData;
-    return props.allData || []; // Fallback ke allData
+    return props.allData || []; 
 });
 
-// --- 2. LOGIKA SATUAN DINAMIS ---
 const getSatuanFromRow = (row) => {
     if (!row) return '-';
-    // Cari key yang mengandung kata 'satuan'
     const key = Object.keys(row).find(k => k.toLowerCase().includes('satuan'));
     return row[key] || props.customSatuan || props.dataset?.satuan || '-';
 };
 
 const dynamicSatuan = computed(() => {
     if (!props.allData || selectedIndices.value.length === 0) return '-';
-    
-    const units = selectedIndices.value.map(idx => {
-        return getSatuanFromRow(props.allData[idx]);
-    });
-
+    const units = selectedIndices.value.map(idx => getSatuanFromRow(props.allData[idx]));
     const uniqueUnits = [...new Set(units)];
     return uniqueUnits.length === 1 ? uniqueUnits[0] : 'Beragam';
 });
 
-// --- 3. CONFIG CHART ---
-// --- CONFIG CHART (DIPERBAIKI) ---
-const chartConfig = computed(() => {
-    if (!props.allData || props.allData.length === 0) return null;
+// --- 2. PERBAIKAN: LOGIKA KOLOM TABEL DINAMIS ---
+// Mengambil semua kunci (header) selain nama dan satuan agar "Januari", dll bisa tampil
+const timeColumns = computed(() => {
+    if (!props.allData || props.allData.length === 0) return [];
+    
+    let cols = new Set();
+    const excludeKeys = ['nama indikator', 'nama data', 'uraian', 'indikator', 'satuan'];
 
-    let allYears = new Set();
     props.allData.forEach(row => {
-        Object.keys(row).forEach(k => {
-            // REGEX BARU: Mencari angka 4 digit di dalam string manapun (misal: "2025" atau "Tahun 2025")
-            const match = k.match(/\b(20\d{2})\b/);
-            if (match) {
-                allYears.add(k); // Simpan key aslinya (misal: "2025")
+        Object.keys(row).forEach(key => {
+            const cleanKey = key.toLowerCase().trim();
+            if (!excludeKeys.includes(cleanKey)) {
+                cols.add(key);
             }
         });
     });
-    
-    // Urutkan tahun berdasarkan angka di dalamnya
-    const yearKeys = Array.from(allYears).sort((a, b) => {
-        return a.match(/\d+/)[0] - b.match(/\d+/)[0];
+
+    return Array.from(cols).sort((a, b) => {
+        const numA = parseInt(a.match(/\d+/)?.[0] || 0);
+        const numB = parseInt(b.match(/\d+/)?.[0] || 0);
+        if (numA && numB && numA !== numB) return numA - numB;
+        return 0; 
     });
+});
+
+// --- 3. CONFIG CHART ---
+const chartConfig = computed(() => {
+    if (!props.allData || props.allData.length === 0) return null;
+
+    const yearKeys = timeColumns.value; // Gunakan timeColumns untuk chart juga
 
     if (selectedIndices.value.length === 0) return { labels: yearKeys, datasets: [] };
 
     const datasets = selectedIndices.value.map((rowIndex, colorIdx) => {
         const row = props.allData[rowIndex];
         
-        // Deteksi Nama Indikator lebih cerdas
         const nameKey = Object.keys(row).find(k => 
             ['nama data', 'nama indikator', 'uraian', 'indikator'].includes(k.toLowerCase().trim())
         ) || Object.keys(row)[0];
@@ -169,14 +172,19 @@ const chartOptions = {
             <div class="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[600px] h-[600px] bg-[#A2B5CB]/10 rounded-full blur-3xl -z-10"></div>
             
             <div class="max-w-[80%] mx-auto">
-                <div class="flex items-center gap-2 text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-8">
+               <div class="flex items-center gap-2 text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-8">
                     <Link href="/" class="hover:text-[#00139E] transition-colors">Beranda</Link> 
                     <span class="text-gray-300">/</span>
                     <Link href="/cari" class="hover:text-[#00139E] transition-colors">Cari</Link>
                     <span class="text-gray-300">/</span>
                     <span class="text-[#000B58]">Detail Indikator</span>
+                    
+                    <Link v-if="dataset?.id_data" :href="`/inputer/data/${dataset.id_data}/edit`" 
+                        class="ml-auto bg-amber-400 text-[#000B58] px-4 py-2 rounded-xl text-xs font-black hover:bg-amber-500 transition-all flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        Edit Data
+                    </Link>
                 </div>
-
                 <div class="grid lg:grid-cols-3 gap-16 items-start">
                     <div class="lg:col-span-2">
                         <span class="inline-block px-4 py-1.5 mb-6 text-sm font-bold text-[#00139E] bg-[#A2B5CB]/20 rounded-full border border-[#A2B5CB]/30 tracking-wide uppercase">
@@ -185,9 +193,6 @@ const chartOptions = {
                         <h1 class="text-4xl lg:text-6xl font-black text-[#000B58] leading-[1.2] mb-8">
                             {{ dataset?.nama_indikator || 'Data Tidak Ditemukan' }}
                         </h1>
-                        <!-- <p class="text-lg text-gray-500 leading-relaxed font-medium max-w-2xl">
-                            {{ dataset?.deskripsi || 'Tidak ada deskripsi rinci untuk dataset ini.' }}
-                        </p> -->
                     </div>
 
                     <div class="bg-white border border-gray-400 p-8 rounded-[2.5rem] shadow-2xl shadow-[#000B58]/5">
@@ -216,7 +221,7 @@ const chartOptions = {
             </div>
         </section>
 
-        <section class="max-w-[80%] mx-auto">
+        <section class="max-w-[80%] mx-auto pb-20">
             <div class="flex gap-4 mb-10 bg-gray-50 p-2 rounded-[2rem] border border-gray-400 w-fit">
                 <button v-for="tab in tabs" :key="tab" @click="activeTab = tab"
                     class="px-10 py-3 rounded-[1.5rem] text-sm font-black transition-all duration-300"
@@ -225,68 +230,90 @@ const chartOptions = {
                 </button>
             </div>
 
-            <!-- <div v-if="activeTab === 'Data'" class="animate-in fade-in duration-500">
-                <div class="bg-white border border-gray-400 rounded-[3rem] overflow-hidden">
-                    <div class="p-10 border-b border-gray-400 flex flex-col md:flex-row justify-between items-center gap-6">
-                        <div>
-                            <h3 class="text-2xl font-black text-[#000B58]">Preview Dataset</h3>
-                            <p class="text-sm font-medium text-gray-400">Menampilkan {{ tableRows.length }} baris indikator</p>
+            <div v-if="activeTab === 'Data'" class="animate-in fade-in duration-500">
+                <div class="mt-8">
+                    <div class="border border-gray-200 rounded-t-[2rem] overflow-hidden shadow-sm relative">
+                        <div class="bg-[#000B58] p-6 flex flex-wrap justify-between items-center gap-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-white">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-white font-black uppercase tracking-widest text-lg">Preview Capaian Nilai</h3>
+                                    <p class="text-blue-200 text-xs font-medium mt-1 opacity-80">
+                                      Geser ke samping untuk melihat seluruh periode waktu. Menampilkan {{ tableRows.length }} baris.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <a v-if="dataset?.id_data" :href="`/export/data/${dataset.id_data}`" 
+                                class="bg-[#00139E] text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-[#000B58] transition-all flex items-center gap-2 shadow-lg border border-blue-800/50">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                Export to Excel
+                            </a>
                         </div>
-                        <a v-if="dataset?.id_data" :href="`/export/data/${dataset.id_data}`" 
-                           class="bg-[#00139E] text-white px-8 py-4 rounded-2xl text-sm font-black hover:bg-[#000B58] transition-all flex items-center gap-3">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12" /></svg>
-                            Export to Excel
-                        </a>
                     </div>
 
-                    <div class="overflow-x-auto" v-if="tableRows.length > 0">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="bg-gray-50/50">
-                                    <th class="px-6 py-6 text-[10px] font-black text-[#A2B5CB] uppercase tracking-widest border-b border-gray-400 text-center w-16">#</th>
-                                    <th class="px-6 py-6 text-[10px] font-black text-[#A2B5CB] uppercase tracking-widest border-b border-gray-400">Nama Indikator</th>
-                                    <th class="px-6 py-6 text-[10px] font-black text-[#A2B5CB] uppercase tracking-widest border-b border-gray-400 w-32 text-center">Satuan</th>
-                                    
-                                    <th v-for="year in (chartConfig?.labels || [])" :key="year" 
-                                        class="px-6 py-6 text-[10px] font-black text-[#A2B5CB] uppercase tracking-widest border-b border-gray-400 text-center">
-                                        {{ year }}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                <tr v-for="(row, idx) in tableRows" :key="idx" class="hover:bg-gray-50/50 transition-colors">
-                                    <td class="px-6 py-5 font-black text-[#00139E] text-center text-sm italic">{{ (props.tableData?.from || 1) + idx }}</td>
-                                    
-                                    <td class="px-6 py-5 text-sm font-bold text-[#000B58]">
-                                        {{ row.nama_indikator || row['Nama Data'] || row['Nama Indikator'] || row['Uraian'] || Object.values(row)[0] }}
-                                    </td>
+                    <div class="border-x border-b border-gray-200 rounded-b-[2rem] overflow-hidden bg-white relative">
+                        <div class="overflow-x-auto custom-scrollbar" v-if="tableRows.length > 0">
+                            <table class="w-full text-left border-collapse whitespace-nowrap">
+                                <thead>
+                                    <tr class="bg-gray-50/80">
+                                        <th class="p-5 bg-gray-100/90 border-b-2 border-r border-gray-200 text-[11px] font-black text-[#A2B5CB] uppercase tracking-[0.15em] sticky left-0 z-20 min-w-[250px] shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] backdrop-blur-sm">
+                                            Nama Indikator
+                                        </th>
+                                        <th class="p-5 border-b-2 border-r border-gray-200 text-[10px] font-black text-[#A2B5CB] uppercase tracking-widest text-center w-24 bg-gray-50/50">
+                                            Satuan
+                                        </th>
 
-                                    <td class="px-6 py-5 text-sm font-medium text-gray-500 text-center">
-                                        {{ getSatuanFromRow(row) }}
-                                    </td>
+                                        <th v-for="year in timeColumns" :key="year" class="p-3 border-b-2 border-r border-gray-100 min-w-[180px] align-bottom bg-gray-50/30">
+                                            <div class="bg-white border-2 border-blue-100/50 rounded-xl px-4 py-3 text-center shadow-sm relative overflow-hidden">
+                                                <div class="absolute top-0 left-0 w-full h-1 bg-[#00139E]/20"></div>
+                                                <span class="text-xs font-black text-[#000B58] uppercase tracking-wider">{{ year }}</span>
+                                            </div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr v-for="(row, idx) in tableRows" :key="idx" class="hover:bg-blue-50/20 transition-colors group">
+                                        <td class="p-5 bg-white border-r border-gray-200 font-bold text-[#000B58] text-sm sticky left-0 z-10 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-[#f8fafc]">
+                                           <div class="line-clamp-2 w-[280px]" :title="row.nama_indikator || row['Nama Data'] || row['Nama Indikator'] || row['Uraian'] || Object.values(row)[0]">
+                                              {{ (props.tableData?.from || 1) + idx }}. {{ row.nama_indikator || row['Nama Data'] || row['Nama Indikator'] || row['Uraian'] || Object.values(row)[0] || 'Data' }}
+                                           </div>
+                                        </td>
+                                        <td class="p-5 border-r border-gray-100 text-xs font-bold text-gray-500 text-center bg-white group-hover:bg-[#f8fafc]">
+                                            {{ getSatuanFromRow(row) }}
+                                        </td>
 
-                                    <td v-for="year in (chartConfig?.labels || [])" :key="year" 
-                                        class="px-6 py-5 text-sm font-bold text-[#000B58] text-center">
-                                        {{ row[year] !== undefined ? row[year] : '-' }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                                        <td v-for="year in timeColumns" :key="year" class="p-3 border-r border-gray-100 min-w-[180px] bg-white group-hover:bg-[#f8fafc]">
+                                            <div class="w-full bg-[#F5F7FA] border border-gray-200 text-[#000B58] rounded-xl px-5 py-4 text-sm font-black text-center shadow-inner transition-all hover:border-[#00139E]/30 hover:bg-white">
+                                                {{ row[year] !== undefined && row[year] !== null && row[year] !== '' ? row[year] : '-' }}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <div v-else class="p-10 text-center text-gray-400 italic">
-                        Tidak ada data indikator yang ditemukan.
-                    </div>
+                        <div v-else class="p-10 text-center text-gray-400 italic">
+                            Tidak ada data indikator yang ditemukan.
+                        </div>
 
-                    <div v-if="props.tableData?.current_page" class="p-8 border-t border-gray-400 bg-gray-50/30 flex justify-between items-center">
-                        <p class="text-xs font-black text-[#A2B5CB] uppercase tracking-widest">Halaman {{ props.tableData.current_page }} dari {{ props.tableData.last_page }}</p>
-                        <div class="flex gap-3">
-                            <Link v-if="props.tableData.prev_page_url" :href="props.tableData.prev_page_url" class="p-3 border border-gray-400 rounded-xl hover:bg-white transition-all"><svg class="h-4 w-4 text-[#000B58]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></Link>
-                            <Link v-if="props.tableData.next_page_url" :href="props.tableData.next_page_url" class="p-3 border border-gray-400 rounded-xl hover:bg-white transition-all"><svg class="h-4 w-4 text-[#000B58]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></Link>
+                        <div v-if="props.tableData?.current_page" class="p-6 bg-gray-50/80 border-t border-gray-200 flex justify-between items-center text-xs text-gray-500 font-medium">
+                            <p class="text-xs font-black text-[#A2B5CB] uppercase tracking-widest">Halaman {{ props.tableData.current_page }} dari {{ props.tableData.last_page }}</p>
+                            <div class="flex gap-3">
+                                <Link v-if="props.tableData.prev_page_url" :href="props.tableData.prev_page_url" class="p-3 border border-gray-400 rounded-xl hover:bg-white transition-all"><svg class="h-4 w-4 text-[#000B58]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></Link>
+                                <Link v-if="props.tableData.next_page_url" :href="props.tableData.next_page_url" class="p-3 border border-gray-400 rounded-xl hover:bg-white transition-all"><svg class="h-4 w-4 text-[#000B58]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg></Link>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div> -->
+            </div>
 
             <div v-if="activeTab === 'Metadata'" class="animate-in slide-in-from-bottom-4 duration-500">
                 <div class="grid lg:grid-cols-2 gap-8">
@@ -424,3 +451,18 @@ const chartOptions = {
         </section>
     </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar { height: 12px; width: 12px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 0 0 2rem 2rem; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 3px solid #f1f5f9; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+}
+</style>

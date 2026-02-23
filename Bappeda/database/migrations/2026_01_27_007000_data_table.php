@@ -32,7 +32,7 @@ return new class extends Migration
             // Note: Kolom tahun di sini bisa dijadikan 'tahun dasar' atau 'tahun pembuatan'. 
             // Karena nilai tahun detailnya nanti masuk ke tabel 'data_values'.
             $table->year('tahun')->nullable(); 
-            
+            $table->text('informasi_tambahan')->nullable();
             $table->timestamps();
 
             // --- DEFINISI FOREIGN KEY ---

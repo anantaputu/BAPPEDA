@@ -88,44 +88,40 @@ class DatasetController extends Controller
         'listBidang'  => \App\Models\Bidang::all(),
     ]);
 }
+public function show(Request $request, $id)
+    {
+        // 1. Ambil Data Master berserta relasi Metadata dan Values (Nilainya)
+        $dataset = Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'values'])
+            ->where('id_data', $id)
+            ->firstOrFail();
 
-   public function show(Request $request, $id)
-{
-    $dataset = Data::with(['tema', 'urusan', 'bidang', 'frekuensi'])->where('id_data', $id)->firstOrFail();
-    $upload = DataUpload::where('id_data', $id)->where('status', 'valid')->latest()->first();
+        // 2. Format Data untuk Tabel dan Grafik Vue
+        // Karena ini halaman detail 1 indikator, kita jadikan 1 baris (row)
+        $rowObject = [
+            'Nama Indikator' => $dataset->nama_indikator,
+            'Satuan'         => $dataset->satuan ?? '-',
+        ];
 
-    $fullChartData = [];
-    $paginatedData = null;
-
-    if ($upload && !empty($upload->value)) {
-        $rawData = $upload->value; // Mengambil array dari kolom JSON
-        $headerRow = array_shift($rawData); // Baris pertama dijadikan nama kolom
-
-        foreach ($rawData as $row) {
-            $newRow = [];
-            foreach ($row as $key => $val) {
-                // Mengubah kunci 'A', 'B' menjadi 'Nama Indikator', '2025'
-                $fieldName = trim($headerRow[$key] ?? $key);
-                $newRow[$fieldName] = $val;
-            }
-            $fullChartData[] = $newRow;
+        // 3. Masukkan nilai tahun dan angka dari DataValue ke dalam baris tersebut
+        // Urutkan berdasarkan tahun agar grafik dari kiri ke kanan (Masa lalu ke masa depan)
+        $sortedValues = $dataset->values->sortBy('tahun');
+        foreach ($sortedValues as $val) {
+            $rowObject[$val->tahun] = $val->nilai;
         }
 
-        // Proses Paginasi untuk Tabel
-        $perPage = 20;
-        $currentPage = \Illuminate\Pagination\LengthAwarePaginator::resolveCurrentPage();
-        $chunkData = array_slice($fullChartData, ($currentPage - 1) * $perPage, $perPage);
+        // Bungkus dalam array karena Vue mengharapkan bentuk List of Objects
+        $fullChartData = [$rowObject];
 
+        // 4. Paginasi buatan (karena hanya 1 baris, kita buat paginator statis agar Vue tidak error)
         $paginatedData = new \Illuminate\Pagination\LengthAwarePaginator(
-            $chunkData, count($fullChartData), $perPage, $currentPage,
+            $fullChartData, 1, 20, 1,
             ['path' => $request->url()]
         );
-    }
 
-    return Inertia::render('Public/DatasetDetail', [
-        'dataset' => $dataset,
-        'tableData' => $paginatedData,
-        'allData' => $fullChartData,
-    ]);
-}
+        return Inertia::render('Public/DatasetDetail', [
+            'dataset'   => $dataset,
+            'tableData' => $paginatedData,
+            'allData'   => $fullChartData,
+        ]);
+    }
 }
