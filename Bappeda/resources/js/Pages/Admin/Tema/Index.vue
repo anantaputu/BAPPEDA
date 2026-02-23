@@ -2,8 +2,13 @@
 import AppLayout from '@/Layouts/AppLayout.vue'
 import { Head, Link, router } from '@inertiajs/vue3'
 import { ref } from 'vue'
+import { usePage } from '@inertiajs/vue3' // Import usePage
+import { computed } from 'vue' // Import computed
 
 defineOptions({ layout: AppLayout })
+
+const page = usePage()
+const cantManage = computed(() => page.props.auth.user.role == 'inputer')
 
 const props = defineProps({
     tema: Array
@@ -64,7 +69,7 @@ const deleteData = () => {
                 <thead>
                     <tr class="bg-gray-50/50 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-400">
                         <th class="p-8">Nama Tema Sektoral</th>
-                        <th class="text-right p-8">Aksi</th>
+                        <th v-if="cantManage" class="text-right p-8">Aksi</th>
                     </tr>
                 </thead>
 
@@ -83,7 +88,7 @@ const deleteData = () => {
                             </div>
                         </td>
 
-                        <td class="p-8 text-right space-x-3">
+                        <td v-if="cantManage" class="p-8 text-right space-x-3">
                             <Link :href="`/admin/tema/${t.id_tema}/edit`" 
                                   class="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-blue-50 text-[#00139E] hover:bg-[#00139E] hover:text-white transition-all shadow-sm group-hover:scale-110">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

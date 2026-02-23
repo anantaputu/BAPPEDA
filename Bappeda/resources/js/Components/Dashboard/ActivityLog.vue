@@ -1,5 +1,7 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3'
+import { computed } from 'vue'
 
 defineProps({ 
     activities: {
@@ -7,6 +9,10 @@ defineProps({
         default: () => []
     }
 });
+
+const page = usePage()
+const user = computed(() => page.props.auth.user)
+const cantManage = computed(() => user.value?.role === 'Admin')
 
 const getStatusClass = (status) => {
     const map = {
@@ -27,7 +33,8 @@ const getStatusClass = (status) => {
                 <h3 class="text-xl font-black text-[#000B58] uppercase tracking-tight">Log Aktivitas Terbaru</h3>
             </div>
             <Link 
-                href="/admin/logs" 
+                v-if="cantManage"
+                href="/admin/logs"
                 class="text-[10px] font-black text-[#00139E] uppercase tracking-[0.2em] hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors border border-transparent hover:border-blue-100"
             >
                 Lihat Semua

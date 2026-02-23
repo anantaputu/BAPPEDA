@@ -64,7 +64,7 @@ const executeDeleteAction = () => {
 <template>
     <Head title="Kelola Data Indikator" />
 
-    <div class="bg-white rounded-[2.5rem] p-10 shadow-2xl shadow-gray-100 border border-gray-400 min-h-[70vh]">
+    <div class="bg-white rounded-[2.5rem] p-10 shadow-2xl shadow-gray-100 border border-gray-400">
         
         <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
             <div>

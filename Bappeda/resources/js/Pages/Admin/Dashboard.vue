@@ -179,7 +179,7 @@ const percentValid = computed(() => {
 
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-400">
-                <h3 class="text-sm font-black text-[#000B58] uppercase tracking-widest mb-6 flex items-center gap-2">
+                <h3 class="text-xs font-black text-[#000B58] uppercase tracking-widest mb-3 flex items-center gap-2">
                     <span class="w-1.5 h-4 bg-[#00139E] rounded-full"></span>
                     Distribusi Indikator per Tema
                 </h3>

@@ -59,10 +59,9 @@ const statsCards = computed(() => [
 
 // Konfigurasi Doughnut menggunakan data stats
 const doughnutData = computed(() => ({
-    labels: ['Disetujui', 'Pending', 'Ditolak'],
     datasets: [{
-        data: [props.stats.data_approved, props.stats.data_pending, props.stats.data_rejected],
-        backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'],
+        data: [props.stats.data_approved],
+        backgroundColor: ['#000B58'],
         borderWidth: 2,
         borderColor: '#ffffff',
         cutout: '75%'
@@ -80,7 +79,7 @@ const validationData = computed(() => ({
     <div class="space-y-8 px-4 sm:px-0">
         <div class="flex items-center justify-between mb-4">
             <div>
-                <h1 class="text-2xl font-black text-emerald-900 uppercase tracking-tight">Ruang Kerja Inputer</h1>
+                <h1 class="text-2xl font-black text-[#000B58] uppercase tracking-tight">Ruang Kerja Inputer</h1>
                 <p class="text-sm text-slate-400 font-medium italic">Monitoring performa input data Anda.</p>
             </div>
         </div>
@@ -94,25 +93,16 @@ const validationData = computed(() => ({
             />
         </section>
 
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-200">
-                <h3 class="text-sm font-black text-emerald-900 uppercase tracking-widest mb-6 flex items-center gap-2">
-                    <span class="w-1.5 h-4 bg-emerald-500 rounded-full"></span>
-                    Tren Input Data (12 Bulan Terakhir)
+        <section>
+            <div class="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-400">
+                <h3 class="text-xs font-black text-[#000B58] uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <span class="w-1.5 h-4 bg-[#00139E] rounded-full"></span>
+                    (12 Bulan Terakhir)
                 </h3>
-                <div class="h-[300px]">
-                    <GrowthLineChart 
-                        :chartData="props.growthChart" 
-                    />
-                </div>
+                <GrowthLineChart 
+                    :chartData="props.growthChart" 
+                />
             </div>
-
-            <ValidationDoughnut
-                :doughnutData="doughnutData" 
-                :validationData="validationData" 
-                :percentValid="props.stats.total_input > 0 ? Math.round((props.stats.data_approved / props.stats.total_input) * 100) : 0"
-                title="Kualitas Data"
-            />
         </section>
         
         <ActivityLog 
