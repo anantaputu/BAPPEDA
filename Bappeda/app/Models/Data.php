@@ -16,7 +16,7 @@ class Data extends Model
    protected $table = 'data';
     protected $primaryKey = 'id_data';
     protected $guarded = [];
-    
+
     protected $fillable = [
         'nama_indikator',
         'deskripsi',
@@ -26,11 +26,11 @@ class Data extends Model
         'id_frekuensi',
         'satuan',
         'sumber',
-        'kata_kunci',
         'status',
         'tahun',
         'informasi_tambahan',
     ];
+
     /* ================= RELATIONS ================= */
 
      public function tema()
@@ -52,6 +52,11 @@ class Data extends Model
     {
         return $this->belongsTo(Frekuensi::class, 'id_frekuensi', 'id_frekuensi');
     }
+    
+    public function katakunci()
+    {
+        return $this->belongsToMany(Katakunci::class, 'data_katakunci_pivot', 'id_data', 'id_katakunci');
+    }
 
     public function cd ()
     {
@@ -63,9 +68,8 @@ class Data extends Model
         return $this->hasMany(DataUpload::class, 'id_data');
     }
 
-    public function values()
-    {
-        return $this->hasMany(DataValue::class, 'id_data', 'id_data');
+    public function values() {
+        return $this->hasMany(DataValue::class, 'id_data')->orderBy('tahun', 'desc');
     }
 
     

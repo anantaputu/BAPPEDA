@@ -171,15 +171,32 @@ class DataInputController extends Controller
         ]);
 
         try {
-            // 2. Lempar data ke Service yang baru kita buat
             $this->uploadService->updateSingleData($id, $request->all(), Auth::id());
             
-            return redirect()->route('inputer.dashboard')
+            $user = Auth::user();
+            $isAdmin = ($user->role->nama_role ?? '' === 'Admin');
+
+            // Jika admin, ke dashboard admin, jika bukan (inputer), ke dashboard inputer
+            $routeName = $isAdmin ? 'admin.dashboard' : 'inputer.dashboard';
+
+            return redirect()->route($routeName)
                 ->with('message', 'Data berhasil diperbarui!');
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Gagal Update Single: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Gagal memperbarui data: ' . $e->getMessage()]);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $data = \App\Models\Data::findOrFail($id);
+            $data->delete();
+
+            return redirect()->back()->with('success', 'Data berhasil dihapus');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
         }
     }
 }

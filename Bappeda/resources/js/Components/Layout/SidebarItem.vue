@@ -13,9 +13,9 @@ defineEmits(['toggle']);
 <template>
     <div v-if="item.children" class="mb-2">
         <button @click="$emit('toggle')"
-            class="w-full flex items-center justify-between px-5 py-4 text-[13px] font-black rounded-2xl transition-all duration-500 group"
+            class="w-full flex items-center justify-between px-5 py-4 text-[13px] font-black rounded-[2.5rem] transition-all duration-500 group"
             :class="isOpen 
-                ? 'text-[#00139E] bg-[#00139E]/5 shadow-sm' 
+                ? 'text-[#00139E] bg-[#00139E]/5' 
                 : 'text-[#A2B5CB] hover:text-[#000B58] hover:bg-gray-50'">
             
             <div class="flex items-center gap-4">
@@ -43,7 +43,7 @@ defineEmits(['toggle']);
                     : 'text-[#A2B5CB] hover:text-[#000B58]'">
                 
                 <div v-if="activeUrl.startsWith(child.path)" 
-                    class="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-[#00139E] rounded-full -ml-[9px] shadow-[0_0_8px_rgba(0,19,158,0.5)]">
+                    class="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-[#00139E] rounded-full -ml-[9px]">
                 </div>
                 
                 {{ child.name }}
@@ -52,13 +52,13 @@ defineEmits(['toggle']);
     </div>
 
     <Link v-else :href="item.path"
-        class="flex items-center gap-4 px-4 py-4 text-[13px] font-black rounded-2xl transition-all duration-500 group"
+        class="flex items-center gap-4 px-4 py-4 text-[13px] font-black rounded-[2.5rem] transition-all duration-500 group"
         :class="activeUrl.startsWith(item.path) 
-            ? 'text-white bg-[#00139E] shadow-xl shadow-[#00139E]/20 translate-x-1' 
+            ? 'text-white bg-[#00139E]' 
             : 'text-[#A2B5CB] hover:text-[#000B58] hover:bg-gray-50 hover:translate-x-1'">
         
         <div class="p-2 rounded-lg transition-colors duration-500"
-            :class="activeUrl.startsWith(item.path) ? 'bg-white/20' : 'bg-transparent group-hover:bg-gray-200/50'">
+            :class="activeUrl.startsWith(item.path) ? 'bg-white/20 rounded-[2.5rem]' : 'bg-transparent group-hover:bg-gray-200/50'">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" :d="item.icon" />
             </svg>

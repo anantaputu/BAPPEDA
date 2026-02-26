@@ -1,18 +1,24 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { useForm, Head, Link } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3'
+import { computed } from 'vue'
 
 defineOptions({ layout: AppLayout });
 
+const page = usePage()
+const user = computed(() => page.props.auth.user)
+const cantManage = computed(() => user.value?.role === 'Admin')
+
 const props = defineProps({
-    dataIndikator: Object, // Pastikan relasi 'values' di-load dari controller
+    dataIndikator: Object, // Relasi 'values' harus di-load dari controller
     tema: Array,
     urusan: Array,
     bidang: Array,
     frekuensi: Array,
 });
 
-// Mapping data ke form
+// Mapping data ke form sesuai dengan Migration & Model Data.php
 const form = useForm({
     nama_indikator: props.dataIndikator.nama_indikator,
     deskripsi: props.dataIndikator.deskripsi,
@@ -22,9 +28,12 @@ const form = useForm({
     id_frekuensi: props.dataIndikator.id_frekuensi,
     satuan: props.dataIndikator.satuan,
     sumber: props.dataIndikator.sumber,
-    status: props.dataIndikator.status,
+    kata_kunci: props.dataIndikator.kata_kunci,
+    status: props.dataIndikator.status || 'aktif',
+    tahun: props.dataIndikator.tahun, // Tahun Dasar/Pembuatan
+    informasi_tambahan: props.dataIndikator.informasi_tambahan,
     
-    // Muat data array nilai (Atau beri 1 kolom kosong jika belum ada data)
+    // Muat data array nilai dari tabel data_values
     values: props.dataIndikator.values && props.dataIndikator.values.length > 0 
             ? props.dataIndikator.values.map(v => ({ tahun: v.tahun, nilai: v.nilai }))
             : [{ tahun: String(new Date().getFullYear()), nilai: '' }]
@@ -49,7 +58,7 @@ const removeColumn = (index) => {
 };
 
 const submit = () => {
-    // Validasi Sederhana
+    // Validasi Sederhana untuk tabel dinamis
     const hasEmptyValues = form.values.some(v => v.tahun === '' || v.nilai === '');
     if (hasEmptyValues) {
         alert("Mohon lengkapi semua baris Waktu dan Nilai pada tabel.");
@@ -59,11 +68,11 @@ const submit = () => {
     form.put(`/inputer/data/${props.dataIndikator.id_data}`, {
         preserveScroll: true,
         onSuccess: () => {
-            // Berhasil, otomatis diarahkan oleh controller
+            // Berhasil
         },
         onError: (errors) => {
             console.log(errors);
-            alert('Gagal menyimpan. Periksa kembali form Anda.');
+            alert('Gagal menyimpan. Periksa kembali inputan Anda.');
         }
     });
 };
@@ -72,42 +81,90 @@ const submit = () => {
 <template>
     <Head title="Edit Master Data" />
 
-    <div class="min-h-screen mx-auto max-w-[95%] py-10">
-        <div class="bg-white rounded-[3rem] shadow-xl border border-gray-100 p-8 md:p-12">
+    <div class="mx-auto">
+        <div class="bg-white rounded-[2.5rem] border border-gray-400 p-8 md:p-12">
             
             <div class="mb-10">
                 <h1 class="text-3xl font-black text-[#000B58] tracking-tight uppercase">
                     Edit <span class="text-[#00139E]">Master Data</span>
                 </h1>
-                <p class="text-gray-400 font-medium mt-2">Perbarui metadata dan edit capaian nilai secara horizontal.</p>
+                <p class="text-gray-400 font-medium mt-2">Perbarui metadata indikator dan capaian nilai secara horizontal.</p>
             </div>
 
             <form @submit.prevent="submit" class="space-y-10">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 bg-gray-50/50 p-8 rounded-[2rem] border border-gray-100">
-                    <div class="md:col-span-4 space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Nama Indikator</label>
+                    
+                    <div class="md:col-span-3 space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Nama Indikator</label>
                         <input v-model="form.nama_indikator" type="text" 
                             class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58] focus:ring-[#00139E]"
                             :class="{ 'border-red-500': form.errors.nama_indikator }" />
                     </div>
 
-                    <div class="md:col-span-2 space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Tema Sektoral</label>
-                        <select v-model="form.id_tema" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58] focus:ring-[#00139E]">
+                    <div class="md:col-span-1 space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Status</label>
+                        <select v-model="form.status" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58]">
+                            <option value="aktif">Aktif</option>
+                            <option value="nonaktif">Nonaktif</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-1 space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Tema Sektoral</label>
+                        <select v-model="form.id_tema" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58]">
                             <option v-for="t in tema" :key="t.id_tema" :value="t.id_tema">{{ t.nama_tema }}</option>
                         </select>
                     </div>
 
                     <div class="md:col-span-1 space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Satuan</label>
-                        <input v-model="form.satuan" type="text" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58] focus:ring-[#00139E]" />
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Urusan</label>
+                        <select v-model="form.id_urusan" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58]">
+                            <option v-for="u in urusan" :key="u.id_urusan" :value="u.id_urusan">{{ u.nama_urusan }}</option>
+                        </select>
                     </div>
 
                     <div class="md:col-span-1 space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Frekuensi</label>
-                        <select v-model="form.id_frekuensi" class="w-full bg-emerald-50 border-emerald-200 text-emerald-800 rounded-xl px-5 py-4 text-sm font-bold focus:ring-emerald-500">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Bidang</label>
+                        <select v-model="form.id_bidang" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58]">
+                            <option v-for="b in bidang" :key="b.id_bidang" :value="b.id_bidang">{{ b.nama_bidang }}</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-1 space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Frekuensi Update</label>
+                        <select v-model="form.id_frekuensi" class="w-full bg-emerald-50 border-emerald-200 text-emerald-800 rounded-xl px-5 py-4 text-sm font-bold">
                             <option v-for="f in frekuensi" :key="f.id_frekuensi" :value="f.id_frekuensi">{{ f.nama_frekuensi }}</option>
                         </select>
+                    </div>
+
+                    <div class="md:col-span-1 space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Satuan</label>
+                        <input v-model="form.satuan" type="text" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58]" />
+                    </div>
+
+                    <div class="md:col-span-2 space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Sumber Data</label>
+                        <input v-model="form.sumber" type="text" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58]" />
+                    </div>
+
+                    <div class="md:col-span-1 space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Tahun Terbit</label>
+                        <input v-model="form.tahun" type="number" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58]" />
+                    </div>
+
+                    <div class="md:col-span-2 space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Deskripsi</label>
+                        <textarea v-model="form.deskripsi" rows="3" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-medium text-[#000B58]"></textarea>
+                    </div>
+
+                    <div class="md:col-span-2 space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Kata Kunci (Tag)</label>
+                        <textarea v-model="form.kata_kunci" rows="3" placeholder="Pisahkan dengan koma..." class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-medium text-[#000B58]"></textarea>
+                    </div>
+
+                    <div class="md:col-span-4 space-y-2">
+                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Informasi Tambahan</label>
+                        <input v-model="form.informasi_tambahan" type="text" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-medium text-[#000B58]" />
                     </div>
                 </div>
 
@@ -119,13 +176,13 @@ const submit = () => {
                             </div>
                             <div>
                                 <h3 class="text-white font-black uppercase tracking-widest text-sm">Capaian Nilai</h3>
-                                <p class="text-blue-200 text-[10px] font-medium mt-0.5">Edit nilai atau tambah waktu periode ke samping.</p>
+                                <p class="text-blue-200 text-[10px] font-medium mt-0.5">Tambah periode waktu ke samping (horizontal).</p>
                             </div>
                         </div>
                         
                         <button @click.prevent="addColumn" class="bg-[#00D2FC] text-[#000B58] hover:bg-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-lg flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
-                            Tambah Kolom Data
+                            Tambah Periode
                         </button>
                     </div>
 
@@ -134,28 +191,25 @@ const submit = () => {
                             <thead>
                                 <tr>
                                     <th class="p-4 bg-gray-50 border-b-2 border-gray-200 border-r text-[10px] font-black text-gray-400 uppercase tracking-widest w-48 min-w-[200px] sticky left-0 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
-                                        Atribut / Periode
+                                        Periode / Waktu
                                     </th>
-                                    
                                     <th v-for="(item, index) in form.values" :key="'head-'+index" class="p-4 bg-gray-50 border-b-2 border-gray-200 min-w-[220px] relative group border-r border-gray-100">
-                                        <label class="text-[9px] font-black text-blue-600 uppercase mb-1 block">Waktu / Bulan / Tahun *</label>
-                                        <div class="flex items-center gap-2">
-                                            <input v-model="item.tahun" type="text" placeholder="Misal: Jan 2024" class="w-full bg-white border-gray-300 rounded-lg px-3 py-2 text-xs font-bold focus:ring-[#00139E]" required>
-                                            
-                                            <button @click.prevent="removeColumn(index)" class="p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors flex-shrink-0" title="Hapus Kolom">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <label class="text-[9px] font-black text-blue-600 uppercase">Tahun/Bulan *</label>
+                                            <button @click.prevent="removeColumn(index)" class="text-red-400 hover:text-red-600 transition-colors">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                             </button>
                                         </div>
+                                        <input v-model="item.tahun" type="text" placeholder="Misal: 2024" class="w-full bg-white border-gray-300 rounded-lg px-3 py-2 text-xs font-bold focus:ring-[#00139E]" required>
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr class="hover:bg-blue-50/30 transition-colors">
                                     <td class="p-4 bg-white border-b border-gray-100 border-r sticky left-0 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
-                                        <span class="text-xs font-black text-[#000B58] uppercase tracking-wide">Isi Nilai Capaian</span>
-                                        <span class="block text-[10px] text-gray-400 mt-1">Gunakan titik (.) untuk desimal</span>
+                                        <span class="text-xs font-black text-[#000B58] uppercase tracking-wide">Nilai Capaian</span>
+                                        <span class="block text-[10px] text-gray-400 mt-1">Gunakan (.) untuk desimal</span>
                                     </td>
-                                    
                                     <td v-for="(item, index) in form.values" :key="'val-'+index" class="p-4 border-b border-gray-100 border-r">
                                         <input v-model="item.nilai" type="text" placeholder="0.00" class="w-full bg-emerald-50/50 border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm font-black text-center focus:ring-emerald-500 focus:bg-emerald-50 transition-colors" required>
                                     </td>
@@ -166,7 +220,10 @@ const submit = () => {
                 </div>
 
                 <div class="pt-6 flex items-center justify-end gap-4 border-t border-gray-100">
-                    <Link href="/inputer/dashboard" class="px-8 py-4 text-gray-400 font-bold hover:text-gray-600 transition-colors uppercase tracking-widest text-xs">
+                    <Link v-if='cantManage' href="/admin/dashboard" class="px-8 py-4 text-gray-400 font-bold hover:text-gray-600 transition-colors uppercase tracking-widest text-xs">
+                        Batal
+                    </Link>
+                    <Link v-if='!cantManage' href="/inputer/dashboard" class="px-8 py-4 text-gray-400 font-bold hover:text-gray-600 transition-colors uppercase tracking-widest text-xs">
                         Batal
                     </Link>
                     <button type="submit" :disabled="form.processing"
@@ -176,14 +233,12 @@ const submit = () => {
                     </button>
                 </div>
             </form>
-
         </div>
     </div>
 </template>
 
 <style scoped>
-/* Scrollbar Kustom agar elegan saat di-scroll ke samping */
-.custom-scrollbar::-webkit-scrollbar { height: 10px; width: 10px; }
+.custom-scrollbar::-webkit-scrollbar { height: 10px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; border: 2px solid #f1f5f9; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }

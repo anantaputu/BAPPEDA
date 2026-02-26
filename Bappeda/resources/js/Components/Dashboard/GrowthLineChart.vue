@@ -95,7 +95,7 @@ const formattedData = computed(() => ({
 </script>
 
 <template>
-    <section class="bg-white p-8 rounded-[3rem] shadow-sm border border-gray-400">
+    <section class="bg-white p-8 rounded-[3rem] shadow-sm border border-gray-400 overflow-hidden">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
             <div>
                 <h3 class="font-black text-[#000B58] text-lg flex items-center gap-2 uppercase tracking-tight">
@@ -112,7 +112,8 @@ const formattedData = computed(() => ({
                 12 Bulan Terakhir
             </div>
         </div>
-        <div class="h-80 w-full">
+
+        <div class="h-80 w-full relative min-w-0">
             <Line :data="formattedData" :options="chartOptions" />
         </div>
     </section>

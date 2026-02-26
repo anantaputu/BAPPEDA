@@ -29,22 +29,26 @@ class HandleInertiaRequests extends Middleware
      * @return array<string, mixed>
      */
     public function share(Request $request): array
-{
-    return [
-        ...parent::share($request),
-        'auth' => [
-            'user' => $request->user() ? [
-                'id' => $request->user()->id,
-                'username' => $request->user()->username,
-                'nama_depan' => $request->user()->nama_depan, // Dari migration
-                'nama_belakang' => $request->user()->nama_belakang, // Dari migration
-                'role_id' => $request->user()->role_id, // Penting untuk cek ID
-                
-                // Ini yang dibaca oleh "const namaRole" di Vue kamu
-                // Kita ambil nama_role dari tabel roles
-                'role' => $request->user()->role?->nama_role, 
-            ] : null,
-        ],
-    ];
-}
+    {
+        return [
+            ...parent::share($request),
+            'auth' => [
+                'user' => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'username' => $request->user()->username,
+                    'nama_depan' => $request->user()->nama_depan, // Dari migration
+                    'nama_belakang' => $request->user()->nama_belakang, // Dari migration
+                    'role_id' => $request->user()->role_id, // Penting untuk cek ID
+                    
+                    // Ini yang dibaca oleh "const namaRole" di Vue kamu
+                    // Kita ambil nama_role dari tabel roles
+                    'role' => $request->user()->role?->nama_role, 
+                ] : null,
+            ],
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+            ],
+        ];
+    }
 }

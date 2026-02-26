@@ -9,7 +9,7 @@ defineOptions({ layout: AppLayout })
 
 const page = usePage()
 const user = computed(() => page.props.auth.user)
-const cantManage = computed(() => user.value?.role === 'admin')
+const cantManage = computed(() => user.value?.role === 'Admin')
 
 const props = defineProps({
     bidang: Array

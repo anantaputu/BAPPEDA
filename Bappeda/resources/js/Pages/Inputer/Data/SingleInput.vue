@@ -23,7 +23,8 @@ const form = useForm({
     id_frekuensi: 1, 
     satuan: '',
     sumber: '',
-    kata_kunci: '',
+    // KATA KUNCI: Menambahkan state kata kunci
+    kata_kunci: '', 
     values: [
         { tahun: new Date().getFullYear(), nilai: '' } 
     ]
@@ -64,13 +65,6 @@ const submitData = () => {
     <Head title="Input Indikator Tunggal" />
 
     <div class="mx-auto">
-        <!-- <Link href="/inputer/dashboard" class="flex items-center gap-2 text-[#A2B5CB] hover:text-[#00139E] transition-colors mb-6 group">
-            <svg class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span class="font-bold uppercase tracking-widest text-[10px]">Kembali ke Dashboard</span>
-        </Link> -->
-
         <div class="bg-white rounded-[2.5rem] p-12 shadow-2xl shadow-gray-100 border border-gray-400">
             <div class="mb-12">
                 <h1 class="text-4xl font-black text-gray-900 tracking-tight">
@@ -109,9 +103,19 @@ const submitData = () => {
                         </div>
 
                         <div class="md:col-span-2 space-y-2">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Kata Kunci (Keywords)</label>
+                            <div class="relative flex items-center">
+                                <span class="absolute left-6 text-gray-400 uppercase font-black text-[10px]">#</span>
+                                <input v-model="form.kata_kunci" type="text" placeholder="penduduk, ekonomi, kemiskinan (Pisahkan dengan koma)" 
+                                    class="w-full bg-gray-50 border-gray-200 rounded-2xl pl-12 pr-6 py-4 focus:ring-4 focus:ring-blue-100 focus:border-[#00139E] transition-all font-bold text-blue-600 italic">
+                            </div>
+                            <p class="text-[9px] text-gray-400 ml-4 italic">* Digunakan untuk mempermudah pencarian dataset oleh pengguna.</p>
+                        </div>
+
+                        <div class="md:col-span-2 space-y-2">
                             <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Deskripsi Singkat</label>
                             <textarea v-model="form.deskripsi" placeholder="Penjelasan mengenai indikator ini..." 
-                                class="w-full bg-gray-50 border-gray-200 rounded-2xl px-6 py-4 focus:ring-4 focus:ring-blue-100 focus:border-[#00139E] transition-all font-medium min-h-[120px]"></textarea>
+                                class="w-full bg-gray-50 border-gray-200 rounded-2xl px-6 py-4 focus:ring-4 focus:ring-blue-100 focus:border-[#00139E] transition-all font-medium min-h-[100px]"></textarea>
                         </div>
                     </div>
                 </div>
@@ -169,7 +173,6 @@ const submitData = () => {
                                 <option v-for="t in tema" :key="t.id_tema" :value="t.id_tema">{{ t.nama_tema }}</option>
                             </select>
                         </div>
-
                         <div class="space-y-2">
                             <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Urusan Pemerintahan *</label>
                             <select v-model="form.id_urusan" class="w-full bg-gray-50 border-gray-200 rounded-2xl px-6 py-4 focus:ring-4 focus:ring-blue-100 focus:border-[#00139E] transition-all font-bold text-gray-800 appearance-none">
@@ -177,7 +180,6 @@ const submitData = () => {
                                 <option v-for="u in urusan" :key="u.id_urusan" :value="u.id_urusan">{{ u.nama_urusan }}</option>
                             </select>
                         </div>
-
                         <div class="space-y-2">
                             <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Bidang / Instansi *</label>
                             <select v-model="form.id_bidang" class="w-full bg-gray-50 border-gray-200 rounded-2xl px-6 py-4 focus:ring-4 focus:ring-blue-100 focus:border-[#00139E] transition-all font-bold text-gray-800 appearance-none">
@@ -185,7 +187,6 @@ const submitData = () => {
                                 <option v-for="b in bidang" :key="b.id_bidang" :value="b.id_bidang">{{ b.nama_bidang }}</option>
                             </select>
                         </div>
-
                         <div class="space-y-2">
                             <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-4">Frekuensi Pelaporan *</label>
                             <select v-model="form.id_frekuensi" class="w-full bg-gray-50 border-gray-200 rounded-2xl px-6 py-4 focus:ring-4 focus:ring-blue-100 focus:border-[#00139E] transition-all font-bold text-gray-800 appearance-none">
@@ -204,10 +205,6 @@ const submitData = () => {
                         :disabled="form.processing"
                         class="bg-[#00139E] text-white px-12 py-5 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#000B58] shadow-2xl shadow-blue-200 transition-all disabled:opacity-50 flex items-center gap-3 active:scale-95"
                     >
-                        <svg v-if="form.processing" class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
                         {{ form.processing ? 'Sedang Menyimpan...' : 'Simpan Data Indikator' }}
                     </button>
                 </div>
@@ -216,15 +213,3 @@ const submitData = () => {
         <div class="h-20"></div>
     </div>
 </template>
-
-<style scoped>
-.list-enter-active,
-.list-leave-active {
-  transition: all 0.4s ease;
-}
-.list-enter-from,
-.list-leave-to {
-  opacity: 0;
-  transform: translateX(30px);
-}
-</style>

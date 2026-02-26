@@ -44,13 +44,12 @@ const dynamicSatuan = computed(() => {
     return uniqueUnits.length === 1 ? uniqueUnits[0] : 'Beragam';
 });
 
-// --- 2. PERBAIKAN: LOGIKA KOLOM TABEL DINAMIS ---
-// Mengambil semua kunci (header) selain nama dan satuan agar "Januari", dll bisa tampil
+// --- 2. LOGIKA KOLOM TABEL DINAMIS ---
 const timeColumns = computed(() => {
     if (!props.allData || props.allData.length === 0) return [];
     
     let cols = new Set();
-    const excludeKeys = ['nama indikator', 'nama data', 'uraian', 'indikator', 'satuan'];
+    const excludeKeys = ['nama indikator', 'nama data', 'uraian', 'indikator', 'satuan', 'id_data', 'created_at', 'updated_at'];
 
     props.allData.forEach(row => {
         Object.keys(row).forEach(key => {
@@ -65,28 +64,24 @@ const timeColumns = computed(() => {
         const numA = parseInt(a.match(/\d+/)?.[0] || 0);
         const numB = parseInt(b.match(/\d+/)?.[0] || 0);
         if (numA && numB && numA !== numB) return numA - numB;
-        return 0; 
+        return a.localeCompare(b); 
     });
 });
 
 // --- 3. CONFIG CHART ---
 const chartConfig = computed(() => {
     if (!props.allData || props.allData.length === 0) return null;
-
-    const yearKeys = timeColumns.value; // Gunakan timeColumns untuk chart juga
-
+    const yearKeys = timeColumns.value;
     if (selectedIndices.value.length === 0) return { labels: yearKeys, datasets: [] };
 
     const datasets = selectedIndices.value.map((rowIndex, colorIdx) => {
         const row = props.allData[rowIndex];
-        
         const nameKey = Object.keys(row).find(k => 
             ['nama data', 'nama indikator', 'uraian', 'indikator'].includes(k.toLowerCase().trim())
         ) || Object.keys(row)[0];
 
         const labelName = row[nameKey] || `Data ${rowIndex + 1}`;
         const rowSatuan = getSatuanFromRow(row);
-
         const dataValues = yearKeys.map(year => {
             let val = row[year];
             if (val === undefined || val === null || val === '-' || val === '') return null; 
@@ -97,7 +92,6 @@ const chartConfig = computed(() => {
         });
 
         const color = chartColors[colorIdx % chartColors.length];
-
         return {
             label: labelName,
             data: dataValues,
@@ -110,10 +104,7 @@ const chartConfig = computed(() => {
         };
     });
 
-    return {
-        labels: yearKeys,
-        datasets: datasets
-    };
+    return { labels: yearKeys, datasets: datasets };
 });
 
 const toggleSelection = (index) => {
@@ -172,19 +163,6 @@ const chartOptions = {
             <div class="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[600px] h-[600px] bg-[#A2B5CB]/10 rounded-full blur-3xl -z-10"></div>
             
             <div class="max-w-[80%] mx-auto">
-               <div class="flex items-center gap-2 text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] mb-8">
-                    <Link href="/" class="hover:text-[#00139E] transition-colors">Beranda</Link> 
-                    <span class="text-gray-300">/</span>
-                    <Link href="/cari" class="hover:text-[#00139E] transition-colors">Cari</Link>
-                    <span class="text-gray-300">/</span>
-                    <span class="text-[#000B58]">Detail Indikator</span>
-                    
-                    <Link v-if="dataset?.id_data" :href="`/inputer/data/${dataset.id_data}/edit`" 
-                        class="ml-auto bg-amber-400 text-[#000B58] px-4 py-2 rounded-xl text-xs font-black hover:bg-amber-500 transition-all flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                        Edit Data
-                    </Link>
-                </div>
                 <div class="grid lg:grid-cols-3 gap-16 items-start">
                     <div class="lg:col-span-2">
                         <span class="inline-block px-4 py-1.5 mb-6 text-sm font-bold text-[#00139E] bg-[#A2B5CB]/20 rounded-full border border-[#A2B5CB]/30 tracking-wide uppercase">
@@ -197,15 +175,6 @@ const chartOptions = {
 
                     <div class="bg-white border border-gray-400 p-8 rounded-[2.5rem] shadow-2xl shadow-[#000B58]/5">
                         <div class="space-y-6">
-                            <div class="flex items-center gap-4 border-b border-gray-100 pb-4">
-                                <div class="w-10 h-10 bg-[#00139E]/10 rounded-xl flex items-center justify-center text-[#00139E]">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] text-[#A2B5CB] uppercase tracking-widest font-black">Tahun Data</p>
-                                    <p class="font-black text-[#000B58]">{{ dataset?.tahun || '-' }}</p>
-                                </div>
-                            </div>
                             <div class="flex items-center gap-4">
                                 <div class="w-10 h-10 bg-[#FF1414]/10 rounded-xl flex items-center justify-center text-[#FF1414]">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
@@ -243,13 +212,14 @@ const chartOptions = {
                                 <div>
                                     <h3 class="text-white font-black uppercase tracking-widest text-lg">Preview Capaian Nilai</h3>
                                     <p class="text-blue-200 text-xs font-medium mt-1 opacity-80">
-                                      Geser ke samping untuk melihat seluruh periode waktu. Menampilkan {{ tableRows.length }} baris.
+                                        Geser ke samping untuk melihat seluruh periode waktu. Menampilkan {{ tableRows.length }} baris.
                                     </p>
                                 </div>
                             </div>
                             
-                            <a v-if="dataset?.id_data" :href="`/export/data/${dataset.id_data}`" 
-                                class="bg-[#00139E] text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-[#000B58] transition-all flex items-center gap-2 shadow-lg border border-blue-800/50">
+                            <a v-if="dataset?.id_data" 
+                               :href="'/export/data/' + dataset.id_data" 
+                               class="bg-[#00139E] text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-[#000B58] transition-all flex items-center gap-2 shadow-lg border border-blue-800/50">
                                 <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12" />
                                 </svg>
@@ -263,13 +233,12 @@ const chartOptions = {
                             <table class="w-full text-left border-collapse whitespace-nowrap">
                                 <thead>
                                     <tr class="bg-gray-50/80">
-                                        <th class="p-5 bg-gray-100/90 border-b-2 border-r border-gray-200 text-[11px] font-black text-[#A2B5CB] uppercase tracking-[0.15em] sticky left-0 z-20 min-w-[250px] shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] backdrop-blur-sm">
+                                        <!-- <th class="p-5 bg-gray-100/90 border-b-2 border-r border-gray-200 text-[11px] font-black text-[#A2B5CB] uppercase tracking-[0.15em] sticky left-0 z-20 min-w-[250px] shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] backdrop-blur-sm">
                                             Nama Indikator
-                                        </th>
+                                        </th> -->
                                         <th class="p-5 border-b-2 border-r border-gray-200 text-[10px] font-black text-[#A2B5CB] uppercase tracking-widest text-center w-24 bg-gray-50/50">
                                             Satuan
                                         </th>
-
                                         <th v-for="year in timeColumns" :key="year" class="p-3 border-b-2 border-r border-gray-100 min-w-[180px] align-bottom bg-gray-50/30">
                                             <div class="bg-white border-2 border-blue-100/50 rounded-xl px-4 py-3 text-center shadow-sm relative overflow-hidden">
                                                 <div class="absolute top-0 left-0 w-full h-1 bg-[#00139E]/20"></div>
@@ -281,15 +250,14 @@ const chartOptions = {
                                 
                                 <tbody class="divide-y divide-gray-100">
                                     <tr v-for="(row, idx) in tableRows" :key="idx" class="hover:bg-blue-50/20 transition-colors group">
-                                        <td class="p-5 bg-white border-r border-gray-200 font-bold text-[#000B58] text-sm sticky left-0 z-10 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-[#f8fafc]">
-                                           <div class="line-clamp-2 w-[280px]" :title="row.nama_indikator || row['Nama Data'] || row['Nama Indikator'] || row['Uraian'] || Object.values(row)[0]">
-                                              {{ (props.tableData?.from || 1) + idx }}. {{ row.nama_indikator || row['Nama Data'] || row['Nama Indikator'] || row['Uraian'] || Object.values(row)[0] || 'Data' }}
+                                        <!-- <td class="p-5 bg-white border-r border-gray-200 font-bold text-[#000B58] text-sm sticky left-0 z-10 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-[#f8fafc]">
+                                           <div class="line-clamp-2 w-[280px]" :title="row.nama_indikator || row['Nama Data'] || row['Nama Indikator'] || row['Uraian']">
+                                              {{ (props.tableData?.from || 1) + idx }}. {{ row.nama_indikator || row['Nama Data'] || row['Nama Indikator'] || row['Uraian'] || 'Data' }}
                                            </div>
-                                        </td>
+                                        </td> -->
                                         <td class="p-5 border-r border-gray-100 text-xs font-bold text-gray-500 text-center bg-white group-hover:bg-[#f8fafc]">
                                             {{ getSatuanFromRow(row) }}
                                         </td>
-
                                         <td v-for="year in timeColumns" :key="year" class="p-3 border-r border-gray-100 min-w-[180px] bg-white group-hover:bg-[#f8fafc]">
                                             <div class="w-full bg-[#F5F7FA] border border-gray-200 text-[#000B58] rounded-xl px-5 py-4 text-sm font-black text-center shadow-inner transition-all hover:border-[#00139E]/30 hover:bg-white">
                                                 {{ row[year] !== undefined && row[year] !== null && row[year] !== '' ? row[year] : '-' }}
@@ -299,10 +267,7 @@ const chartOptions = {
                                 </tbody>
                             </table>
                         </div>
-
-                        <div v-else class="p-10 text-center text-gray-400 italic">
-                            Tidak ada data indikator yang ditemukan.
-                        </div>
+                        <div v-else class="p-10 text-center text-gray-400 italic">Tidak ada data indikator yang ditemukan.</div>
 
                         <div v-if="props.tableData?.current_page" class="p-6 bg-gray-50/80 border-t border-gray-200 flex justify-between items-center text-xs text-gray-500 font-medium">
                             <p class="text-xs font-black text-[#A2B5CB] uppercase tracking-widest">Halaman {{ props.tableData.current_page }} dari {{ props.tableData.last_page }}</p>
@@ -327,6 +292,19 @@ const chartOptions = {
                                 <div class="flex justify-between items-center py-3 border-b border-gray-50 px-2"><span class="text-s text-gray-800 uppercase tracking-wider">Urusan</span><span class="text-s font-black text-[#000B58] text-right">{{ dataset?.urusan?.nama_urusan || '-' }}</span></div>
                                 <div class="flex justify-between items-center py-3 border-b border-gray-50 px-2"><span class="text-s text-gray-800 uppercase tracking-wider">Bidang</span><span class="text-s font-black text-[#000B58] text-right">{{ dataset?.bidang?.nama_bidang || '-' }}</span></div>
                                 <div class="flex justify-between items-center py-3 border-b border-gray-50 px-2"><span class="text-s text-gray-800 uppercase tracking-wider">Tema</span><span class="text-s font-black text-[#000B58] text-right">{{ dataset?.tema?.nama_tema || '-' }}</span></div>
+                                
+                                <div class="pt-4 mt-2">
+                                    <span class="text-[10px] font-black text-[#A2B5CB] uppercase tracking-[0.2em] block mb-3">Kata Kunci / Tagging</span>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span v-for="tag in dataset?.katakunci" :key="tag.id_katakunci" 
+                                              class="px-3 py-1 bg-blue-50 text-[#00139E] text-[11px] font-bold rounded-lg border border-blue-100 uppercase tracking-wider hover:bg-[#00139E] hover:text-white transition-colors duration-200 cursor-default">
+                                            #{{ tag.nama_katakunci }}
+                                        </span>
+                                        <span v-if="!dataset?.katakunci || dataset?.katakunci.length === 0" class="text-gray-400 italic text-xs">
+                                            Tidak ada kata kunci yang disematkan.
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -350,7 +328,7 @@ const chartOptions = {
                     <div class="space-y-8">
                         <div class="bg-white border border-gray-400 p-10 rounded-[2.5rem] shadow-sm h-full">
                             <div class="mb-10">
-                                <h4 class="text-xl font-black text-[#000B58] uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg> Deskripsi Lengkap</h4>
+                                <h4 class="text-xl font-black text-[#000B58] uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Deskripsi Lengkap</h4>
                                 <p class="text-gray-800 text-s leading-loose text-justify">{{ dataset?.deskripsi || 'Tidak ada deskripsi yang tersedia untuk dataset ini.' }}</p>
                             </div>
                             
@@ -387,7 +365,6 @@ const chartOptions = {
 
                         <div class="relative w-full h-[500px] bg-gray-50/30 rounded-[2rem] border border-gray-100 p-4">
                             <Line v-if="chartConfig && chartConfig.datasets.length > 0" :data="chartConfig" :options="chartOptions" />
-                            
                             <div v-else class="flex flex-col items-center justify-center h-full text-gray-400 bg-gray-50/50 rounded-[2rem] border-2 border-dashed border-gray-200">
                                 <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 border border-gray-200">
                                     <svg class="w-10 h-10 text-[#A2B5CB]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -423,7 +400,7 @@ const chartOptions = {
 
                                     <div class="flex-1">
                                         <p class="text-xs font-black text-gray-700 leading-tight group-hover:text-[#00139E] transition-colors uppercase tracking-wide">
-                                            {{ row.nama_indikator || row['Nama Data'] || row['Nama Indikator'] || row['Uraian'] || Object.values(row)[0] }}
+                                            {{ row.nama_indikator || row['Nama Data'] || row['Nama Indikator'] || row['Uraian'] }}
                                         </p>
                                         <div v-if="selectedIndices.includes(index)" 
                                              class="mt-2 h-1.5 w-full rounded-full overflow-hidden bg-gray-100">
@@ -434,7 +411,6 @@ const chartOptions = {
                                     </div>
                                 </div>
                             </div>
-                            
                             <div v-else class="flex-1 flex flex-col items-center justify-center text-center p-6 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
                                 <p class="text-xs font-bold text-gray-400 italic">Data list tidak tersedia.</p>
                             </div>

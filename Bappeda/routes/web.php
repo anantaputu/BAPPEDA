@@ -8,7 +8,8 @@ use App\Http\Controllers\Public\LandingController;
 use App\Http\Controllers\Public\SearchController;
 use App\Http\Controllers\Public\DatasetController;
 use App\Http\Controllers\Public\DashboardController; // Traffic Cop
-use App\Http\Controllers\Public\OverviewController;  // Statistik Public
+use App\Http\Controllers\Public\OverviewController;
+use App\Http\Controllers\Public\LearnmoreController;  // Statistik Public
 
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\UserController;
@@ -32,7 +33,9 @@ use App\Http\Controllers\Inputer\DataOutputController;
 */
 Route::get('/', [LandingController::class, 'index']);
 Route::get('/public-dashboard', [DashboardController::class, 'index'])->name('public.dashboard');
-Route::get('/cari', [SearchController::class, 'index'])->name('public.search');
+Route::get('/search', [SearchController::class, 'index'])->name('public.search');
+Route::get('/learnmore', [LearnmoreController::class, 'index'])->name('public.learnmore');
+Route::post('/contact', [App\Http\Controllers\Public\ContactController::class, 'store'])->name('public.contact.store');
 Route::get('/dataset/{id}', [DatasetController::class, 'show'])->name('dataset.detail');
 Route::get('/export/data/{id}', [DataOutputController::class, 'export'])->name('public.export');
 Route::get('/katalog', [App\Http\Controllers\Public\DatasetController::class, 'index'])->name('public.katalog');// ini ga penting nanta cuman kek search gitu
@@ -88,6 +91,8 @@ Route::middleware(['auth', 'role:admin|inputer'])->prefix('inputer')->name('inpu
 
     // Route::get('/wizard', [DataInputController::class, 'createWizard'])->name('wizard');
     Route::post('/data', [DataInputController::class, 'store'])->name('data.store');
+
+    Route::delete('/data/{id}', [DataInputController::class, 'destroy'])->name('data.destroy');
 
     Route::get('/export/{id}', [DataOutputController::class, 'export'])->name('export');
     

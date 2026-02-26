@@ -1,26 +1,27 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
-// Import Komponen Baru
 import Navbar from '@/Components/Layout/Navbar.vue';
 import Sidebar from '@/Components/Layout/Sidebar.vue';
-// import UserHeader from '@/Components/Layout/UserHeader.vue';
 import LogoutModal from '@/Components/Layout/LogoutModal.vue';
 
-// 1. Inisialisasi Data Global
+const isSidebarOpen = ref(true);
+
+const toggleSidebar = () => {
+    isSidebarOpen.value = !isSidebarOpen.value;
+};
+
 const page = usePage();
 const logoPath = '/images/logo.png';
 const activeUrl = computed(() => page.url);
 const showLogoutModal = ref(false);
 
-// Logika untuk menutup modal logout saat URL berubah
 watch(() => page.url, () => {
     showLogoutModal.value = false;
 });
 
-// 2. Logika Deteksi Role
 const role = computed(() => {
-    const userData = page.props.auth?.user; // optional chaining
+    const userData = page.props.auth?.user; 
     if (!userData) return 'anonymous';
     
     const namaRole = userData.role; 
@@ -29,13 +30,11 @@ const role = computed(() => {
     return "guest";
 });
 
-// 3. Logika Dropdown Master Data (Auto-open jika di URL terkait)
 const openMasterData = ref(
     ['/admin/data', '/admin/tema', '/admin/urusan', '/admin/bidang', '/admin/frekuensi']
     .some(path => activeUrl.value.startsWith(path))
 );
 
-// 4. Konfigurasi Menu Berdasarkan Role
 const menuGroups = computed(() => {
     const groups = [];
     const dashboardPath = role.value === 'admin' 
@@ -60,14 +59,13 @@ const menuGroups = computed(() => {
         });
     }
 
-  if (role.value === 'admin' || role.value === 'inputer') {
+    if (role.value === 'admin' || role.value === 'inputer') {
         groups.push({
-            label: 'DATA REFERENSI', // Label baru agar cocok untuk keduanya
+            label: 'DATA REFERENSI',
             items: [
                 {
-                       name: 'Input Data Baru', 
-
-                    path: '/inputer/data', // Route ini sekarang aman untuk admin
+                    name: 'Input Data Baru', 
+                    path: '/inputer/data', 
                     icon: 'M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' 
                 },
                 { 
@@ -80,7 +78,6 @@ const menuGroups = computed(() => {
                         { name: 'Frekuensi', path: '/admin/frekuensi' },
                     ]
                 },
-                
             ]
         });
     }
@@ -89,12 +86,11 @@ const menuGroups = computed(() => {
 </script>
 
 <template>
-    <div class="flex min-h-screen bg-white font-sans">
+    <div class="flex min-h-screen bg-white font-sans overflow-x-hidden">
         
-        <Navbar v-if="role === 'anonymous'" :logoPath="logoPath" />
-
         <Sidebar 
             v-if="role !== 'anonymous'"
+            :isSidebarOpen="isSidebarOpen"
             :role="role"
             :menuGroups="menuGroups"
             :activeUrl="activeUrl"
@@ -102,25 +98,42 @@ const menuGroups = computed(() => {
             :logoPath="logoPath"
             @toggleMasterData="openMasterData = !openMasterData"
             @logout="showLogoutModal = true"
+            @toggleSidebar="isSidebarOpen = !isSidebarOpen" 
         />
 
-        <main :class="[role === 'anonymous' ? 'w-full' : 'ml-[22rem] p-8 w-full flex flex-col min-h-screen']">
-            <!-- <UserHeader v-if="role !== 'anonymous'" /> -->
-            
-            <div class="flex-1">
-                <slot />
-            </div>
+        <Transition
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="opacity-0 -translate-x-10"
+            enter-to-class="opacity-100 translate-x-0"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="opacity-100 translate-x-0"
+            leave-to-class="opacity-0 -translate-x-10"
+        >
+            <button 
+                v-if="role !== 'anonymous' && !isSidebarOpen"
+                @click="isSidebarOpen = true"
+                class="fixed top-1/2 left-4 z-[60] transform -translate-y-1/2 w-10 h-10 bg-[#000B58] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-900 transition-all"
+            >
+                <svg class="w-6 h-6 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+        </Transition>
 
-            <footer v-if="role === 'anonymous'" class="w-full bg-white border border-gray-400 py-16 mt-20">
-                <div class="max-w-[80%] mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
-                    <div class="space-y-4">
-                        <h2 class="text-2xl font-black text-[#000B58]">BAPPEDA Provinsi Nusa Tenggara Barat</h2>
-                        <p class="text-[#A2B5CB] text-xs italic">Jl. Flamboyan No.2, Mataram Bar., Kec. Selaparang, Kota Mataram, NTB 83126</p>
-                    </div>
-                    <img :src="logoPath" alt="Logo" class="h-32 grayscale opacity-50">
-                </div>
-            </footer>
-        </main>
+        <div 
+            :class="[
+                role === 'anonymous' ? 'w-full' : 'flex-1 transition-all duration-500 ease-in-out',
+                (role !== 'anonymous' && isSidebarOpen) ? 'ml-[26rem]' : 'ml-0'
+            ]"
+            class="flex flex-col min-h-screen min-w-0"
+        >
+
+            <Navbar v-if="role == 'anonymous'" :logoPath="logoPath"/>
+
+            <main class="p-8 flex-1">
+                <slot />
+            </main>
+        </div>
 
         <LogoutModal :show="showLogoutModal" @close="showLogoutModal = false" />
     </div>

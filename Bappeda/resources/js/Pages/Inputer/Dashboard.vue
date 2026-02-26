@@ -14,11 +14,10 @@ defineOptions({ layout: AppLayout });
 const props = defineProps({
     auth: Object,
     stats: Object,
-    growthChart: Object, // Menerima object labels & values dari controller
+    growthChart: Object,
     myRecentActivities: Array,
 });
 
-// Warna Emerald untuk Tema Inputer
 const colors = {
     emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', bar: 'bg-emerald-600' },
     amber: { bg: 'bg-amber-50', text: 'text-amber-600', bar: 'bg-amber-600' },
@@ -56,28 +55,14 @@ const statsCards = computed(() => [
         progress: (props.stats.total_input > 0) ? ((props.stats.data_rejected / props.stats.total_input) * 100) : 0
     },
 ]);
-
-// Konfigurasi Doughnut menggunakan data stats
-const doughnutData = computed(() => ({
-    datasets: [{
-        data: [props.stats.data_approved],
-        backgroundColor: ['#000B58'],
-        borderWidth: 2,
-        borderColor: '#ffffff',
-        cutout: '75%'
-    }]
-}));
-
-const validationData = computed(() => ({
-    total: props.stats.total_input || 0
-}));
 </script>
 
 <template>
     <Head title="Dashboard Inputer" />
 
-    <div class="space-y-8 px-4 sm:px-0">
-        <div class="flex items-center justify-between mb-4">
+    <div class="max-w-full overflow-hidden space-y-8 px-4 sm:px-6 lg:px-8 py-4">
+        
+        <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-black text-[#000B58] uppercase tracking-tight">Ruang Kerja Inputer</h1>
                 <p class="text-sm text-slate-400 font-medium italic">Monitoring performa input data Anda.</p>
@@ -92,22 +77,19 @@ const validationData = computed(() => ({
                 :colors="colors" 
             />
         </section>
-
-        <section>
-            <div class="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-400">
-                <h3 class="text-xs font-black text-[#000B58] uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <span class="w-1.5 h-4 bg-[#00139E] rounded-full"></span>
-                    (12 Bulan Terakhir)
-                </h3>
-                <GrowthLineChart 
-                    :chartData="props.growthChart" 
-                />
-            </div>
-        </section>
         
-        <ActivityLog 
-            title="Riwayat Aktivitas Saya" 
-            :activities="props.myRecentActivities" 
-        />
+        <div class="w-full">
+            <ActivityLog 
+                title="Riwayat Aktivitas Saya" 
+                :activities="props.myRecentActivities" 
+            />
+        </div>
     </div>
 </template>
+
+<style scoped>
+/* Memastikan kontainer tidak meluap saat sidebar transisi */
+div {
+    transition: width 0.3s ease;
+}
+</style>

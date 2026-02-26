@@ -8,7 +8,8 @@ import { computed } from 'vue'
 defineOptions({ layout: AppLayout })
 
 const page = usePage()
-const cantManage = computed( () => page.props.auth.user.role == 'inputer')
+const user = computed(() => page.props.auth.user)
+const cantManage = computed(() => user.value?.role === 'Admin')
 
 const props = defineProps({
     frekuensi: Array

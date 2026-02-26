@@ -70,30 +70,29 @@ class DatasetController extends Controller
     }
     
     public function index(Request $request)
-{
-    $query = Data::with(['tema', 'urusan', 'bidang'])->where('status', 'aktif');
+    {
+        $query = Data::with(['tema', 'urusan', 'bidang'])->where('status', 'aktif');
 
-    // Filter dinamis
-    if ($request->filled('tema')) $query->where('id_tema', $request->tema);
-    if ($request->filled('urusan')) $query->where('id_urusan', $request->urusan);
-    if ($request->filled('bidang')) $query->where('id_bidang', $request->bidang);
-    if ($request->filled('q')) $query->where('nama_indikator', 'like', '%' . $request->q . '%');
+        // Filter dinamis
+        if ($request->filled('tema')) $query->where('id_tema', $request->tema);
+        if ($request->filled('urusan')) $query->where('id_urusan', $request->urusan);
+        if ($request->filled('bidang')) $query->where('id_bidang', $request->bidang);
+        if ($request->filled('q')) $query->where('nama_indikator', 'like', '%' . $request->q . '%');
 
-    return Inertia::render('Public/Katalog', [
-        'indicators' => $query->latest()->paginate(12)->withQueryString(),
-        'filters'    => $request->all(),
-        // Kirim semua daftar metadata untuk dropdown filter
-        'listTema'    => \App\Models\Tema::all(),
-        'listUrusan'  => \App\Models\Urusan::all(),
-        'listBidang'  => \App\Models\Bidang::all(),
-    ]);
-}
-public function show(Request $request, $id)
+        return Inertia::render('Public/Katalog', [
+            'indicators' => $query->latest()->paginate(12)->withQueryString(),
+            'filters'    => $request->all(),
+            // Kirim semua daftar metadata untuk dropdown filter
+            'listTema'    => \App\Models\Tema::all(),
+            'listUrusan'  => \App\Models\Urusan::all(),
+            'listBidang'  => \App\Models\Bidang::all(),
+        ]);
+    }
+
+    public function show(Request $request, $id)
     {
         // 1. Ambil Data Master berserta relasi Metadata dan Values (Nilainya)
-        $dataset = Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'values'])
-            ->where('id_data', $id)
-            ->firstOrFail();
+        $dataset = Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'katakunci'])->findOrFail($id);
 
         // 2. Format Data untuk Tabel dan Grafik Vue
         // Karena ini halaman detail 1 indikator, kita jadikan 1 baris (row)
