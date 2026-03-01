@@ -11,7 +11,7 @@ use App\Models\DataUpload;
 
 class InputerDashboardController extends Controller
 {
-    public function index()
+  public function index()
     {
         $userId = Auth::id();
 
@@ -26,7 +26,6 @@ class InputerDashboardController extends Controller
         ];
 
         // 2. LOGIKA GROWTH CHART (Pola Admin)
-        // Gunakan DATE_FORMAT(created_at, '%Y-%m') jika Anda menggunakan MySQL
         $growthRaw = DataUpload::select(
             DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"), 
             DB::raw('COUNT(*) as total')
@@ -50,7 +49,6 @@ class InputerDashboardController extends Controller
             $growthValues[] = $growthRaw[$monthKey] ?? 0;
         }
 
-        // Ini adalah object yang akan diterima oleh GrowthLineChart
         $growthChart = [
             'labels' => $growthLabels,
             'values' => $growthValues
@@ -73,10 +71,34 @@ class InputerDashboardController extends Controller
                 ];
             });
 
+        // =========================================================
+        // 4. [BARU] QUERY UNTUK GRAFIK "PIN DATA" SELURUH INDIKATOR
+        // =========================================================
+        $indikators = \App\Models\Data::with('values')->where('id_user', $userId)->get();
+        
+        $allDataFormatted = [];
+        foreach ($indikators as $dataset) {
+            $rowObject = [
+                'id_data'            => $dataset->id_data,
+                'nama_indikator'     => $dataset->nama_indikator,
+                'satuan'             => $dataset->satuan,
+                'informasi_tambahan' => $dataset->informasi_tambahan,
+            ];
+            
+            // Susun nilai per tahun menjadi format mendatar ke samping
+            foreach ($dataset->values as $val) {
+                $rowObject[$val->tahun] = $val->nilai;
+            }
+            $allDataFormatted[] = $rowObject;
+        }
+        // =========================================================
+
         return Inertia::render('Inputer/Dashboard', [
-            'stats' => $stats,
-            'growthChart' => $growthChart,
+            'stats'              => $stats,
+            'growthChart'        => $growthChart,
             'myRecentActivities' => $myRecentActivities,
+            // [BARU] Lempar data ini agar dibaca oleh Chart.js di Vue
+            'allData'            => $allDataFormatted, 
         ]);
     }
 }

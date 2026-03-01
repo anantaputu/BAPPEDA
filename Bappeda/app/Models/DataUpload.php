@@ -10,6 +10,7 @@ class DataUpload extends Model
 {
     protected $table = 'data_uploads';
     protected $primaryKey = 'id_upload';
+    protected $guarded = [];
 
     protected $fillable = [
         'id_data',
@@ -32,7 +33,7 @@ class DataUpload extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'id_user');
+        return $this->belongsTo(User::class, 'id_user', 'id');
     }
 
     public function values()

@@ -12,8 +12,8 @@ return new class extends Migration
        
             $table->unsignedBigInteger('id_data'); 
             
-            $table->year('tahun'); 
-            $table->string('nilai')->nullable(); 
+            $table->string('tahun'); 
+            $table->double('nilai')->nullable(); 
             $table->timestamps();
 
    

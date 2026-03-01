@@ -89,29 +89,42 @@ class DatasetController extends Controller
         ]);
     }
 
-    public function show(Request $request, $id)
+   public function show(Request $request, $id)
     {
-        // 1. Ambil Data Master berserta relasi Metadata dan Values (Nilainya)
-        $dataset = Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'katakunci'])->findOrFail($id);
+        // 1. Ambil Data Master berserta relasi Metadata dan Values
+        // (Hapus 'katakunci' jika memang tabelnya belum ada agar tidak error)
+        $dataset = Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'values', 'uploads'])->findOrFail($id);
 
-        // 2. Format Data untuk Tabel dan Grafik Vue
-        // Karena ini halaman detail 1 indikator, kita jadikan 1 baris (row)
+        // 2. Format Data Dasar
         $rowObject = [
             'Nama Indikator' => $dataset->nama_indikator,
             'Satuan'         => $dataset->satuan ?? '-',
         ];
 
-        // 3. Masukkan nilai tahun dan angka dari DataValue ke dalam baris tersebut
-        // Urutkan berdasarkan tahun agar grafik dari kiri ke kanan (Masa lalu ke masa depan)
+        // ========================================================
+        // [PERBAIKAN] 3. BONGKAR JSON INFORMASI TAMBAHAN KE KOLOM
+        // ========================================================
+        if (!empty($dataset->informasi_tambahan)) {
+            $extraFields = json_decode($dataset->informasi_tambahan, true);
+            if (is_array($extraFields)) {
+                foreach ($extraFields as $key => $val) {
+                    // Hindari duplikasi kolom Nama Data
+                    if (strtolower($key) !== 'nama data' && strtolower($key) !== 'nama indikator') {
+                        $rowObject[$key] = $val;
+                    }
+                }
+            }
+        }
+
+        // 4. Masukkan nilai waktu (Tahun/Bulan)
         $sortedValues = $dataset->values->sortBy('tahun');
         foreach ($sortedValues as $val) {
             $rowObject[$val->tahun] = $val->nilai;
         }
 
-        // Bungkus dalam array karena Vue mengharapkan bentuk List of Objects
         $fullChartData = [$rowObject];
 
-        // 4. Paginasi buatan (karena hanya 1 baris, kita buat paginator statis agar Vue tidak error)
+        // 5. Paginasi statis
         $paginatedData = new \Illuminate\Pagination\LengthAwarePaginator(
             $fullChartData, 1, 20, 1,
             ['path' => $request->url()]

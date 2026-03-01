@@ -11,14 +11,28 @@ const user = computed(() => page.props.auth.user)
 const cantManage = computed(() => user.value?.role === 'Admin')
 
 const props = defineProps({
-    dataIndikator: Object, // Relasi 'values' harus di-load dari controller
+    dataIndikator: Object,
     tema: Array,
     urusan: Array,
     bidang: Array,
     frekuensi: Array,
 });
 
-// Mapping data ke form sesuai dengan Migration & Model Data.php
+// 1. Parsing Informasi Tambahan
+let parsedExtraFields = {};
+if (props.dataIndikator?.informasi_tambahan) {
+    let rawExtra = props.dataIndikator.informasi_tambahan;
+    if (typeof rawExtra === 'string') {
+        try { rawExtra = JSON.parse(rawExtra); } catch (e) { rawExtra = {}; }
+    }
+    for (let key in rawExtra) {
+        if (key.toLowerCase() !== 'nama data' && key.toLowerCase() !== 'nama indikator') {
+            parsedExtraFields[key] = rawExtra[key] || ''; 
+        }
+    }
+}
+
+// 2. Mapping Form
 const form = useForm({
     nama_indikator: props.dataIndikator.nama_indikator,
     deskripsi: props.dataIndikator.deskripsi,
@@ -30,25 +44,21 @@ const form = useForm({
     sumber: props.dataIndikator.sumber,
     kata_kunci: props.dataIndikator.kata_kunci,
     status: props.dataIndikator.status || 'aktif',
-    tahun: props.dataIndikator.tahun, // Tahun Dasar/Pembuatan
-    informasi_tambahan: props.dataIndikator.informasi_tambahan,
+    tahun: props.dataIndikator.tahun, 
     
-    // Muat data array nilai dari tabel data_values
+    // Properti Extra Fields dan Values
+    extra_fields: parsedExtraFields, 
     values: props.dataIndikator.values && props.dataIndikator.values.length > 0 
             ? props.dataIndikator.values.map(v => ({ tahun: v.tahun, nilai: v.nilai }))
             : [{ tahun: String(new Date().getFullYear()), nilai: '' }]
 });
 
-// FUNGSI: Menambah KOLOM baru ke samping
 const addColumn = () => {
     const lastYear = form.values.length > 0 ? form.values[form.values.length - 1].tahun : new Date().getFullYear();
-    // Jika formatnya angka (misal 2024), sarankan tahun berikutnya (2025)
     const nextYear = !isNaN(lastYear) && lastYear.trim() !== '' ? String(parseInt(lastYear) + 1) : '';
-    
     form.values.push({ tahun: nextYear, nilai: '' });
 };
 
-// FUNGSI: Menghapus KOLOM
 const removeColumn = (index) => {
     if (form.values.length > 1) {
         form.values.splice(index, 1);
@@ -58,7 +68,6 @@ const removeColumn = (index) => {
 };
 
 const submit = () => {
-    // Validasi Sederhana untuk tabel dinamis
     const hasEmptyValues = form.values.some(v => v.tahun === '' || v.nilai === '');
     if (hasEmptyValues) {
         alert("Mohon lengkapi semua baris Waktu dan Nilai pada tabel.");
@@ -68,7 +77,7 @@ const submit = () => {
     form.put(`/inputer/data/${props.dataIndikator.id_data}`, {
         preserveScroll: true,
         onSuccess: () => {
-            // Berhasil
+            alert('Data berhasil diperbarui!');
         },
         onError: (errors) => {
             console.log(errors);
@@ -92,13 +101,11 @@ const submit = () => {
             </div>
 
             <form @submit.prevent="submit" class="space-y-10">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 bg-gray-50/50 p-8 rounded-[2rem] border border-gray-100">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 bg-gray-50/50 p-8 rounded-[2rem] border border-gray-100 relative">
                     
                     <div class="md:col-span-3 space-y-2">
                         <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Nama Indikator</label>
-                        <input v-model="form.nama_indikator" type="text" 
-                            class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58] focus:ring-[#00139E]"
-                            :class="{ 'border-red-500': form.errors.nama_indikator }" />
+                        <input v-model="form.nama_indikator" type="text" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58] focus:ring-[#00139E]" />
                     </div>
 
                     <div class="md:col-span-1 space-y-2">
@@ -152,19 +159,27 @@ const submit = () => {
                         <input v-model="form.tahun" type="number" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58]" />
                     </div>
 
+                    <template v-if="Object.keys(form.extra_fields).length > 0">
+                        <div class="md:col-span-4 border-t border-gray-200 my-2 pt-6">
+                            <h4 class="text-[10px] font-black uppercase text-[#000B58] tracking-widest flex items-center gap-2">
+                                <svg class="w-4 h-4 text-[#00139E]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                                Atribut Tambahan
+                            </h4>
+                        </div>
+                        <div v-for="(value, key) in form.extra_fields" :key="key" class="md:col-span-2 space-y-2">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{{ key }}</label>
+                            <input v-model="form.extra_fields[key]" type="text" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-medium text-[#000B58] focus:ring-[#00139E]" />
+                        </div>
+                    </template>
+
                     <div class="md:col-span-2 space-y-2">
                         <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Deskripsi</label>
-                        <textarea v-model="form.deskripsi" rows="3" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-medium text-[#000B58]"></textarea>
+                        <textarea v-model="form.deskripsi" rows="2" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-medium text-[#000B58]"></textarea>
                     </div>
 
                     <div class="md:col-span-2 space-y-2">
                         <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Kata Kunci (Tag)</label>
-                        <textarea v-model="form.kata_kunci" rows="3" placeholder="Pisahkan dengan koma..." class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-medium text-[#000B58]"></textarea>
-                    </div>
-
-                    <div class="md:col-span-4 space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Informasi Tambahan</label>
-                        <input v-model="form.informasi_tambahan" type="text" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-medium text-[#000B58]" />
+                        <textarea v-model="form.kata_kunci" rows="2" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-medium text-[#000B58]"></textarea>
                     </div>
                 </div>
 
@@ -176,13 +191,12 @@ const submit = () => {
                             </div>
                             <div>
                                 <h3 class="text-white font-black uppercase tracking-widest text-sm">Capaian Nilai</h3>
-                                <p class="text-blue-200 text-[10px] font-medium mt-0.5">Tambah periode waktu ke samping (horizontal).</p>
+                                <p class="text-blue-200 text-[10px] font-medium mt-0.5">Edit nilai atau tambah waktu periode ke samping.</p>
                             </div>
                         </div>
-                        
                         <button @click.prevent="addColumn" class="bg-[#00D2FC] text-[#000B58] hover:bg-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-lg flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
-                            Tambah Periode
+                            Tambah Kolom Data
                         </button>
                     </div>
 
@@ -190,24 +204,24 @@ const submit = () => {
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr>
-                                    <th class="p-4 bg-gray-50 border-b-2 border-gray-200 border-r text-[10px] font-black text-gray-400 uppercase tracking-widest w-48 min-w-[200px] sticky left-0 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
-                                        Periode / Waktu
+                                    <th class="p-4 bg-gray-50 border-b border-gray-200 border-r text-[10px] font-black text-gray-400 uppercase tracking-widest w-48 min-w-[200px] sticky left-0 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
+                                        Atribut / Periode
                                     </th>
-                                    <th v-for="(item, index) in form.values" :key="'head-'+index" class="p-4 bg-gray-50 border-b-2 border-gray-200 min-w-[220px] relative group border-r border-gray-100">
+                                    <th v-for="(item, index) in form.values" :key="'head-'+index" class="p-4 bg-white border-b border-gray-200 min-w-[220px] border-r border-gray-100">
                                         <div class="flex items-center justify-between mb-1">
-                                            <label class="text-[9px] font-black text-blue-600 uppercase">Tahun/Bulan *</label>
-                                            <button @click.prevent="removeColumn(index)" class="text-red-400 hover:text-red-600 transition-colors">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                            <label class="text-[9px] font-black text-blue-600 uppercase">Waktu / Bulan / Tahun *</label>
+                                            <button @click.prevent="removeColumn(index)" class="text-red-400 hover:text-red-600 transition-colors bg-red-50 p-1.5 rounded-md">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </button>
                                         </div>
-                                        <input v-model="item.tahun" type="text" placeholder="Misal: 2024" class="w-full bg-white border-gray-300 rounded-lg px-3 py-2 text-xs font-bold focus:ring-[#00139E]" required>
+                                        <input v-model="item.tahun" type="text" class="w-full bg-gray-50 border-gray-200 rounded-lg px-3 py-2.5 text-xs font-bold focus:ring-[#00139E]" required>
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr class="hover:bg-blue-50/30 transition-colors">
+                                <tr>
                                     <td class="p-4 bg-white border-b border-gray-100 border-r sticky left-0 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.03)]">
-                                        <span class="text-xs font-black text-[#000B58] uppercase tracking-wide">Nilai Capaian</span>
+                                        <span class="text-xs font-black text-[#000B58] uppercase tracking-wide">Isi Nilai Capaian</span>
                                         <span class="block text-[10px] text-gray-400 mt-1">Gunakan (.) untuk desimal</span>
                                     </td>
                                     <td v-for="(item, index) in form.values" :key="'val-'+index" class="p-4 border-b border-gray-100 border-r">
@@ -220,10 +234,7 @@ const submit = () => {
                 </div>
 
                 <div class="pt-6 flex items-center justify-end gap-4 border-t border-gray-100">
-                    <Link v-if='cantManage' href="/admin/dashboard" class="px-8 py-4 text-gray-400 font-bold hover:text-gray-600 transition-colors uppercase tracking-widest text-xs">
-                        Batal
-                    </Link>
-                    <Link v-if='!cantManage' href="/inputer/dashboard" class="px-8 py-4 text-gray-400 font-bold hover:text-gray-600 transition-colors uppercase tracking-widest text-xs">
+                    <Link href="/inputer/dashboard" class="px-8 py-4 text-gray-400 font-bold hover:text-gray-600 transition-colors uppercase tracking-widest text-xs">
                         Batal
                     </Link>
                     <button type="submit" :disabled="form.processing"

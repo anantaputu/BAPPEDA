@@ -14,63 +14,62 @@ use App\Models\DataValue;
 class Data extends Model
 {
    protected $table = 'data';
-    protected $primaryKey = 'id_data';
-    protected $guarded = [];
+   protected $primaryKey = 'id_data';
 
-    protected $fillable = [
-        'nama_indikator',
-        'deskripsi',
-        'id_tema',
-        'id_urusan',
-        'id_bidang',
-        'id_frekuensi',
-        'satuan',
-        'sumber',
-        'status',
-        'tahun',
-        'informasi_tambahan',
-    ];
+   protected $fillable = [
+       'id_user', 
+       'id_upload',
+       'nama_indikator',
+       'deskripsi',
+       'id_tema',
+       'id_urusan',
+       'id_bidang',
+       'id_frekuensi',
+       'satuan',
+       'sumber',
+       'status',
+       'tahun',
+       'informasi_tambahan',
+   ];
 
-    /* ================= RELATIONS ================= */
+   /* ================= RELATIONS ================= */
 
-     public function tema()
-    {
-        return $this->belongsTo(Tema::class, 'id_tema', 'id_tema');
-    }
+   public function tema()
+   {
+       return $this->belongsTo(Tema::class, 'id_tema', 'id_tema');
+   }
 
-    public function urusan()
-    {
-        return $this->belongsTo(Urusan::class, 'id_urusan', 'id_urusan');
-    }
+   public function urusan()
+   {
+       return $this->belongsTo(Urusan::class, 'id_urusan', 'id_urusan');
+   }
 
-    public function bidang()
-    {
-        return $this->belongsTo(Bidang::class, 'id_bidang', 'id_bidang');
-    }
+   public function bidang()
+   {
+       return $this->belongsTo(Bidang::class, 'id_bidang', 'id_bidang');
+   }
 
-    public function frekuensi()
-    {
-        return $this->belongsTo(Frekuensi::class, 'id_frekuensi', 'id_frekuensi');
-    }
-    
-    public function katakunci()
-    {
-        return $this->belongsToMany(Katakunci::class, 'data_katakunci_pivot', 'id_data', 'id_katakunci');
-    }
+   public function frekuensi()
+   {
+       return $this->belongsTo(Frekuensi::class, 'id_frekuensi', 'id_frekuensi');
+   }
+   
+   public function katakunci()
+   {
+       return $this->belongsToMany(Katakunci::class, 'data_katakunci_pivot', 'id_data', 'id_katakunci');
+   }
 
-    public function cd ()
-    {
-        return $this->hasMany(DataField::class, 'id_data');
-    }
+   public function cd ()
+   {
+       return $this->hasMany(DataField::class, 'id_data');
+   }
 
-    public function uploads()
-    {
-        return $this->hasMany(DataUpload::class, 'id_data');
-    }
+   public function uploads()
+   {
+       return $this->hasMany(DataUpload::class, 'id_data', 'id_data');
+   }
 
-    public function values() {
-        return $this->hasMany(DataValue::class, 'id_data')->orderBy('tahun', 'desc');
-    }
-
-    
+   public function values() {
+       return $this->hasMany(DataValue::class, 'id_data', 'id_data');
+   }
 }

@@ -203,12 +203,12 @@ class DataUploadService
     }
 
     // 4. FUNGSI SIMPAN SINGLE
+    // 4. FUNGSI SIMPAN SINGLE
     public function processSingleData($formData, $userId)
     {
         DB::beginTransaction();
         try {
             // Ambil tahun pertama dari array values sebagai default tahun untuk master dan log
-            // (Jika user menginput 2024 dan 2025, ini akan mengambil 2024)
             $defaultTahun = $formData['values'][0]['tahun'] ?? date('Y');
 
             // 1. Simpan Master Data
@@ -224,14 +224,17 @@ class DataUploadService
                     'deskripsi'    => $formData['deskripsi'] ?? null,
                     'sumber'       => $formData['sumber'] ?? null,
                     'status'       => 'aktif',
-                    // Gunakan tahun dari baris pertama yang diinput
-                    'tahun'        => $defaultTahun 
+                    'tahun'        => $defaultTahun,
+                    
+                    // [PERBAIKAN DI SINI] Tangkap extra_fields dan jadikan JSON
+                    'informasi_tambahan' => isset($formData['extra_fields']) && !empty($formData['extra_fields']) 
+                                            ? json_encode($formData['extra_fields']) 
+                                            : null,
                 ]
             );
 
             // 2. Looping array values dari Vue
             foreach ($formData['values'] as $item) {
-                // PERBAIKAN: Gunakan $item['nilai'] bukan $formData['nilai']
                 $nilaiClean = preg_replace('/[^0-9,\.\-]/', '', $item['nilai']); 
                 
                 if (strpos($nilaiClean, ',') !== false && strpos($nilaiClean, '.') !== false) {
@@ -243,7 +246,6 @@ class DataUploadService
                 
                 // 3. Simpan Nilai ke data_values
                 DataValue::updateOrCreate(
-                    // PERBAIKAN: Gunakan $item['tahun'] bukan $formData['tahun']
                     ['id_data' => $dataMaster->id_data, 'tahun' => $item['tahun']], 
                     ['nilai' => (float) $nilaiClean]
                 );
@@ -253,11 +255,9 @@ class DataUploadService
             DataUpload::create([
                 'id_user'   => $userId,
                 'id_data'   => $dataMaster->id_data,
-                // PERBAIKAN: Gunakan defaultTahun
                 'periode'   => $defaultTahun, 
                 'status'    => 'valid',
                 'file_path' => 'manual_input', 
-                // PERBAIKAN: Simpan seluruh array values ke dalam JSON log
                 'value'     => json_encode(['values' => $formData['values']]), 
             ]);
 
@@ -269,6 +269,7 @@ class DataUploadService
             throw new Exception("Gagal memproses data: " . $e->getMessage());
         }
     }
+
     // 5. FUNGSI UPDATE SINGLE DATA
     public function updateSingleData($id, $formData, $userId)
     {
@@ -286,6 +287,12 @@ class DataUploadService
                 'deskripsi'      => $formData['deskripsi'] ?? null,
                 'sumber'         => $formData['sumber'] ?? null,
                 'status'         => $formData['status'] ?? 'aktif',
+                
+                // [PERBAIKAN DI SINI] Tangkap extra_fields yang diedit dan jadikan JSON
+                // Jika tidak ada extra_fields baru yang dikirim, biarkan informasi_tambahan yang lama
+                'informasi_tambahan' => isset($formData['extra_fields']) 
+                                        ? json_encode($formData['extra_fields']) 
+                                        : $dataMaster->informasi_tambahan,
             ]);
 
             // 2. Looping array values dari form edit

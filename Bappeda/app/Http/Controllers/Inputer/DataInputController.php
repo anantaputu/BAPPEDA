@@ -52,6 +52,8 @@ class DataInputController extends Controller
         $statsQuery = \App\Models\Data::query();
         if (!$isAdmin) $statsQuery->where('id_user', $user->id);
 
+        
+
         return Inertia::render('Inputer/Data/Index', [
             'stats' => [
                 'total_upload' => (clone $statsQuery)->count(),
@@ -139,54 +141,68 @@ class DataInputController extends Controller
             return response()->json(['error' => $e->getMessage()], 400);
         }
     }
-
-    public function storeBulk(Request $request)
+public function storeBulk(Request $request)
     {
         try {
-            $this->uploadService->processBulkData($request->input('dataset'), $request->input('years'), Auth::id());
+            // 1. Cek apakah datanya benar-benar terkirim dari Vue
+            if (!$request->has('dataset') || empty($request->input('dataset'))) {
+                throw new \Exception("Data Excel kosong atau gagal terbaca oleh sistem.");
+            }
+
+            // 2. Eksekusi Service (Hanya kirim 3 parameter, karena parameter ke-4 file_name sudah otomatis default di service)
+            $this->uploadService->processBulkData(
+                $request->input('dataset'), 
+                $request->input('years'), 
+                Auth::id()
+            );
+
             return response()->json(['success' => true]);
+
         } catch (\Exception $e) {
+            // Jika error, kembalikan pesan error aslinya agar bisa dibaca di Vue
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-  public function update(Request $request, $id)
-    {
-        // 1. Validasi murni di Controller
-        $request->validate([
-            'nama_indikator' => 'required|string|max:255',
-            'id_tema'        => 'required',
-            'id_urusan'      => 'required',
-            'id_bidang'      => 'required',
-            'id_frekuensi'   => 'required',
-            'satuan'         => 'required|string',
-            'sumber'         => 'nullable|string',
-            'status'         => 'required|in:aktif,nonaktif',
-            'deskripsi'      => 'nullable|string',
-            
-            // Validasi Array Nilai
-            'values'         => 'required|array|min:1',
-            'values.*.tahun' => 'required|string',
-            'values.*.nilai' => 'required',
-        ]);
+public function update(Request $request, $id)
+{
+    // 1. Validasi murni di Controller
+    $request->validate([
+        'nama_indikator' => 'required|string|max:255',
+        'id_tema'        => 'required',
+        'id_urusan'      => 'required',
+        'id_bidang'      => 'required',
+        'id_frekuensi'   => 'required',
+        'satuan'         => 'required|string',
+        'sumber'         => 'nullable|string',
+        'status'         => 'required|in:aktif,nonaktif',
+        'deskripsi'      => 'nullable|string',
+        
+        // Validasi Array Nilai
+        'values'         => 'required|array|min:1',
+        'values.*.tahun' => 'required|string',
+        'values.*.nilai' => 'required',
+    ]);
 
-        try {
-            $this->uploadService->updateSingleData($id, $request->all(), Auth::id());
-            
-            $user = Auth::user();
-            $isAdmin = ($user->role->nama_role ?? '' === 'Admin');
+    try {
+        $this->uploadService->updateSingleData($id, $request->all(), Auth::id());
+        
+        $user = Auth::user();
+        
+        // [DIPERBAIKI DI SINI] 👇
+        $isAdmin = (optional($user->role)->nama_role === 'Admin');
 
-            // Jika admin, ke dashboard admin, jika bukan (inputer), ke dashboard inputer
-            $routeName = $isAdmin ? 'admin.dashboard' : 'inputer.dashboard';
+        // Jika admin, ke dashboard admin, jika bukan (inputer), ke dashboard inputer
+        $routeName = $isAdmin ? 'admin.dashboard' : 'inputer.dashboard';
 
-            return redirect()->route($routeName)
-                ->with('message', 'Data berhasil diperbarui!');
+        return redirect()->route($routeName)
+            ->with('message', 'Data berhasil diperbarui!');
 
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Gagal Update Single: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Gagal memperbarui data: ' . $e->getMessage()]);
-        }
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error('Gagal Update Single: ' . $e->getMessage());
+        return back()->withErrors(['error' => 'Gagal memperbarui data: ' . $e->getMessage()]);
     }
+}
 
     public function destroy($id)
     {
