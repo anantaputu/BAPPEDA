@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, router } from '@inertiajs/vue3';
+import DeleteModal from '@/Components/Layout/DeleteModal.vue'; // Pastikan path ini benar
+import { Head, router, Link } from '@inertiajs/vue3';
 import { ref, watch, computed } from 'vue';
 import debounce from 'lodash/debounce';
 
@@ -10,23 +11,28 @@ const props = defineProps({
     groupedData: Object,
     timeColumns: Array,
     metadata: Object, 
-    filters: Object
+    filters: Object,
+    isAdmin: { // Ditambahkan dari file CRUD
+        type: Boolean,
+        default: false
+    }
 });
 
-// 1. CARI ID FREKUENSI "TAHUNAN" SEBAGAI DEFAULT AWAL
+// ==========================================
+// 1. STATE & LOGIKA SPREADSHEET (FILTER & GROUPING)
+// ==========================================
 const getTahunanId = () => {
     if (!props.metadata?.frekuensi) return '';
     const tahunan = props.metadata.frekuensi.find(f => f.nama_frekuensi.toLowerCase() === 'tahunan');
     return tahunan ? tahunan.id_frekuensi : '';
 };
 
-// 2. STATE FILTER (Set default frekuensi ke Tahunan jika kosong)
 const form = ref({
     search: props.filters.search || '',
     tema: props.filters.tema || '',
     urusan: props.filters.urusan || '',
     bidang: props.filters.bidang || '',
-    frekuensi: props.filters.frekuensi || getTahunanId(), // Default otomatis "Tahunan"
+    frekuensi: props.filters.frekuensi || getTahunanId(), 
     group_by: props.filters.group_by || 'tema' 
 });
 
@@ -40,35 +46,25 @@ const updateView = debounce(() => {
 
 watch(form, () => { updateView(); }, { deep: true });
 
-// ==========================================
-// 3. FILTER KOLOM CERDAS (PENGHILANG KOLOM KOSONG)
-// ==========================================
 const filteredTimeColumns = computed(() => {
     if (!props.timeColumns) return [];
     
-    // Cari nama frekuensi yang sedang dipilih di dropdown
     const selectedFreq = props.metadata.frekuensi.find(f => f.id_frekuensi === form.value.frekuensi);
     const freqName = selectedFreq ? selectedFreq.nama_frekuensi.toLowerCase() : '';
 
     return props.timeColumns.filter(col => {
         const strCol = String(col).trim();
-        // Cek apakah isi kolom murni 4 digit angka (Misal: "2024", "2025")
         const isTahunAngka = /^\d{4}$/.test(strCol); 
 
         if (freqName.includes('tahun')) {
-            // JIKA TAHUNAN: Hanya tampilkan kolom yang berupa angka 4 digit
             return isTahunAngka;
         } else if (freqName.includes('bulan') || freqName.includes('minggu') || freqName.includes('hari')) {
-            // JIKA BULANAN/MINGGUAN: Sembunyikan angka tahun murni, tampilkan teks bulan/minggu
             return !isTahunAngka;
         }
-        
-        // Jika "Semua Waktu" dipilih, tampilkan semua
         return true; 
     });
 });
 
-// HELPER: AMBIL NILAI
 const getValue = (values, timeKey) => {
     if (!values) return '-';
     const found = values.find(v => String(v.tahun).trim() === String(timeKey).trim()); 
@@ -82,7 +78,6 @@ const getGroupLabel = () => {
     return '📂 Tema Sektoral';
 };
 
-// FORMATTER WAKTU
 const formatTimeHeader = (timeString) => {
     if (timeString === null || timeString === undefined) return '-';
     try {
@@ -103,6 +98,30 @@ const formatTimeHeader = (timeString) => {
         return String(timeString).toUpperCase(); 
     }
 };
+
+// ==========================================
+// 2. STATE & LOGIKA CRUD (HAPUS DATA)
+// ==========================================
+const showDeleteModal = ref(false);
+const dataToDelete = ref(null);
+
+const openDeleteModal = (item) => {
+    dataToDelete.value = item;
+    showDeleteModal.value = true;
+};
+
+const executeDeleteAction = () => {
+    if (dataToDelete.value) {
+        // Sesuaikan endpoint ini dengan route delete data indikator Anda
+        router.delete(`/inputer/data/${dataToDelete.value.id_data}`, {
+            onSuccess: () => {
+                showDeleteModal.value = false;
+                dataToDelete.value = null;
+            },
+            preserveScroll: true
+        });
+    }
+};
 </script>
 
 <template>
@@ -111,9 +130,29 @@ const formatTimeHeader = (timeString) => {
     <div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
         <div class="max-w-[98%] mx-auto">
             
-            <div class="mb-8">
-                <h2 class="text-3xl font-black text-[#000B58] uppercase tracking-tight">Master Data View</h2>
-                <p class="text-gray-500 text-sm font-medium mt-1">Lihat, filter, dan bandingkan seluruh indikator pembangunan dalam satu tampilan.</p>
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
+                <div>
+                    <h2 class="text-3xl font-black text-[#000B58] uppercase tracking-tight">Master Data View</h2>
+                    <p class="text-gray-500 text-sm font-medium mt-1">Lihat, filter, dan bandingkan seluruh indikator pembangunan dalam satu tampilan.</p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                    <Link href="/inputer/data/input-single" 
+                        class="bg-white text-[#00139E] border-2 border-[#00139E] px-8 py-3 rounded-2xl font-black text-[11px] tracking-widest uppercase hover:bg-blue-50 transition-all shadow-lg flex items-center justify-center gap-3 active:scale-95">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Input Single
+                    </Link>
+
+                    <Link href="/inputer/data/input-multi" 
+                        class="bg-[#00139E] text-white px-8 py-3 rounded-2xl font-black text-[11px] tracking-widest uppercase hover:bg-[#000B58] transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3 active:scale-95">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Bulk Upload (Excel)
+                    </Link>
+                </div>
             </div>
 
             <div class="bg-white p-6 rounded-[1.5rem] shadow-lg border border-gray-200 mb-8">
@@ -164,26 +203,29 @@ const formatTimeHeader = (timeString) => {
             <div class="bg-white border border-gray-300 rounded-2xl overflow-hidden shadow-2xl shadow-blue-900/5 flex flex-col max-h-[70vh]">
                 <div class="overflow-auto flex-1 custom-scrollbar">
                     <table class="w-full text-left border-collapse relative">
-                        <thead class="bg-[#000B58] text-white sticky top-0 z-30">
+                        <thead class="bg-[#000B58] text-white sticky top-0 z-40">
                             <tr>
-                                <th class="p-4 text-[10px] uppercase font-black tracking-widest w-[400px] border-r border-white/10 sticky left-0 bg-[#000B58] z-20 shadow-lg">Nama Indikator</th>
+                                <th class="p-4 text-[10px] uppercase font-black tracking-widest w-[400px] border-r border-white/10 sticky left-0 bg-[#000B58] z-30 shadow-lg">Nama Indikator</th>
                                 <th class="p-4 text-[10px] uppercase font-black tracking-widest w-[100px] text-center border-r border-white/10">Satuan</th>
                                 <th class="p-4 text-[10px] uppercase font-black tracking-widest w-[100px] text-center border-r border-white/10">Frekuensi</th>
                                 
                                 <th v-for="(col, index) in filteredTimeColumns" :key="'header-' + index" class="p-4 text-[10px] uppercase font-black tracking-widest min-w-[120px] text-center border-r border-white/10 whitespace-nowrap bg-[#00139E]">
                                     {{ formatTimeHeader(col) }}
                                 </th>
+                                
+                                <th class="p-4 text-[10px] uppercase font-black tracking-widest w-[160px] text-center sticky right-0 bg-[#000B58] z-30 shadow-[-4px_0_8px_rgba(0,0,0,0.1)]">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <template v-for="(groupItems, groupName) in groupedData" :key="groupName">
-                                <tr class="bg-gray-100 sticky top-[49px] z-10">
-                                    <td :colspan="filteredTimeColumns.length + 3" class="p-3 text-xs font-black text-[#00139E] uppercase tracking-widest border-b border-gray-300 shadow-sm">
+                                <tr class="bg-gray-100 sticky top-[49px] z-20">
+                                    <td :colspan="filteredTimeColumns.length + 4" class="p-3 text-xs font-black text-[#00139E] uppercase tracking-widest border-b border-gray-300 shadow-sm">
                                         {{ getGroupLabel() }}: {{ groupName }}
                                     </td>
                                 </tr>
 
                                 <tr v-for="item in groupItems" :key="item.id_data" class="hover:bg-blue-50/50 transition-colors border-b border-gray-200 group">
+                                    
                                     <td class="p-3 text-xs font-bold text-gray-700 border-r border-gray-100 sticky left-0 bg-white group-hover:bg-blue-50 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                                         <a :href="`/dataset/${item.id_data}`" class="hover:text-blue-600 hover:underline leading-relaxed block">
                                             {{ item.nama_indikator }}
@@ -206,11 +248,30 @@ const formatTimeHeader = (timeString) => {
                                     <td v-for="(col, index) in filteredTimeColumns" :key="'data-' + index" class="p-3 text-xs font-black text-gray-800 text-center border-r border-gray-100">
                                         {{ getValue(item.values, col) }}
                                     </td>
+
+                                    <td class="p-3 text-center sticky right-0 bg-white group-hover:bg-blue-50 border-l border-gray-200 z-10 shadow-[-2px_0_5px_rgba(0,0,0,0.05)]">
+                                        <div class="flex justify-center gap-2">
+                                            <a :href="`/export/data/${item.id_data}`" target="_blank" title="Download Excel"
+                                                class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12" stroke-width="2.5" /></svg>
+                                            </a>
+                                            
+                                            <Link :href="`/inputer/data/${item.id_data}/edit`" title="Edit Data"
+                                                class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-[#00139E] hover:bg-[#000B58] hover:text-white transition-all shadow-sm">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2.5" /></svg>
+                                            </Link>
+
+                                            <button @click="openDeleteModal(item)" title="Hapus Data"
+                                                class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2.5" /></svg>
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                             </template>
                             
                             <tr v-if="Object.keys(groupedData).length === 0">
-                                <td :colspan="filteredTimeColumns.length + 3" class="p-10 text-center text-gray-400 font-bold italic">
+                                <td :colspan="filteredTimeColumns.length + 4" class="p-10 text-center text-gray-400 font-bold italic">
                                     Data tidak ditemukan dengan filter tersebut.
                                 </td>
                             </tr>
@@ -219,9 +280,18 @@ const formatTimeHeader = (timeString) => {
                 </div>
             </div>
             
-            <p class="text-[10px] text-gray-400 mt-4 italic">* Gunakan scroll horizontal untuk melihat tahun lainnya. Tabel otomatis memfilter kolom (Bulan/Tahun) berdasarkan menu Frekuensi.</p>
+            <p class="text-[10px] text-gray-400 mt-4 italic">* Gunakan scroll horizontal untuk melihat tahun lainnya. Tabel otomatis memfilter kolom berdasarkan menu Frekuensi.</p>
 
         </div>
+
+        <DeleteModal 
+            :show="showDeleteModal" 
+            :title="'Hapus Indikator Ini?'"
+            :description="'Seluruh data untuk indikator \'' + (dataToDelete?.nama_indikator || 'ini') + '\' akan dihapus secara permanen. Pastikan Anda telah memiliki cadangannya.'"
+            @close="showDeleteModal = false"
+            @confirm="executeDeleteAction"
+        />
+
     </div>
 </template>
 
@@ -229,5 +299,5 @@ const formatTimeHeader = (timeString) => {
 .custom-scrollbar::-webkit-scrollbar { height: 12px; width: 12px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; border: 3px solid #f1f5f9; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00139E; }
 </style>

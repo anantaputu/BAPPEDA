@@ -21,11 +21,22 @@ const previewData = ref([]);
 const timeColumns = ref([]);  
 const extraColumns = ref([]); 
 
+// Default frekuensi
 const globalFrekuensi = ref(props.frekuensi?.length > 0 ? props.frekuensi[0].id_frekuensi : null);
+
+// [BARU] Default Tahun Terbit untuk bulk set
+const globalTahunTerbit = ref(new Date().getFullYear());
 
 watch(globalFrekuensi, (newVal) => {
     previewData.value.forEach(row => {
         row.id_frekuensi = newVal;
+    });
+});
+
+// [BARU] Watcher untuk mengubah semua tahun terbit sekaligus jika user menggunakan dropdown bulk
+watch(globalTahunTerbit, (newVal) => {
+    previewData.value.forEach(row => {
+        row.tahun_terbit = newVal;
     });
 });
 
@@ -68,6 +79,15 @@ const handleFileUpload = async (event) => {
                 namaDataBaru = row.extra_fields[keyNamaData]; 
             }
 
+            // [BARU] Deteksi Tahun Terbit dari extra_fields (jika kolom itu ada di Excel)
+            let parsedTahunTerbit = new Date().getFullYear(); // Default ke tahun ini
+            const keyTahunTerbit = Object.keys(row.extra_fields || {}).find(k => k.toUpperCase().includes('TAHUN TERBIT'));
+            if (keyTahunTerbit && row.extra_fields[keyTahunTerbit]) {
+                parsedTahunTerbit = row.extra_fields[keyTahunTerbit];
+                // Hapus dari extra_fields agar tidak masuk ke kolom atribut tambahan di database
+                delete row.extra_fields[keyTahunTerbit]; 
+            }
+
             return {
                 ...row,
                 nama_indikator: namaDataBaru, 
@@ -75,12 +95,16 @@ const handleFileUpload = async (event) => {
                 id_frekuensi: globalFrekuensi.value,
                 id_tema: '',
                 id_urusan: '',
-                id_bidang: ''
+                id_bidang: '',
+                // [BARU] Masukkan ke objek baris
+                tahun_terbit: parsedTahunTerbit 
             }
         });
 
         timeColumns.value = response.data.years || []; 
-        extraColumns.value = (response.data.extra_headers || []).filter(h => !h.toUpperCase().includes('NAMA DATA')); 
+        extraColumns.value = (response.data.extra_headers || []).filter(h => 
+            !h.toUpperCase().includes('NAMA DATA') && !h.toUpperCase().includes('TAHUN TERBIT')
+        ); 
         isPreviewing.value = true;
     } catch (error) {
         let msg = 'Gagal membaca file Excel.';
@@ -101,7 +125,7 @@ const submitFinalData = async () => {
     isLoading.value = true;
     try {
         await axios.post('/inputer/data/store-bulk', {
-            dataset: previewData.value,
+            dataset: previewData.value, // Data ini sekarang sudah memuat row.tahun_terbit
             years: timeColumns.value 
         });
         router.visit('/inputer/dashboard');
@@ -149,12 +173,19 @@ const submitFinalData = async () => {
                     </span>
                 </div>
                 
-                <div class="flex items-center gap-4 px-4 py-2 bg-gray-50 rounded-2xl border border-gray-200">
-                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Set Frekuensi Untuk Semua:</label>
-                    <select v-model="globalFrekuensi" class="bg-transparent border-none text-[#00139E] text-[11px] font-black focus:ring-0 cursor-pointer uppercase">
-                        <option :value="null">Pilih...</option>
-                        <option v-for="f in frekuensi" :key="f.id_frekuensi" :value="f.id_frekuensi">{{ f.nama_frekuensi }}</option>
-                    </select>
+                <div class="flex flex-wrap gap-4">
+                    <div class="flex items-center gap-4 px-4 py-2 bg-gray-50 rounded-2xl border border-gray-200">
+                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Set Tahun Terbit Semua:</label>
+                        <input v-model="globalTahunTerbit" type="number" class="bg-transparent border-none text-[#00139E] text-[11px] font-black focus:ring-0 w-20 p-0 text-center">
+                    </div>
+
+                    <div class="flex items-center gap-4 px-4 py-2 bg-gray-50 rounded-2xl border border-gray-200">
+                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Set Frekuensi Semua:</label>
+                        <select v-model="globalFrekuensi" class="bg-transparent border-none text-[#00139E] text-[11px] font-black focus:ring-0 cursor-pointer uppercase">
+                            <option :value="null">Pilih...</option>
+                            <option v-for="f in frekuensi" :key="f.id_frekuensi" :value="f.id_frekuensi">{{ f.nama_frekuensi }}</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -163,10 +194,12 @@ const submitFinalData = async () => {
                     <thead>
                         <tr class="bg-gray-900 text-white border-b border-gray-800">
                             <th class="p-5 text-[9px] uppercase font-black tracking-widest whitespace-nowrap">Indikator</th>
-                            <th class="p-5 text-[9px] uppercase font-black tracking-widest w-[180px]">Tema</th>
-                            <th class="p-5 text-[9px] uppercase font-black tracking-widest w-[180px]">Urusan</th>
-                            <th class="p-5 text-[9px] uppercase font-black tracking-widest w-[180px]">Bidang</th>
+                            <th class="p-5 text-[9px] uppercase font-black tracking-widest w-[160px]">Tema</th>
+                            <th class="p-5 text-[9px] uppercase font-black tracking-widest w-[160px]">Urusan</th>
+                            <th class="p-5 text-[9px] uppercase font-black tracking-widest w-[160px]">Bidang</th>
                             <th class="p-5 text-[9px] uppercase font-black tracking-widest text-center">Satuan</th>
+                            
+                            <th class="p-5 text-[9px] uppercase font-black tracking-widest text-center text-blue-300">Thn Terbit</th>
                             
                             <th v-for="t in timeColumns" :key="t" class="p-5 text-[9px] uppercase font-black tracking-widest text-center bg-blue-900 min-w-[100px]">
                                 {{ formatHeader(t) }}
@@ -201,6 +234,10 @@ const submitFinalData = async () => {
                             
                             <td class="p-5 text-[10px] text-center font-bold text-gray-500 uppercase border-r border-gray-100">{{ row.satuan }}</td>
                             
+                            <td class="p-2 border-r border-gray-100 bg-blue-50/20">
+                                <input v-model="row.tahun_terbit" type="number" class="w-full bg-white border-blue-100 rounded-lg text-[10px] font-black py-2 focus:ring-[#00139E] text-center text-[#00139E]">
+                            </td>
+
                             <td v-for="t in timeColumns" :key="t" class="p-5 text-xs text-center font-black text-[#00139E] bg-blue-50/30">
                                 {{ row.values[t] || '-' }}
                             </td>
@@ -227,7 +264,6 @@ const submitFinalData = async () => {
 </template>
 
 <style scoped>
-/* Scrollbar horizontal tetap manis tapi tidak mengganggu layout */
 .custom-scrollbar::-webkit-scrollbar { height: 8px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }

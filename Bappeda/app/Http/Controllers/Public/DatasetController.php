@@ -9,6 +9,8 @@ use App\Models\Data;
 use App\Models\DataUpload;
 use App\Models\DataField;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
+use App\Models\Bookmark;
 
 class DatasetController extends Controller
 {
@@ -88,11 +90,36 @@ class DatasetController extends Controller
             'listBidang'  => \App\Models\Bidang::all(),
         ]);
     }
+    // DatasetController.php
+public function toggleBookmark($id)
+{
+    $user = auth()->user();
+    
+    // Cek apakah sudah di-pin
+    $existingBookmark = Bookmark::where('user_id', $user->id)
+        ->where('user_id', $user->id)
+        ->where('dataset_id', $id)
+        ->first();
+
+   if ($existingBookmark) {
+        // Hapus jika ada
+        $existingBookmark->delete();
+    } else {
+
+        Bookmark::create([
+            'user_id' => $user->id,
+            'dataset_id' => $id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    return back(); 
+}
 
    public function show(Request $request, $id)
     {
-        // 1. Ambil Data Master berserta relasi Metadata dan Values
-        // (Hapus 'katakunci' jika memang tabelnya belum ada agar tidak error)
+      
         $dataset = Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'values', 'uploads'])->findOrFail($id);
 
         // 2. Format Data Dasar
@@ -129,6 +156,13 @@ class DatasetController extends Controller
             $fullChartData, 1, 20, 1,
             ['path' => $request->url()]
         );
+
+    $isPinned = DB::table('bookmark')
+    ->where('user_id', auth()->id())
+    ->where('dataset_id', $dataset->id_data)
+    ->exists();
+
+    $dataset->is_pinned = $isPinned;
 
         return Inertia::render('Public/DatasetDetail', [
             'dataset'   => $dataset,

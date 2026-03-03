@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Inputer;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Data, Tema, Urusan, Bidang, Frekuensi};
+use App\Models\{Data, Tema, Urusan, Bidang, Frekuensi,DataUpload};
 use App\Services\DataUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,39 +31,72 @@ class DataInputController extends Controller
     // ==========================================
     // 1. RENDER HALAMAN (VIEWS)
     // ==========================================
-    public function index()
-    {
-        $user = Auth::user();
-        $isAdmin = (strtolower($user->role->nama_role ?? '') === 'admin');
+   public function index()
+{
+    $userId = auth()->id();
 
-        // PERBAIKAN: Query harus ke model DataUpload agar riwayatnya muncul
-        // Kita panggil relasi 'data' (untuk nama indikator) dan 'user' (untuk operator)
-        $query = \App\Models\DataUpload::with(['data', 'user']); 
+    // 1. DATA UNTUK RIWAYAT UPLOAD (Tampilan CRUD)
+    $recentUploads = DataUpload::with(['data.urusan', 'data.bidang', 'user'])
+        ->where('id_user', $userId)
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-        // Jika bukan admin, hanya lihat upload miliknya sendiri
-        if (!$isAdmin) {
-            $query->where('id_user', $user->id);
+    // 2. METADATA UNTUK FILTER SPREADSHEET
+    $metadata = [
+        'tema' => Tema::all(),
+        'urusan' => Urusan::all(),
+        'bidang' => Bidang::all(),
+        'frekuensi' => Frekuensi::all(),
+        'tahun_terbit' => Data::select('tahun_terbit')->distinct()->orderBy('tahun_terbit', 'desc')->pluck('tahun_terbit'),
+    ];
+
+    // 3. AMBIL DATA UTAMA UNTUK SPREADSHEET
+   $query = \App\Models\Data::with(['values', 'tema', 'urusan', 'bidang', 'frekuensi'])
+            ->where('id_user', $userId);
+
+        // Terapkan filter jika ada request dari Vue
+        if (request('search')) {
+            $query->where('nama_indikator', 'ilike', '%' . request('search') . '%');
         }
+        if (request('urusan')) $query->where('id_urusan', request('urusan'));
+        if (request('bidang')) $query->where('id_bidang', request('bidang'));
+        if (request('tema')) $query->where('id_tema', request('tema'));
+        if (request('frekuensi')) $query->where('id_frekuensi', request('frekuensi'));
+        if (request('tahun_terbit')) $query->where('tahun_terbit', request('tahun_terbit')); // Filter Tahun Terbit
 
-        // Ambil riwayat terbaru
-        $recentUploads = $query->latest()->limit(10)->get();
+        $allData = $query->get();
+    // 4. GROUPING DATA (Untuk tampilan Spreadsheet)
+    $groupedData = [];
+    $timeColumnsSet = [];
+    $groupBy = request('group_by', 'tema'); 
 
-        // Query terpisah untuk statistik (opsional jika masih ingin menghitung di backend)
-        $statsQuery = \App\Models\Data::query();
-        if (!$isAdmin) $statsQuery->where('id_user', $user->id);
+    foreach ($allData as $item) {
+        $groupName = 'Lainnya';
+        if ($groupBy === 'tema') $groupName = $item->tema->nama_tema ?? 'Tanpa Tema';
+        if ($groupBy === 'urusan') $groupName = $item->urusan->nama_urusan ?? 'Tanpa Urusan';
+        if ($groupBy === 'bidang') $groupName = $item->bidang->nama_bidang ?? 'Tanpa Bidang';
+        if ($groupBy === 'frekuensi') $groupName = $item->frekuensi->nama_frekuensi ?? 'Tanpa Frekuensi';
 
-        
+        $groupedData[$groupName][] = $item;
 
-        return Inertia::render('Inputer/Data/Index', [
-            'stats' => [
-                'total_upload' => (clone $statsQuery)->count(),
-                'valid'        => (clone $statsQuery)->where('status', 'aktif')->count(),
-                'pending'      => (clone $statsQuery)->where('status', 'nonaktif')->count(),
-            ],
-            'recentUploads' => $recentUploads,
-            'isAdmin'       => $isAdmin
-        ]);
+        foreach ($item->values as $val) {
+            $timeColumnsSet[$val->tahun] = true;
+        }
     }
+
+    $timeColumns = array_keys($timeColumnsSet);
+    sort($timeColumns); 
+
+    // RETURN KE HALAMAN INDEX / SPREADSHEET
+    return Inertia::render('Inputer/Data/Index', [
+        'recentUploads' => $recentUploads,
+        'isAdmin'       => Auth::user()->role->nama_role === 'Admin',
+        'groupedData'   => $groupedData,
+        'timeColumns'   => $timeColumns,
+        'metadata'      => $metadata,
+        'filters'       => request()->all('search', 'tema', 'urusan', 'bidang', 'frekuensi', 'group_by', 'periode', 'tahun_terbit'),
+    ]);
+}
 
     public function createSingle()
     {
@@ -111,6 +144,7 @@ class DataInputController extends Controller
         'sumber'         => 'required|string',
         'deskripsi'      => 'nullable|string',
         'values'         => 'required|array|min:1',
+        'tahun_terbit'   => 'nullable|integer',
         
         // Validasi tiap item di dalam array values
         'values.*.tahun' => 'required', // String agar support "Januari 2024"
@@ -142,7 +176,7 @@ class DataInputController extends Controller
         }
     }
 public function storeBulk(Request $request)
-    {
+    {\Log::info($request->all());
         try {
             // 1. Cek apakah datanya benar-benar terkirim dari Vue
             if (!$request->has('dataset') || empty($request->input('dataset'))) {
@@ -177,6 +211,7 @@ public function update(Request $request, $id)
         'sumber'         => 'nullable|string',
         'status'         => 'required|in:aktif,nonaktif',
         'deskripsi'      => 'nullable|string',
+        'tahun_terbit'   => 'nullable|integer',
         
         // Validasi Array Nilai
         'values'         => 'required|array|min:1',

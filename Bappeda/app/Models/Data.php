@@ -28,7 +28,7 @@ class Data extends Model
        'satuan',
        'sumber',
        'status',
-       'tahun',
+       'tahun_terbit',
        'informasi_tambahan',
    ];
 

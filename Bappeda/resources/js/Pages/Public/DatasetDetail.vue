@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { Line } from 'vue-chartjs';
 import { 
@@ -154,21 +154,26 @@ const formatDate = (dateString) => {
 };
 
 // [BARU] Helper untuk Format Label Tipe Aksi Riwayat
+// 1. UPDATE HELPER ACTION NAME
 const getActionName = (filePath) => {
     if (!filePath) return 'Pembaruan Sistem';
+    if (filePath === 'system_init') return 'Registrasi Data Awal'; // <--- [BARU]
     if (filePath === 'manual_input') return 'Input Data Awal (Baru)';
     if (filePath === 'edit_manual') return 'Perubahan Data (Edit)';
     if (filePath.includes('.xls') || filePath.includes('.csv')) return 'Upload via Excel (Bulk)';
     return 'Pembaruan Data';
 };
 
-// [BARU] Helper untuk Mengekstrak Snapshot JSON menjadi Teks yang mudah dibaca
+// 2. UPDATE HELPER FORMAT SNAPSHOT
 const formatSnapshotValue = (jsonValue) => {
     if (!jsonValue) return 'Tidak ada rekam nilai tersimpan.';
     try {
         let parsed = typeof jsonValue === 'string' ? JSON.parse(jsonValue) : jsonValue;
         
-        // Format dari Input Single / Edit (menyimpan array 'values')
+        // [BARU] Jika ini adalah log virtual buatan sistem
+        if (parsed.pesan) return parsed.pesan;
+
+        // Format dari Input Single / Edit
         if (parsed.values && Array.isArray(parsed.values)) {
             return parsed.values.map(v => `${v.tahun} = ${v.nilai}`).join('   |   ');
         }
@@ -183,6 +188,35 @@ const formatSnapshotValue = (jsonValue) => {
         return 'Format data tidak terbaca.';
     }
 };
+
+// 3. [BARU] LOGIKA UNTUK MENGGABUNGKAN LOG ASLI DAN LOG VIRTUAL (AWAL)
+const timelineHistory = computed(() => {
+    if (!props.dataset) return [];
+
+    // Salin array log dari database
+    let logs = [...(props.dataset.uploads || [])];
+
+    // Cek apakah di database sudah ada log yang menandakan input awal
+    const hasInitialLog = logs.some(log => 
+        log.file_path === 'manual_input' || 
+        (log.file_path && (log.file_path.includes('.xls') || log.file_path.includes('.csv')))
+    );
+
+    // Jika tidak ada log awal (karena data lama / bulk upload), kita buat log "Virtual" di awal waktu
+    if (!hasInitialLog) {
+        logs.push({
+            id_upload: 'virtual-init-' + props.dataset.id_data,
+            id_user: props.dataset.id_user || 'Sistem',
+            created_at: props.dataset.created_at, // Ambil dari waktu pembuatan master
+            status: props.dataset.status === 'aktif' ? 'valid' : 'pending',
+            file_path: 'system_init',
+            value: '{"pesan": "Data pertama kali diregistrasikan ke dalam sistem."}'
+        });
+    }
+
+    // Urutkan riwayat dari yang terbaru (atas) ke yang terlama (bawah)
+    return logs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+});
 
 const chartOptions = {
     responsive: true,
@@ -210,6 +244,24 @@ const chartOptions = {
         x: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' }, color: '#000B58' } }
     }
 };
+const toggleBookmark = () => {
+    // Ambil ID, bisa dari id_data atau id biasa
+    const dataId = props.dataset?.id_data || props.dataset?.id; 
+
+    // Jika ID tetap tidak ketemu, beri peringatan (alert) agar kita tahu errornya
+    if (!dataId) {
+        alert("Gagal: ID Dataset tidak ditemukan!");
+        console.log("Isi dataset:", props.dataset);
+        return;
+    }
+    
+    // Kirim request ke backend
+    router.post(`/inputer/data/${dataId}/bookmark`, {}, {
+        preserveScroll: true,
+    });
+};
+
+
 </script>
 
 <template>
@@ -226,12 +278,29 @@ const chartOptions = {
                     <Link href="/cari" class="hover:text-[#00139E] transition-colors">Cari</Link>
                     <span class="text-gray-300">/</span>
                     <span class="text-[#000B58]">Detail Indikator</span>
-                    
-                    <Link v-if="dataset?.id_data" :href="`/inputer/data/${dataset.id_data}/edit`" 
-                        class="ml-auto bg-amber-400 text-[#000B58] px-4 py-2 rounded-xl text-xs font-black hover:bg-amber-500 transition-all flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                        Edit Data
-                    </Link>
+
+                    <div class="ml-auto flex items-center gap-3">
+                        
+                        <button @click="toggleBookmark" 
+                            class="px-4 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 border"
+                            :class="dataset?.is_pinned 
+                                ? 'bg-[#00139E] text-white border-[#00139E] shadow-lg' 
+                                : 'bg-white text-[#000B58] border-gray-300 hover:bg-gray-50'">
+                            
+                            <svg class="w-4 h-4" :fill="dataset?.is_pinned ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                            </svg>
+                            {{ dataset?.is_pinned ? 'Tersimpan di Dashboard' : 'Pin Data' }}
+                        </button>
+
+                        <Link v-if="dataset?.id_data" :href="`/inputer/data/${dataset.id_data}/edit`" 
+                            class="bg-amber-400 text-[#000B58] px-4 py-2 rounded-xl text-xs font-black hover:bg-amber-500 transition-all flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            Edit Data
+                        </Link>
+
+                    </div>
+                  
                 </div>
                 <div class="grid lg:grid-cols-3 gap-16 items-start">
                     <div class="lg:col-span-2">
@@ -412,7 +481,7 @@ const chartOptions = {
 
                     <div v-if="dataset?.uploads && dataset.uploads.length > 0" class="relative border-l-2 border-[#00139E]/20 ml-4 space-y-10 pb-6">
                         
-                        <div v-for="(log, idx) in [...dataset.uploads].reverse()" :key="log.id_upload" class="relative pl-10 group">
+                        <div v-for="(log, idx) in timelineHistory" :key="log.id_upload" class="relative pl-10 group">
                             
                             <div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full border-4 border-white shadow-sm transition-all duration-300"
                                  :class="idx === 0 ? 'bg-[#FF1414] scale-125' : 'bg-[#00139E] group-hover:scale-110 group-hover:bg-[#FF1414]'"></div>

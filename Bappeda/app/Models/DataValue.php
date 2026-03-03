@@ -8,7 +8,6 @@ class DataValue extends Model
     protected $table = 'data_values';
     protected $guarded = [];
 
-    // Tambahkan ini agar outputnya murni angka, bukan string "10.5"
     protected $casts = [
         'nilai' => 'double', 
     ];

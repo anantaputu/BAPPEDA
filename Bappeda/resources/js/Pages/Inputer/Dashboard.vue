@@ -24,10 +24,13 @@ const props = defineProps({
     allData: {
         type: Array,
         default: () => []
+    },
+    pinnedData: {
+        type: Array,
+        default: () => [] 
     }
 });
-
-const activeView = ref('Grafik'); // Tab pemilih antara Grafik dan Tabel
+const activeView = ref('Grafik'); 
 const views = ['Grafik', 'Tabel Data'];
 
 const colors = {
@@ -35,6 +38,7 @@ const colors = {
     amber: { bg: 'bg-amber-50', text: 'text-amber-600', bar: 'bg-amber-600' },
     rose: { bg: 'bg-rose-50', text: 'text-rose-600', bar: 'bg-rose-600' },
     blue: { bg: 'bg-blue-50', text: 'text-blue-600', bar: 'bg-blue-600' },
+    indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', bar: 'bg-indigo-600' },
 };
 
 // ========================================================
@@ -42,34 +46,75 @@ const colors = {
 // ========================================================
 const getSatuanFromRow = (row) => {
     if (!row) return '-';
-    // Cari kunci yang mengandung kata satuan (berjaga-jaga jika huruf besar/kecil)
     const key = Object.keys(row).find(k => k.toLowerCase().trim() === 'satuan');
     return row[key] || '-';
 };
 
-// Dapatkan daftar satuan yang unik dari seluruh data
 const availableSatuans = computed(() => {
     if (!props.allData || props.allData.length === 0) return [];
     const units = props.allData.map(row => getSatuanFromRow(row).toUpperCase());
     return [...new Set(units)].filter(u => u !== '-');
 });
 
-// State untuk menyimpan satuan yang sedang aktif dipilih
-const activeSatuan = ref(availableSatuans.value.length > 0 ? availableSatuans.value[0] : null);
+// ... kode props dan activeView tetap sama ...
+// ... kode props dan activeView tetap sama ...
 
-// Data yang sudah difilter berdasarkan satuan yang dipilih
-const filteredData = computed(() => {
-    if (!activeSatuan.value) return [];
-    return props.allData.filter(row => getSatuanFromRow(row).toUpperCase() === activeSatuan.value);
+const activeSatuan = ref(null);
+const activeTahunTerbit = ref('Semua');
+
+// Pastikan activeSatuan terisi saat data tersedia
+watch(() => availableSatuans.value, (newSatuans) => {
+    if (newSatuans.length > 0 && !activeSatuan.value) {
+        activeSatuan.value = newSatuans[0];
+    }
+}, { immediate: true });
+
+// [PERBAIKAN] Ambil daftar Tahun Terbit secara dinamis
+const availableTahunTerbit = computed(() => {
+    // Selalu kembalikan minimal ['Semua'] agar tombol minimal muncul satu
+    const defaultOption = ['Semua'];
+    if (!props.allData || props.allData.length === 0) return defaultOption;
+    
+    // Ambil tahun_terbit, bersihkan null/undefined
+    const years = props.allData
+        .map(row => row.tahun_terbit)
+        .filter(y => y !== null && y !== undefined && y !== '');
+    
+    // Ambil yang unik saja
+    const uniqueYears = [...new Set(years)];
+    
+    // Urutkan angka (Terbaru ke Terlama)
+    uniqueYears.sort((a, b) => b - a);
+    
+    return [...defaultOption, ...uniqueYears];
 });
 
+// [PERBAIKAN] Filter Data dengan String Comparison agar tipe data Int/String tidak masalah
+const filteredData = computed(() => {
+    if (!activeSatuan.value) return [];
+    
+    return props.allData.filter(row => {
+        // 1. Filter Satuan
+        const matchSatuan = getSatuanFromRow(row).toUpperCase() === activeSatuan.value.toUpperCase();
+        
+        // 2. Filter Tahun Terbit (Gunakan String untuk perbandingan aman)
+        const matchTahun = activeTahunTerbit.value === 'Semua' || 
+                           String(row.tahun_terbit) === String(activeTahunTerbit.value);
+                           
+        return matchSatuan && matchTahun;
+    });
+});
+// ... kode timeColumns dan chartConfig tetap sama ...
 // ========================================================
-// 2. LOGIKA GRAFIK & TABEL
+// 2. LOGIKA GRAFIK & TABEL 
 // ========================================================
 const selectedIndices = ref([0]); 
 const chartColors = ['#00139E', '#FF1414', '#00D2FC', '#F8B400', '#54D62C', '#9D4EDD', '#FF6B6B'];
 
-// Reset pilihan grafik jika pindah tab satuan
+// [BARU] STATE UNTUK FILTER FREKUENSI GRAFIK
+const activeChartFreq = ref('Tahunan'); 
+const chartFreqOptions = ['Tahunan', 'Bulanan', 'Lainnya', 'Semua'];
+
 watch(activeSatuan, () => {
     if (filteredData.value.length > 0) {
         selectedIndices.value = [0];
@@ -97,19 +142,38 @@ const extraFieldKeys = computed(() => {
     return Array.from(keys);
 });
 
+// Helper Format Waktu (Agar Januari/Kondisi Awal tampil rapi)
+const formatTimeHeader = (timeString) => {
+    if (!timeString) return '-';
+    let str = String(timeString).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        return new Date(str).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    if (/^\d{4}-\d{2}$/.test(str)) {
+        const [year, month] = str.split('-');
+        return new Date(year, month - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }); 
+    }
+    return str.replace(/\b\w/g, char => char.toUpperCase());
+};
+
 const timeColumns = computed(() => {
     if (!filteredData.value || filteredData.value.length === 0) return [];
     
+    // Daftar field yang harus dibuang dari header kolom waktu
     const excludeKeys = [
-        'nama_indikator', 'nama indikator', 'nama data', 'uraian', 'indikator', 'satuan', 'id_data', 'informasi_tambahan',
-        ...extraFieldKeys.value.map(k => k.toLowerCase())
+        'nama_indikator', 'nama indikator', 'nama data', 'uraian', 'indikator', 
+        'satuan', 'id_data', 'informasi_tambahan', 'tahun_terbit', 'id_user', 
+        'id_tema', 'id_urusan', 'id_bidang', 'id_frekuensi', 'status', 'tahun'
     ];
 
     let cols = new Set();
     filteredData.value.forEach(row => {
         Object.keys(row).forEach(key => {
             const cleanKey = key.toLowerCase().trim();
-            if (!excludeKeys.includes(cleanKey)) cols.add(key);
+            // Jangan masukkan extra_fields atau metadata ke kolom waktu
+            if (!excludeKeys.includes(cleanKey) && !extraFieldKeys.value.includes(key)) {
+                cols.add(key);
+            }
         });
     });
 
@@ -121,24 +185,46 @@ const timeColumns = computed(() => {
     return Array.from(cols).sort((a, b) => {
         const strA = a.toLowerCase().trim();
         const strB = b.toLowerCase().trim();
+
+        // Urutkan angka tahun murni (2024, 2025)
         if (!isNaN(strA) && !isNaN(strB)) return parseInt(strA) - parseInt(strB);
 
-        let monthA = 99; let monthB = 99;
+        // Urutkan Bulan (Januari -> Desember)
+        let mIndexA = 99; let mIndexB = 99;
         for (let m in monthOrder) {
-            if (strA.includes(m)) monthA = monthOrder[m];
-            if (strB.includes(m)) monthB = monthOrder[m];
+            if (strA.includes(m)) mIndexA = monthOrder[m];
+            if (strB.includes(m)) mIndexB = monthOrder[m];
         }
 
-        if (monthA !== monthB) return monthA - monthB;
-        return a.localeCompare(b);
+        if (mIndexA !== mIndexB) return mIndexA - mIndexB;
+        return strA.localeCompare(strB);
+    });
+});
+
+// [BARU] FILTER LABEL UNTUK GRAFIK BERDASARKAN FREKUENSI
+const filteredChartLabels = computed(() => {
+    if (!timeColumns.value) return [];
+
+    return timeColumns.value.filter(col => {
+        const str = String(col).trim().toLowerCase();
+        const isTahun = /^\d{4}$/.test(str); 
+        
+        const monthNames = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'];
+        const isBulan = monthNames.some(m => str.includes(m)) || /^\d{4}-\d{2}$/.test(str);
+
+        if (activeChartFreq.value === 'Tahunan') return isTahun;
+        if (activeChartFreq.value === 'Bulanan') return isBulan && !isTahun;
+        if (activeChartFreq.value === 'Lainnya') return !isTahun && !isBulan;
+        return true; 
     });
 });
 
 const chartConfig = computed(() => {
     if (!filteredData.value || filteredData.value.length === 0) return null;
 
-    const yearKeys = timeColumns.value; 
-    if (selectedIndices.value.length === 0) return { labels: yearKeys, datasets: [] };
+    // Ganti yearKeys menjadi label yang sudah difilter
+    const labels = filteredChartLabels.value; 
+    if (selectedIndices.value.length === 0 || labels.length === 0) return { labels: [], datasets: [] };
 
     const datasets = selectedIndices.value.map((rowIndex, colorIdx) => {
         const row = filteredData.value[rowIndex];
@@ -151,8 +237,9 @@ const chartConfig = computed(() => {
         const labelName = row[nameKey] || `Data ${rowIndex + 1}`;
         const rowSatuan = getSatuanFromRow(row);
 
-        const dataValues = yearKeys.map(year => {
-            let val = row[year];
+        const dataValues = labels.map(timeKey => {
+            let val = row[timeKey];
+            if (typeof val === 'string') val = val.replace(',', '.'); // Handle koma desimal
             return (val === undefined || val === null || val === '') ? null : parseFloat(val);
         });
 
@@ -164,13 +251,20 @@ const chartConfig = computed(() => {
             unit: rowSatuan,
             borderColor: color,
             backgroundColor: color,
-            borderWidth: 2,
-            tension: 0.3, 
+            borderWidth: 3,
+            pointBackgroundColor: '#fff',
+            pointBorderColor: color,
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            tension: 0.4, 
             fill: false 
         };
     }).filter(d => d !== null);
 
-    return { labels: yearKeys, datasets: datasets };
+    const formattedLabels = labels.map(l => formatTimeHeader(l));
+
+    return { labels: formattedLabels, datasets: datasets };
 });
 
 const toggleSelection = (index) => {
@@ -209,11 +303,16 @@ const chartOptions = {
     }
 };
 
+// ========================================================
+// 3. UPDATE STATS CARDS 
+// ========================================================
 const statsCards = computed(() => [
-    { label: 'TOTAL DATA DIINPUT', value: props.stats.total_input || 0, icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', color: 'blue', progress: 100 },
-    { label: 'DATA DISETUJUI', value: props.stats.data_approved || 0, icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', color: 'emerald', progress: (props.stats.total_input > 0) ? ((props.stats.data_approved / props.stats.total_input) * 100) : 0 },
-    { label: 'MENUNGGU VALIDASI', value: props.stats.data_pending || 0, icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: 'amber', progress: (props.stats.total_input > 0) ? ((props.stats.data_pending / props.stats.total_input) * 100) : 0 },
-    { label: 'DATA DITOLAK', value: props.stats.data_rejected || 0, icon: 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z', color: 'rose', progress: (props.stats.total_input > 0) ? ((props.stats.data_rejected / props.stats.total_input) * 100) : 0 },
+    { label: 'TOTAL INDIKATOR', value: props.stats.total_indikator || 3, icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4', color: 'indigo' },
+    { label: 'CAKUPAN TEMA', value: props.stats.cakupan_tema || 8, icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z', color: 'indigo' },
+    { label: 'TOTAL URUSAN', value: props.stats.total_urusan || 11, icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253', color: 'indigo' },
+    { label: 'TOTAL BIDANG', value: props.stats.total_bidang || 3, icon: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4', color: 'indigo' },
+    { label: 'VARIASI FREKUENSI', value: props.stats.variasi_frekuensi || 7, icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: 'indigo' },
+    { label: 'SUMBER DATA', value: props.stats.sumber_data || 0, icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', color: 'indigo' },
 ]);
 </script>
 
@@ -229,37 +328,88 @@ const statsCards = computed(() => [
             </div>
         </div>
 
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
             <StatCard v-for="(stat, index) in statsCards" :key="index" v-bind="stat" :colors="colors" />
         </section>
 
-        <section class="mt-12 mb-4 bg-white p-6 rounded-[2rem] border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
-            
-            <div class="w-full md:w-auto">
-                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Filter Berdasarkan Satuan:</p>
-                <div class="flex flex-wrap gap-2">
-                    <button v-for="satuan in availableSatuans" :key="satuan" 
-                        @click="activeSatuan = satuan"
-                        class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300"
-                        :class="activeSatuan === satuan ? 'bg-[#00139E] text-white shadow-lg shadow-blue-900/20' : 'bg-gray-50 text-gray-500 hover:bg-blue-50 hover:text-[#00139E] border border-gray-200'">
-                        {{ satuan }}
-                    </button>
-                    <div v-if="availableSatuans.length === 0" class="text-xs text-rose-500 italic font-bold">Belum ada data indikator.</div>
+        <section v-if="pinnedData && pinnedData.length > 0" class="mt-10 animate-in fade-in duration-500">
+            <div class="flex items-center gap-3 mb-5">
+                <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 shadow-sm border border-amber-100">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-black text-[#000B58] uppercase tracking-widest">Pin Indikator Favorit</h3>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Akses cepat ke data pilihan Anda</p>
                 </div>
             </div>
 
-            <div class="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-200">
-                <button v-for="view in views" :key="view" @click="activeView = view"
-                    class="px-8 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all"
-                    :class="activeView === view ? 'bg-white text-[#000B58] shadow-sm' : 'text-gray-400 hover:text-[#000B58]'">
-                    {{ view }}
-                </button>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <Link v-for="item in pinnedData" :key="item.id_data" :href="`/dataset/${item.id_data}`" 
+                    class="group relative bg-white p-5 rounded-[1.5rem] border border-gray-200 shadow-sm hover:border-[#00139E]/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[120px]">
+                    
+                    <div class="absolute top-0 left-0 w-1.5 h-full bg-[#00139E] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    
+                    <div>
+                        <div class="flex justify-between items-start mb-2 gap-3">
+                            <h4 class="text-[13px] font-black text-[#000B58] line-clamp-2 leading-tight group-hover:text-[#00139E] transition-colors">
+                                {{ item.nama_indikator }}
+                            </h4>
+                            <div class="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center shrink-0 group-hover:bg-amber-100 transition-colors">
+                                <svg class="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex items-center justify-between border-t border-gray-50 pt-3">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tahun Data</span>
+                        <span class="text-[11px] font-black text-[#00139E] bg-blue-50/80 px-3 py-1.5 rounded-lg border border-blue-100/50">
+                            {{ item.tahun_terbit || '-' }}
+                        </span>
+                    </div>
+                </Link>
             </div>
         </section>
+<section class="mt-10 mb-4 bg-white p-6 rounded-[2rem] border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
+    <div class="w-full md:w-auto flex flex-wrap gap-6">
+        <div>
+            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Satuan:</p>
+            <div class="flex flex-wrap gap-2">
+                <button v-for="satuan in availableSatuans" :key="satuan" 
+                    @click="activeSatuan = satuan"
+                    class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                    :class="activeSatuan === satuan ? 'bg-[#00139E] text-white shadow-lg' : 'bg-gray-50 text-gray-500 border border-gray-200'">
+                    {{ satuan }}
+                </button>
+            </div>
+        </div>
 
+            <div>
+    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Tahun Terbit:</p>
+    <div class="flex flex-wrap gap-2">
+        <button v-for="tahun in availableTahunTerbit" :key="tahun" 
+            @click="activeTahunTerbit = tahun"
+            class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+            :class="activeTahunTerbit === tahun 
+                ? 'bg-amber-500 text-white shadow-lg shadow-amber-900/20' 
+                : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-amber-50'">
+            {{ tahun }}
+        </button>
+    </div>
+</div>
+</div>
+
+    <div class="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-200">
+        <button v-for="view in views" :key="view" @click="activeView = view"
+            class="px-8 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all"
+            :class="activeView === view ? 'bg-white text-[#000B58] shadow-sm' : 'text-gray-400 hover:text-[#000B58]'">
+            {{ view }}
+        </button>
+    </div>
+</section>
         <section v-if="activeView === 'Grafik'" class="grid lg:grid-cols-4 gap-6 items-start animate-in fade-in duration-500">
             <div class="lg:col-span-3 bg-white border border-gray-200 p-8 rounded-[2rem] shadow-sm relative overflow-hidden flex flex-col h-full min-h-[550px]">
-                <div class="flex justify-between items-end mb-6">
+                
+                <div class="flex flex-wrap justify-between items-end mb-6 gap-4">
                     <div>
                         <h4 class="text-lg font-black text-[#000B58] uppercase tracking-widest flex items-center gap-2">
                             <svg class="w-6 h-6 text-[#00139E]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
@@ -267,14 +417,24 @@ const statsCards = computed(() => [
                         </h4>
                         <p class="text-xs text-gray-400 font-medium mt-1">Membandingkan {{ selectedIndices.length }} indikator bersatuan {{ activeSatuan }}</p>
                     </div>
+
+                    <div class="flex bg-gray-50 p-1 rounded-xl border border-gray-200">
+                        <button v-for="freq in chartFreqOptions" :key="freq" 
+                            @click="activeChartFreq = freq"
+                            class="px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
+                            :class="activeChartFreq === freq ? 'bg-white text-[#00139E] shadow-sm border border-gray-100' : 'text-gray-400 hover:text-[#000B58]'">
+                            {{ freq }}
+                        </button>
+                    </div>
                 </div>
 
                 <div class="relative w-full flex-1 bg-gray-50/50 rounded-2xl border border-gray-100 p-4">
-                    <Line v-if="chartConfig && chartConfig.datasets.length > 0" :data="chartConfig" :options="chartOptions" />
+                    <Line v-if="chartConfig && chartConfig.datasets.length > 0 && chartConfig.labels.length > 0" :data="chartConfig" :options="chartOptions" />
                     
-                    <div v-else class="flex flex-col items-center justify-center h-full text-gray-400">
-                        <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <p class="text-sm font-black text-gray-400 uppercase tracking-widest">Pilih Indikator di Samping</p>
+                    <div v-else class="flex flex-col items-center justify-center h-full text-center">
+                        <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <p class="text-sm font-black text-gray-400 uppercase tracking-widest">Data Tidak Lengkap</p>
+                        <p class="text-[10px] text-gray-400 mt-1">Ganti filter frekuensi waktu di pojok kanan atas, atau pilih indikator lain di samping.</p>
                     </div>
                 </div>
             </div>
@@ -282,7 +442,7 @@ const statsCards = computed(() => [
             <div class="lg:col-span-1 bg-white border border-gray-200 p-6 rounded-[2rem] shadow-sm flex flex-col h-[550px]">
                 <h4 class="text-sm font-black text-[#000B58] uppercase tracking-widest mb-4 flex items-center gap-2 pb-4 border-b border-gray-100">
                     <svg class="w-5 h-5 text-[#00139E]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
-                    Pin Indikator
+                    Pilih Indikator
                 </h4>
 
                 <div v-if="filteredData.length > 0" class="overflow-y-auto pr-2 space-y-3 custom-scrollbar flex-1">
@@ -340,7 +500,7 @@ const statsCards = computed(() => [
                                 <th v-for="year in timeColumns" :key="year" class="p-4 border-b-2 border-r border-gray-100 min-w-[150px] align-bottom bg-gray-50/30">
                                     <div class="bg-white border border-blue-100 rounded-xl px-4 py-3 text-center shadow-sm relative overflow-hidden">
                                         <div class="absolute top-0 left-0 w-full h-1 bg-[#00139E]/20"></div>
-                                        <span class="text-xs font-black text-[#000B58] uppercase tracking-wider">{{ year }}</span>
+                                        <span class="text-xs font-black text-[#000B58] uppercase tracking-wider">{{ formatTimeHeader(year) }}</span>
                                     </div>
                                 </th>
                             </tr>
@@ -380,7 +540,6 @@ const statsCards = computed(() => [
         
     </div>
 </template>
-
 <style scoped>
 div { transition: width 0.3s ease; }
 

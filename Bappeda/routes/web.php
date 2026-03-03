@@ -103,6 +103,10 @@ Route::middleware(['auth', 'role:admin|inputer'])->prefix('inputer')->name('inpu
     Route::get('/data/input-multi', [DataInputController::class, 'createMulti'])->name('createMulti');
     Route::post('/data/preview-excel', [DataInputController::class, 'previewExcel'])->name('previewExcel');
     Route::post('/data/store-bulk', [DataInputController::class, 'storeBulk'])->name('storeBulk');
+
+    // web.php
+    // Tambahkan baris ini agar Laravel tahu ke mana harus memproses klik tombol Pin
+Route::post('/data/{id}/bookmark', [DatasetController::class, 'toggleBookmark'])->name('dataset.bookmark');
 });
 
 
