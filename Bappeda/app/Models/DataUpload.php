@@ -17,7 +17,6 @@ class DataUpload extends Model
         'id_user',
         'periode',
         'file_path',
-        'status',
         'value'
     ];
 

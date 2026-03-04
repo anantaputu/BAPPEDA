@@ -15,7 +15,8 @@ return new class extends Migration
             $table->unsignedBigInteger('id_user')->nullable()->index();   // Siapa yang input (Inputer)
             $table->unsignedBigInteger('id_upload')->nullable()->index(); // Dari batch upload mana
             
-            $table->string('nama_indikator');
+            $table->string('nama_data
+');
             $table->text('deskripsi')->nullable();
             
             // Relasi Metadata
@@ -27,7 +28,6 @@ return new class extends Migration
             $table->string('satuan')->nullable();
             $table->string('sumber')->nullable();
             $table->string('kata_kunci')->nullable();
-            $table->string('status')->default('aktif');
             
             // Note: Kolom tahun di sini bisa dijadikan 'tahun dasar' atau 'tahun pembuatan'. 
             // Karena nilai tahun detailnya nanti masuk ke tabel 'data_values'.

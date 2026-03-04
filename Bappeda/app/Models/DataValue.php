@@ -5,7 +5,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class DataValue extends Model
 {
-    protected $table = 'data_values';
+   protected $table = 'data_values';
+
+    protected $primaryKey = 'id_value'; 
+
+    protected $fillable = ['id_data', 'tahun', 'nilai'];
     protected $guarded = [];
 
     protected $casts = [
