@@ -22,14 +22,10 @@ class AdminDashboardController extends Controller
         // 1. STATISTIK (Dinamis dari DB)
         $stats = [
             'total_dataset' => Data::count(),
-            'data_valid'    => DataUpload::where('status', 'valid')->count(),
-            'data_pending'  => DataUpload::where('status', 'pending')->count(), // Tambahan info pending
             'total_org'     => Data::distinct('sumber')->count('sumber'),
             
             // STATISTIK USER (Sesuai Model User Anda)
             'total_user'    => User::count(),
-            'user_active'   => User::where('status_aktif', true)->count(),
-            'user_inactive' => User::where('status_aktif', false)->count(),
         ];
 
         // 2. DATA CHART BAR (TEMA)

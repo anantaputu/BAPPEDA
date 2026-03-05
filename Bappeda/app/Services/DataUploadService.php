@@ -134,83 +134,99 @@ class DataUploadService
    // ==========================================
     // FUNGSI SIMPAN BULK/MASSAL (DARI PREVIEW)
     // ==========================================
-  public function processBulkData($dataset, $years, $userId, $fileName = 'Multi Data Excel')
-    {
-        DB::beginTransaction();
-        try {
-            foreach ($dataset as $row) {
-                // PERBAIKAN: Hapus 'status' => 'aktif'
-                $dataMaster = \App\Models\Data::updateOrCreate(
-                    ['nama_data' => $row['nama_data']],
-                    [
-                        'id_user'      => $userId,
-                        'id_tema'      => $row['id_tema'],
-                        'id_urusan'    => $row['id_urusan'],
-                        'id_bidang'    => $row['id_bidang'],
-                        'id_frekuensi' => $row['id_frekuensi'] ?? 1, 
-                        'satuan'       => $row['satuan'] ?? '-',
-                        'informasi_tambahan' => isset($row['extra_fields']) ? json_encode($row['extra_fields']) : null,
-                        'tahun_terbit' => $row['tahun_terbit'] ?? date('Y'),
-                    ]
-                );
+public function processBulkData($dataset, $years, $userId, $fileName = 'Multi Data Excel')
+{
+    DB::beginTransaction();
+    try {
+        foreach ($dataset as $row) {
 
-                \App\Models\DataUpload::create([
-                    'id_user'   => $userId,
-                    'id_data'   => $dataMaster->id_data, 
-                    'periode'   => date('Y'),
-                    'file_path' => $fileName,
-                    'status'    => 'valid',
-                    'value'     => json_encode(['years' => $years, 'nilai' => $row['values'] ?? []]) 
-                ]);
+            $dataMaster = \App\Models\Data::updateOrCreate(
+                ['nama_data' => $row['nama_data']],
+                [
+                    'id_user'      => $userId,
+                    'id_tema'      => $row['id_tema'],
+                    'id_urusan'    => $row['id_urusan'],
+                    'id_bidang'    => $row['id_bidang'],
+                    'id_frekuensi' => $row['id_frekuensi'] ?? 1,
+                    'satuan'       => $row['satuan'] ?? '-',
+                    'informasi_tambahan' => isset($row['extra_fields']) 
+                                            ? json_encode($row['extra_fields']) 
+                                            : null,
+                    'tahun_terbit' => $row['tahun_terbit'] ?? date('Y'),
+                ]
+            );
 
-                $infoTambahanUpdate = false;
-                $infoTambahanArray = [];
-                
-                if ($dataMaster->informasi_tambahan) {
-                    $infoTambahanArray = json_decode($dataMaster->informasi_tambahan, true) ?? [];
-                }
+            DataUpload::create([
+                'id_user'   => $userId,
+                'id_data'   => $dataMaster->id_data,
+                'periode'   => date('Y'),
+                'file_path' => $fileName,
+                'value'     => json_encode([
+                    'years' => $years,
+                    'nilai' => $row['values'] ?? []
+                ])
+            ]);
 
-                foreach ($years as $tahun) {
-                    $nilai = $row['values'][$tahun] ?? null;
+            $infoTambahanUpdate = false;
+            $infoTambahanArray = [];
 
-                    if ($nilai !== null && trim((string)$nilai) !== '') {
-                        $nilaiString = (string)$nilai;
-                        $catatanDalamKurung = null;
+            if ($dataMaster->informasi_tambahan) {
+                $infoTambahanArray = json_decode($dataMaster->informasi_tambahan, true) ?? [];
+            }
 
-                        if (preg_match('/\((.*?)\)/', $nilaiString, $matches)) {
-                            $catatanDalamKurung = trim($matches[1]); 
-                            $nilaiString = trim(preg_replace('/\(.*?\)/', '', $nilaiString)); 
-                        }
+            foreach ($years as $tahun) {
 
-                        $nilaiClean = str_replace(',', '.', $nilaiString);
-                        $nilaiClean = preg_replace('/[^0-9\.\-]/', '', $nilaiClean);
+                $nilai = $row['values'][$tahun] ?? null;
 
-                        if ($nilaiClean !== '') {
-                            \App\Models\DataValue::updateOrCreate(
-                                ['id_data' => $dataMaster->id_data, 'tahun' => $tahun], 
-                                ['nilai' => (float) $nilaiClean]
-                            );
-                        }
+                if ($nilai !== null && trim((string)$nilai) !== '') {
 
-                        if ($catatanDalamKurung) {
-                            $labelTambahan = (strtolower(trim($tahun)) === 'kondisi awal') ? 'Tahun Kondisi Awal' : "Catatan ($tahun)";
-                            $infoTambahanArray[$labelTambahan] = $catatanDalamKurung;
-                            $infoTambahanUpdate = true;
-                        }
+                    $nilaiString = (string)$nilai;
+                    $catatanDalamKurung = null;
+
+                    if (preg_match('/\((.*?)\)/', $nilaiString, $matches)) {
+                        $catatanDalamKurung = trim($matches[1]);
+                        $nilaiString = trim(preg_replace('/\(.*?\)/', '', $nilaiString));
+                    }
+
+                    $nilaiClean = str_replace(',', '.', $nilaiString);
+                    $nilaiClean = preg_replace('/[^0-9\.\-]/', '', $nilaiClean);
+
+                    if ($nilaiClean !== '') {
+                        DataValue::updateOrCreate(
+                            [
+                                'id_data' => $dataMaster->id_data,
+                                'tahun' => $tahun
+                            ],
+                            [
+                                'nilai' => (float) $nilaiClean
+                            ]
+                        );
+                    }
+
+                    if ($catatanDalamKurung) {
+                        $labelTambahan = strtolower(trim($tahun)) === 'kondisi awal'
+                            ? 'Tahun Kondisi Awal'
+                            : "Catatan ($tahun)";
+
+                        $infoTambahanArray[$labelTambahan] = $catatanDalamKurung;
+                        $infoTambahanUpdate = true;
                     }
                 }
-
-                if ($infoTambahanUpdate) {
-                    $dataMaster->informasi_tambahan = json_encode($infoTambahanArray);
-                    $dataMaster->save();
-                }
             }
-            DB::commit();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw new \Exception($e->getMessage()); 
+
+            if ($infoTambahanUpdate) {
+                $dataMaster->informasi_tambahan = json_encode($infoTambahanArray);
+                $dataMaster->save();
+            }
         }
+
+        DB::commit();
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        throw new \Exception($e->getMessage());
     }
+}
 
     public function processSingleData($formData, $userId)
     {
@@ -257,7 +273,6 @@ class DataUploadService
                 'id_user'   => $userId,
                 'id_data'   => $dataMaster->id_data,
                 'periode'   => $defaultTahun, 
-                'status'    => 'valid',
                 'file_path' => 'manual_input', 
                 'value'     => json_encode(['values' => $formData['values']]), 
             ]);
@@ -287,6 +302,12 @@ class DataUploadService
                 'satuan'         => $formData['satuan'] ?? '-',
                 'deskripsi'      => $formData['deskripsi'] ?? null,
                 'sumber'         => $formData['sumber'] ?? null,
+<<<<<<< Updated upstream
+=======
+                
+                // [PERBAIKAN DI SINI] Tangkap extra_fields yang diedit dan jadikan JSON
+                // Jika tidak ada extra_fields baru yang dikirim, biarkan informasi_tambahan yang lama
+>>>>>>> Stashed changes
                 'informasi_tambahan' => isset($formData['extra_fields']) 
                                         ? json_encode($formData['extra_fields']) 
                                         : $dataMaster->informasi_tambahan,
@@ -321,7 +342,6 @@ class DataUploadService
                 'id_user'   => $userId,
                 'id_data'   => $dataMaster->id_data,
                 'periode'   => $defaultTahun, 
-                'status'    => 'valid',
                 'file_path' => 'edit_manual', 
                 'value'     => json_encode(['values' => $formData['values']]), 
             ]);

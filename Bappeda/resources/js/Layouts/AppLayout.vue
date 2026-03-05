@@ -112,7 +112,7 @@ const menuGroups = computed(() => {
             <button 
                 v-if="role !== 'anonymous' && !isSidebarOpen"
                 @click="isSidebarOpen = true"
-                class="fixed top-1/2 left-4 z-[60] transform -translate-y-1/2 w-10 h-10 bg-[#000B58] text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-900 transition-all"
+                class="fixed top-1/2 left-6 z-[60] transform -translate-y-1/2 w-12 h-12 bg-primary text-white rounded-xl flex items-center justify-center shadow-xl shadow-primary/20 hover:bg-secondary transition-all active:scale-90"
             >
                 <svg class="w-6 h-6 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" />
@@ -127,12 +127,17 @@ const menuGroups = computed(() => {
             ]"
             class="flex flex-col min-h-screen min-w-0"
         >
-
             <Navbar v-if="role == 'anonymous'" :logoPath="logoPath"/>
 
-            <main class="p-8 flex-1">
-                <slot />
+            <main class="p-8 flex-1 bg-white">
+                <div class="max-w-full">
+                    <slot />
+                </div>
             </main>
+
+            <footer v-if="role !== 'anonymous'" class="px-8 py-6 border-t border-bgsoft text-xs font-bold text-textsecondary uppercase tracking-widest">
+                &copy; 2026 BAPPEDA Provinsi NTB — Satu Data Terintegrasi
+            </footer>
         </div>
 
         <LogoutModal :show="showLogoutModal" @close="showLogoutModal = false" />

@@ -123,9 +123,9 @@ class DataInputController extends Controller
 
     public function storeSingle(Request $request)
     {
-        // PERBAIKAN: Hapus validasi status
+        // Validasi input data indikator
         $request->validate([
-            'nama_data' => 'required|string|max:255',
+            'nama_data'      => 'required|string|max:255',
             'id_tema'        => 'required',
             'id_urusan'      => 'required',
             'id_bidang'      => 'required',
@@ -135,16 +135,18 @@ class DataInputController extends Controller
             'deskripsi'      => 'nullable|string',
             'values'         => 'required|array|min:1',
             'tahun_terbit'   => 'nullable|integer',
-            'values.*.tahun' => 'required', 
-            'values.*.nilai' => 'required', 
+
+            // Validasi setiap item dalam array values
+            'values.*.tahun' => 'required|string',
+            'values.*.nilai' => 'required',
         ]);
 
         try {
             $this->uploadService->processSingleData($request->all(), Auth::id());
-            
+
             return redirect()->route('inputer.dashboard')
                 ->with('message', 'Data Indikator Berhasil Disimpan!');
-                
+
         } catch (\Exception $e) {
             \Log::error('Gagal Simpan Single: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Gagal menyimpan: ' . $e->getMessage()]);
@@ -184,9 +186,9 @@ class DataInputController extends Controller
 
     public function update(Request $request, $id)
     {
-        // PERBAIKAN: Hapus validasi status
+        // Validasi data indikator yang diperbarui
         $request->validate([
-            'nama_data' => 'required|string|max:255',
+            'nama_data'      => 'required|string|max:255',
             'id_tema'        => 'required',
             'id_urusan'      => 'required',
             'id_bidang'      => 'required',
@@ -195,6 +197,8 @@ class DataInputController extends Controller
             'sumber'         => 'nullable|string',
             'deskripsi'      => 'nullable|string',
             'tahun_terbit'   => 'nullable|integer',
+
+            // Validasi array values
             'values'         => 'required|array|min:1',
             'values.*.tahun' => 'required|string',
             'values.*.nilai' => 'required',
@@ -202,7 +206,7 @@ class DataInputController extends Controller
 
         try {
             $this->uploadService->updateSingleData($id, $request->all(), Auth::id());
-            
+
             $user = Auth::user();
             $isAdmin = (optional($user->role)->nama_role === 'Admin');
             $routeName = $isAdmin ? 'admin.dashboard' : 'inputer.dashboard';

@@ -24,7 +24,6 @@ const form = useForm({
     satuan: '',
     sumber: '',
     kata_kunci: '', 
-    status: 'aktif',
     tahun: new Date().getFullYear(), // Tahun registrasi master data
     
     // Array untuk Capaian Nilai (Tahun/Nilai) diset mendatar
@@ -140,14 +139,6 @@ const submitData = () => {
                             class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58] focus:ring-[#00139E]" 
                             :class="{'border-red-500': form.errors.nama_data}" />
                         <p v-if="form.errors.nama_data" class="text-red-500 text-xs ml-1 font-bold">{{ form.errors.nama_data }}</p>
-                    </div>
-
-                    <div class="md:col-span-1 space-y-2">
-                        <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Status *</label>
-                        <select v-model="form.status" class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58]">
-                            <option value="aktif">Aktif</option>
-                            <option value="nonaktif">Nonaktif</option>
-                        </select>
                     </div>
 
                     <div class="md:col-span-1 space-y-2">
