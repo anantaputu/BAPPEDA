@@ -53,7 +53,7 @@ class DataController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama_indikator' => 'required|string|max:255',
+            'nama_data' => 'required|string|max:255',
             'deskripsi'      => 'nullable|string',
 
             'id_tema'        => 'required|exists:tema,id_tema',
@@ -67,7 +67,7 @@ class DataController extends Controller
         ]);
 
         Data::create([
-            'nama_indikator' => $validated['nama_indikator'],
+            'nama_data' => $validated['nama_data'],
             'deskripsi'      => $validated['deskripsi'],
             'id_tema'        => $validated['id_tema'],
             'id_urusan'      => $validated['id_urusan'],
@@ -103,7 +103,7 @@ class DataController extends Controller
     public function update(Request $request, Data $data)
     {
         $validated = $request->validate([
-            'nama_indikator' => 'required|string|max:255',
+            'nama_data' => 'required|string|max:255',
             'deskripsi'      => 'nullable|string',
 
             'id_tema'        => 'required|exists:tema,id_tema',

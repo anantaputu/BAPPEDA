@@ -113,7 +113,7 @@ class DataUploadService
             }
 
             $previewData[] = [
-                'nama_indikator' => $namaIndikator,
+                'nama_data' => $namaIndikator,
                 'satuan'         => $colSatuan ? ($row[$colSatuan] ?? '-') : '-',
                 'id_tema'        => null,
                 'id_urusan'      => null,
@@ -134,107 +134,93 @@ class DataUploadService
    // ==========================================
     // FUNGSI SIMPAN BULK/MASSAL (DARI PREVIEW)
     // ==========================================
-   public function processBulkData($dataset, $years, $userId, $fileName = 'Multi Data Excel')
-{
-    DB::beginTransaction();
-    try {
-        foreach ($dataset as $row) {
-            // 1. Simpan Data ke Tabel Master
-            $dataMaster = \App\Models\Data::updateOrCreate(
-                ['nama_indikator' => $row['nama_indikator']],
-                [
-                    'id_user'      => $userId,
-                    'id_tema'      => $row['id_tema'],
-                    'id_urusan'    => $row['id_urusan'],
-                    'id_bidang'    => $row['id_bidang'],
-                    'id_frekuensi' => $row['id_frekuensi'] ?? 1, 
-                    'satuan'       => $row['satuan'] ?? '-',
-                    'informasi_tambahan' => isset($row['extra_fields']) ? json_encode($row['extra_fields']) : null,
-                    'status'       => 'aktif',
-                    'tahun_terbit' => $row['tahun_terbit'] ?? date('Y'),
-                ]
-            );
+  public function processBulkData($dataset, $years, $userId, $fileName = 'Multi Data Excel')
+    {
+        DB::beginTransaction();
+        try {
+            foreach ($dataset as $row) {
+                // PERBAIKAN: Hapus 'status' => 'aktif'
+                $dataMaster = \App\Models\Data::updateOrCreate(
+                    ['nama_data' => $row['nama_data']],
+                    [
+                        'id_user'      => $userId,
+                        'id_tema'      => $row['id_tema'],
+                        'id_urusan'    => $row['id_urusan'],
+                        'id_bidang'    => $row['id_bidang'],
+                        'id_frekuensi' => $row['id_frekuensi'] ?? 1, 
+                        'satuan'       => $row['satuan'] ?? '-',
+                        'informasi_tambahan' => isset($row['extra_fields']) ? json_encode($row['extra_fields']) : null,
+                        'tahun_terbit' => $row['tahun_terbit'] ?? date('Y'),
+                    ]
+                );
 
-            // 2. BAGIAN PENTING: Buat Riwayat Upload PER INDIKATOR (Cegah Relasi Terputus)
-            \App\Models\DataUpload::create([
-                'id_user'   => $userId,
-                'id_data'   => $dataMaster->id_data, // INI YANG MENGHUBUNGKAN RELASI
-                'periode'   => date('Y'),
-                'file_path' => $fileName,
-                'status'    => 'valid',
-                'value'     => json_encode(['years' => $years, 'nilai' => $row['values'] ?? []]) 
+                \App\Models\DataUpload::create([
+                    'id_user'   => $userId,
+                    'id_data'   => $dataMaster->id_data, 
+                    'periode'   => date('Y'),
+                    'file_path' => $fileName,
+                    'status'    => 'valid',
+                    'value'     => json_encode(['years' => $years, 'nilai' => $row['values'] ?? []]) 
+                ]);
+
+                $infoTambahanUpdate = false;
+                $infoTambahanArray = [];
                 
-            ]);
+                if ($dataMaster->informasi_tambahan) {
+                    $infoTambahanArray = json_decode($dataMaster->informasi_tambahan, true) ?? [];
+                }
 
-            // 3. Simpan Nilai Waktu ke data_values DENGAN PARSER CERDAS
-            $infoTambahanUpdate = false;
-            $infoTambahanArray = [];
-            
-            // Ambil info tambahan eksisting jika ada
-            if ($dataMaster->informasi_tambahan) {
-                $infoTambahanArray = json_decode($dataMaster->informasi_tambahan, true) ?? [];
-            }
+                foreach ($years as $tahun) {
+                    $nilai = $row['values'][$tahun] ?? null;
 
-            foreach ($years as $tahun) {
-                $nilai = $row['values'][$tahun] ?? null;
+                    if ($nilai !== null && trim((string)$nilai) !== '') {
+                        $nilaiString = (string)$nilai;
+                        $catatanDalamKurung = null;
 
-                if ($nilai !== null && trim((string)$nilai) !== '') {
-                    $nilaiString = (string)$nilai;
-                    $catatanDalamKurung = null;
+                        if (preg_match('/\((.*?)\)/', $nilaiString, $matches)) {
+                            $catatanDalamKurung = trim($matches[1]); 
+                            $nilaiString = trim(preg_replace('/\(.*?\)/', '', $nilaiString)); 
+                        }
 
-                    // A. EKSTRAKSI TANDA KURUNG (Misal menangkap "2023" dari "0,54 (2023)")
-                    if (preg_match('/\((.*?)\)/', $nilaiString, $matches)) {
-                        $catatanDalamKurung = trim($matches[1]); 
-                        // Hilangkan teks dalam kurung dari nilai asli
-                        $nilaiString = trim(preg_replace('/\(.*?\)/', '', $nilaiString)); 
-                    }
+                        $nilaiClean = str_replace(',', '.', $nilaiString);
+                        $nilaiClean = preg_replace('/[^0-9\.\-]/', '', $nilaiClean);
 
-                    // B. BERSIHKAN ANGKA (Hapus spasi, ubah koma jadi titik)
-                    $nilaiClean = str_replace(',', '.', $nilaiString);
-                    $nilaiClean = preg_replace('/[^0-9\.\-]/', '', $nilaiClean);
+                        if ($nilaiClean !== '') {
+                            \App\Models\DataValue::updateOrCreate(
+                                ['id_data' => $dataMaster->id_data, 'tahun' => $tahun], 
+                                ['nilai' => (float) $nilaiClean]
+                            );
+                        }
 
-                    // C. SIMPAN ANGKA MURNI KE DATABASE
-                    if ($nilaiClean !== '') {
-                        \App\Models\DataValue::updateOrCreate(
-                            ['id_data' => $dataMaster->id_data, 'tahun' => $tahun], 
-                            ['nilai' => (float) $nilaiClean]
-                        );
-                    }
-
-                    // D. SIMPAN CATATAN KE INFORMASI TAMBAHAN
-                    if ($catatanDalamKurung) {
-                        $labelTambahan = (strtolower(trim($tahun)) === 'kondisi awal') ? 'Tahun Kondisi Awal' : "Catatan ($tahun)";
-                        $infoTambahanArray[$labelTambahan] = $catatanDalamKurung;
-                        $infoTambahanUpdate = true;
+                        if ($catatanDalamKurung) {
+                            $labelTambahan = (strtolower(trim($tahun)) === 'kondisi awal') ? 'Tahun Kondisi Awal' : "Catatan ($tahun)";
+                            $infoTambahanArray[$labelTambahan] = $catatanDalamKurung;
+                            $infoTambahanUpdate = true;
+                        }
                     }
                 }
-            }
 
-            // E. SIMPAN KEMBALI INFORMASI TAMBAHAN JIKA ADA PERUBAHAN
-            if ($infoTambahanUpdate) {
-                $dataMaster->informasi_tambahan = json_encode($infoTambahanArray);
-                $dataMaster->save();
+                if ($infoTambahanUpdate) {
+                    $dataMaster->informasi_tambahan = json_encode($infoTambahanArray);
+                    $dataMaster->save();
+                }
             }
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception($e->getMessage()); 
         }
-        DB::commit();
-    } catch (\Exception $e) {
-        DB::rollBack();
-        throw new \Exception($e->getMessage()); 
     }
-}
 
-    // 4. FUNGSI SIMPAN SINGLE
-    // 4. FUNGSI SIMPAN SINGLE
     public function processSingleData($formData, $userId)
     {
         DB::beginTransaction();
         try {
-            // Ambil tahun pertama dari array values sebagai default tahun untuk master dan log
             $defaultTahun = $formData['values'][0]['tahun'] ?? date('Y');
 
-            // 1. Simpan Master Data
+            // PERBAIKAN: Hapus 'status' => 'aktif'
             $dataMaster = Data::updateOrCreate(
-                ['nama_indikator' => trim($formData['nama_indikator'])],
+                ['nama_data' => trim($formData['nama_data'])],
                 [
                     'id_user'      => $userId,
                     'id_tema'      => $formData['id_tema'],
@@ -244,17 +230,13 @@ class DataUploadService
                     'satuan'       => $formData['satuan'] ?? '-',
                     'deskripsi'    => $formData['deskripsi'] ?? null,
                     'sumber'       => $formData['sumber'] ?? null,
-                    'status'       => 'aktif',
                     'tahun_terbit' => $formData['tahun_terbit'] ?? date('Y'),
-                    
-                    // [PERBAIKAN DI SINI] Tangkap extra_fields dan jadikan JSON
                     'informasi_tambahan' => isset($formData['extra_fields']) && !empty($formData['extra_fields']) 
                                             ? json_encode($formData['extra_fields']) 
                                             : null,
                 ]
             );
 
-            // 2. Looping array values dari Vue
             foreach ($formData['values'] as $item) {
                 $nilaiClean = preg_replace('/[^0-9,\.\-]/', '', $item['nilai']); 
                 
@@ -265,14 +247,12 @@ class DataUploadService
                     $nilaiClean = str_replace(',', '.', $nilaiClean);
                 }
                 
-                // 3. Simpan Nilai ke data_values
                 DataValue::updateOrCreate(
                     ['id_data' => $dataMaster->id_data, 'tahun' => $item['tahun']], 
                     ['nilai' => (float) $nilaiClean]
                 );
             }
                 
-            // 4. Catat log ke tabel data_uploads
             DataUpload::create([
                 'id_user'   => $userId,
                 'id_data'   => $dataMaster->id_data,
@@ -291,15 +271,15 @@ class DataUploadService
         }
     }
 
-    // 5. FUNGSI UPDATE SINGLE DATA
     public function updateSingleData($id, $formData, $userId)
     {
         DB::beginTransaction();
         try {
-            // 1. Update Master Data
             $dataMaster = Data::findOrFail($id);
+            
+            // PERBAIKAN: Hapus 'status' => $formData['status']
             $dataMaster->update([
-                'nama_indikator' => trim($formData['nama_indikator']),
+                'nama_data' => trim($formData['nama_data']),
                 'id_tema'        => $formData['id_tema'],
                 'id_urusan'      => $formData['id_urusan'],
                 'id_bidang'      => $formData['id_bidang'],
@@ -307,19 +287,13 @@ class DataUploadService
                 'satuan'         => $formData['satuan'] ?? '-',
                 'deskripsi'      => $formData['deskripsi'] ?? null,
                 'sumber'         => $formData['sumber'] ?? null,
-                'status'         => $formData['status'] ?? 'aktif',
-                
-                // [PERBAIKAN DI SINI] Tangkap extra_fields yang diedit dan jadikan JSON
-                // Jika tidak ada extra_fields baru yang dikirim, biarkan informasi_tambahan yang lama
                 'informasi_tambahan' => isset($formData['extra_fields']) 
                                         ? json_encode($formData['extra_fields']) 
                                         : $dataMaster->informasi_tambahan,
             ]);
 
-            // 2. Looping array values dari form edit
             $requestedYears = [];
             foreach ($formData['values'] as $item) {
-                // Bersihkan nilai
                 $nilaiClean = preg_replace('/[^0-9,\.\-]/', '', $item['nilai']); 
                 if (strpos($nilaiClean, ',') !== false && strpos($nilaiClean, '.') !== false) {
                     $nilaiClean = str_replace('.', '', $nilaiClean);
@@ -330,21 +304,18 @@ class DataUploadService
                 
                 $requestedYears[] = $item['tahun'];
 
-                // 3. Simpan Nilai ke data_values (Update jika ada, Insert jika baru)
                 DataValue::updateOrCreate(
                     ['id_data' => $dataMaster->id_data, 'tahun' => $item['tahun']], 
                     ['nilai' => (float) $nilaiClean]
                 );
             }
 
-            // Hapus nilai di database yang di-hapus user dari tampilan UI (Tong sampah ditekan)
             if (count($requestedYears) > 0) {
                 DataValue::where('id_data', $dataMaster->id_data)
                     ->whereNotIn('tahun', $requestedYears)
                     ->delete();
             }
                 
-            // 4. Catat log ke tabel data_uploads untuk riwayat revisi
             $defaultTahun = count($requestedYears) > 0 ? $requestedYears[0] : date('Y');
             DataUpload::create([
                 'id_user'   => $userId,

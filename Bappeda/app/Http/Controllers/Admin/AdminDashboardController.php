@@ -67,7 +67,7 @@ class AdminDashboardController extends Controller
             return $query->with(['tema', 'bidang'])->limit(5)->get()->map(function ($item) {
                 return [
                     'id'    => $item->id_data,
-                    'title' => $item->nama_indikator,
+                    'title' => $item->nama_data,
                     // Mengambil label tema secara dinamis
                     'tags'  => [$item->tema->nama_tema ?? 'Umum', $item->tahun], 
                     'org'   => $item->sumber ?? 'Bappeda NTB',
@@ -152,7 +152,7 @@ class AdminDashboardController extends Controller
                 'id' => $log->id_upload,
                 'user' => $log->user->name ?? 'System',
                 'action' => 'Mengunggah Data', // Secara default dari data_uploads
-                'target' => $log->data->nama_indikator ?? 'Indikator tidak diketahui',
+                'target' => $log->data->nama_data ?? 'Indikator tidak diketahui',
                 'status' => $log->status, // pending, valid, atau rejected
                 'time' => $log->created_at->diffForHumans(),
                 'date_raw' => $log->created_at->format('d M Y, H:i')

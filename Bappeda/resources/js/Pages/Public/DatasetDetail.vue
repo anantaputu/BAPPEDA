@@ -265,7 +265,7 @@ const toggleBookmark = () => {
 </script>
 
 <template>
-    <Head :title="dataset?.nama_indikator || 'Detail Data'" />
+    <Head :title="dataset?.nama_data || 'Detail Data'" />
 
     <div class="min-h-screen bg-white font-sans mt-20">
         <section class="relative pt-20 overflow-hidden w-full"> 
@@ -308,7 +308,7 @@ const toggleBookmark = () => {
                             {{ dataset?.tema?.nama_tema || 'Indikator Pembangunan' }}
                         </span>
                         <h1 class="text-4xl lg:text-6xl font-black text-[#000B58] leading-[1.2] mb-8">
-                            {{ dataset?.nama_indikator || 'Data Tidak Ditemukan' }}
+                            {{ dataset?.nama_data || 'Data Tidak Ditemukan' }}
                         </h1>
                     </div>
 
@@ -396,8 +396,8 @@ const toggleBookmark = () => {
                             <tbody class="divide-y divide-gray-100">
                                 <tr v-for="(row, idx) in tableRows" :key="idx" class="hover:bg-blue-50/20 transition-colors group">
                                     <td class="p-5 bg-white border-r border-gray-200 font-bold text-[#000B58] text-sm sticky left-0 z-10 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-[#f8fafc]">
-                                        <div class="line-clamp-2 w-[280px]" :title="row['Nama Indikator'] || row.nama_indikator || row['Nama Data'] || 'Data'">
-                                            {{ (props.tableData?.from || 1) + idx }}. {{ row['Nama Indikator'] || row.nama_indikator || row['Nama Data'] || row['Uraian'] || 'Indikator Tidak Diketahui' }}
+                                        <div class="line-clamp-2 w-[280px]" :title="row['Nama Indikator'] || row.nama_data || row['Nama Data'] || 'Data'">
+                                            {{ (props.tableData?.from || 1) + idx }}. {{ row['Nama Indikator'] || row.nama_data || row['Nama Data'] || row['Uraian'] || 'Indikator Tidak Diketahui' }}
                                         </div>
                                     </td>
                                     <td class="p-5 border-r border-gray-100 text-xs font-bold text-gray-500 text-center bg-white group-hover:bg-[#f8fafc]">
@@ -461,7 +461,7 @@ const toggleBookmark = () => {
                                 <div v-for="(row, index) in props.allData" :key="index" @click="toggleSelection(index)"
                                     class="p-4 rounded-[1.5rem] border cursor-pointer mb-2"
                                     :class="selectedIndices.includes(index) ? 'bg-blue-50 border-blue-200' : 'bg-white'">
-                                    <p class="text-xs font-black text-gray-700">{{ row.nama_indikator || row['Nama Indikator'] }}</p>
+                                    <p class="text-xs font-black text-gray-700">{{ row.nama_data || row['Nama Indikator'] }}</p>
                                 </div>
                             </div>
                         </div>

@@ -15,8 +15,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_user')->nullable()->index();   // Siapa yang input (Inputer)
             $table->unsignedBigInteger('id_upload')->nullable()->index(); // Dari batch upload mana
             
-            $table->string('nama_data
-');
+            $table->string('nama_data');
             $table->text('deskripsi')->nullable();
             
             // Relasi Metadata

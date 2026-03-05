@@ -15,7 +15,7 @@ const props = defineProps({
 const isLoading = ref(false);
 
 const form = useForm({
-    nama_indikator: '',
+    nama_data: '',
     deskripsi: '',
     id_tema: '',
     id_urusan: '',
@@ -136,10 +136,10 @@ const submitData = () => {
 
                     <div class="md:col-span-3 space-y-2">
                         <label class="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Nama Indikator *</label>
-                        <input v-model="form.nama_indikator" type="text" placeholder="Contoh: Jumlah Penduduk Miskin"
+                        <input v-model="form.nama_data" type="text" placeholder="Contoh: Jumlah Penduduk Miskin"
                             class="w-full bg-white border-gray-200 rounded-xl px-5 py-4 text-sm font-bold text-[#000B58] focus:ring-[#00139E]" 
-                            :class="{'border-red-500': form.errors.nama_indikator}" />
-                        <p v-if="form.errors.nama_indikator" class="text-red-500 text-xs ml-1 font-bold">{{ form.errors.nama_indikator }}</p>
+                            :class="{'border-red-500': form.errors.nama_data}" />
+                        <p v-if="form.errors.nama_data" class="text-red-500 text-xs ml-1 font-bold">{{ form.errors.nama_data }}</p>
                     </div>
 
                     <div class="md:col-span-1 space-y-2">

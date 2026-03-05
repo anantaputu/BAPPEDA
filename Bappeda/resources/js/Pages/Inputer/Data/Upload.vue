@@ -54,7 +54,7 @@ const submit = () => {
                         </div>
                         
                         <div class="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-inner">
-                            <h3 class="font-extrabold text-xl text-white mb-2">{{ data.nama_indikator }}</h3>
+                            <h3 class="font-extrabold text-xl text-white mb-2">{{ data.nama_data }}</h3>
                             <div class="flex flex-wrap gap-4 text-xs font-bold uppercase tracking-widest text-blue-200 mt-3">
                                 <span class="bg-blue-800/30 px-3 py-1 rounded-lg border border-blue-400/30">Satuan: {{ data.satuan }}</span>
                                 <span class="bg-blue-800/30 px-3 py-1 rounded-lg border border-blue-400/30">Sumber: {{ data.sumber }}</span>

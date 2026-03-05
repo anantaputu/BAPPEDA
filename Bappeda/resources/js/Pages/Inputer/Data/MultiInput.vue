@@ -72,7 +72,7 @@ const handleFileUpload = async (event) => {
         globalFrekuensi.value = props.frekuensi?.length > 0 ? props.frekuensi[0].id_frekuensi : null;
 
         previewData.value = response.data.rows.map(row => {
-            let indikatorAsli = row.nama_indikator; 
+            let indikatorAsli = row.nama_data; 
             let namaDataBaru = indikatorAsli;
             const keyNamaData = Object.keys(row.extra_fields || {}).find(k => k.toUpperCase().includes('NAMA DATA'));
             if (keyNamaData && row.extra_fields[keyNamaData]) {
@@ -90,7 +90,7 @@ const handleFileUpload = async (event) => {
 
             return {
                 ...row,
-                nama_indikator: namaDataBaru, 
+                nama_data: namaDataBaru, 
                 kode_indikator: indikatorAsli, 
                 id_frekuensi: globalFrekuensi.value,
                 id_tema: '',
@@ -209,7 +209,7 @@ const submitFinalData = async () => {
                     <tbody class="divide-y divide-gray-200">
                         <tr v-for="(row, index) in previewData" :key="index" class="hover:bg-gray-50 transition-colors">
                             <td class="p-5 border-r border-gray-100">
-                                <span class="text-[11px] font-black text-gray-900 uppercase block">{{ row.nama_indikator }}</span>
+                                <span class="text-[11px] font-black text-gray-900 uppercase block">{{ row.nama_data }}</span>
                                 <span class="text-[9px] text-gray-400 font-bold uppercase mt-1 block">Ref: {{ row.kode_indikator }}</span>
                             </td>
                             

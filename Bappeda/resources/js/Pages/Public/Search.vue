@@ -176,7 +176,7 @@ onUnmounted(() => window.removeEventListener('click', closeOnOutsideClick));
                             <td class="px-8 py-6">
                                 <div class="flex flex-col">
                                     <span class="text-sm font-bold text-[#000B58] group-hover:text-[#00139E] transition-colors leading-snug">
-                                        {{ item.nama_indikator }}
+                                        {{ item.nama_data }}
                                     </span>
                                     <span class="text-[10px] font-bold text-[#A2B5CB] mt-1 uppercase tracking-wider">
                                         Tema: {{ item.tema?.nama_tema || 'Umum' }}

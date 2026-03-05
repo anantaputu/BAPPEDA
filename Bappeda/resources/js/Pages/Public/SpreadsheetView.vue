@@ -228,7 +228,7 @@ const executeDeleteAction = () => {
                                     
                                     <td class="p-3 text-xs font-bold text-gray-700 border-r border-gray-100 sticky left-0 bg-white group-hover:bg-blue-50 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                                         <a :href="`/dataset/${item.id_data}`" class="hover:text-blue-600 hover:underline leading-relaxed block">
-                                            {{ item.nama_indikator }}
+                                            {{ item.nama_data }}
                                         </a>
                                         <div class="flex gap-2 mt-1 opacity-60 text-[9px] uppercase font-black text-gray-400">
                                             <span v-if="form.group_by !== 'tema'">{{ item.tema?.nama_tema }}</span>
@@ -287,7 +287,7 @@ const executeDeleteAction = () => {
         <DeleteModal 
             :show="showDeleteModal" 
             :title="'Hapus Indikator Ini?'"
-            :description="'Seluruh data untuk indikator \'' + (dataToDelete?.nama_indikator || 'ini') + '\' akan dihapus secara permanen. Pastikan Anda telah memiliki cadangannya.'"
+            :description="'Seluruh data untuk indikator \'' + (dataToDelete?.nama_data || 'ini') + '\' akan dihapus secara permanen. Pastikan Anda telah memiliki cadangannya.'"
             @close="showDeleteModal = false"
             @confirm="executeDeleteAction"
         />

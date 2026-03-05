@@ -21,7 +21,7 @@ class SearchController extends Controller
         // Filter Keyword
         if ($request->search) {
             $query->where(function($q) use ($request) {
-                $q->where('nama_indikator', 'like', "%{$request->search}%")
+                $q->where('nama_data', 'like', "%{$request->search}%")
                   ->orWhereHas('katakunci', function($queryK) use ($request) {
                       $queryK->where('nama_katakunci', 'like', "%{$request->search}%");
                   });

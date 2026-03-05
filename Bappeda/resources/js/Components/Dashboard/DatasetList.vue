@@ -27,7 +27,7 @@ defineProps({ title: String, items: Array, type: String });
                 
                 <div>
                     <h4 class="text-sm font-bold text-gray-800 group-hover:text-[#00139E] transition-colors line-clamp-2 leading-snug mb-2">
-                        {{ item.title || item.nama_indikator }}
+                        {{ item.title || item.nama_data }}
                     </h4>
                     <div class="flex flex-wrap gap-2 items-center">
                         <span v-if="item.tags" v-for="tag in item.tags" :key="tag" :class="['text-[9px] font-bold uppercase px-2 py-0.5 rounded', type === 'popular' ? 'bg-gray-100 text-gray-500' : 'bg-blue-50 text-blue-500']">

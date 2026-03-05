@@ -161,7 +161,7 @@ const timeColumns = computed(() => {
     
     // Daftar field yang harus dibuang dari header kolom waktu
     const excludeKeys = [
-        'nama_indikator', 'nama indikator', 'nama data', 'uraian', 'indikator', 
+        'nama_data', 'nama indikator', 'nama data', 'uraian', 'indikator', 
         'satuan', 'id_data', 'informasi_tambahan', 'tahun_terbit', 'id_user', 
         'id_tema', 'id_urusan', 'id_bidang', 'id_frekuensi', 'status', 'tahun'
     ];
@@ -231,7 +231,7 @@ const chartConfig = computed(() => {
         if(!row) return null;
 
         const nameKey = Object.keys(row).find(k => 
-            ['nama_indikator', 'nama indikator', 'nama data', 'uraian', 'indikator'].includes(k.toLowerCase().trim())
+            ['nama_data', 'nama indikator', 'nama data', 'uraian', 'indikator'].includes(k.toLowerCase().trim())
         ) || Object.keys(row)[0];
 
         const labelName = row[nameKey] || `Data ${rowIndex + 1}`;
@@ -352,7 +352,7 @@ const statsCards = computed(() => [
                     <div>
                         <div class="flex justify-between items-start mb-2 gap-3">
                             <h4 class="text-[13px] font-black text-[#000B58] line-clamp-2 leading-tight group-hover:text-[#00139E] transition-colors">
-                                {{ item.nama_indikator }}
+                                {{ item.nama_data }}
                             </h4>
                             <div class="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center shrink-0 group-hover:bg-amber-100 transition-colors">
                                 <svg class="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
@@ -457,7 +457,7 @@ const statsCards = computed(() => [
 
                         <div class="flex-1 min-w-0">
                             <p class="text-[11px] font-black text-gray-700 leading-tight group-hover:text-[#00139E] transition-colors uppercase tracking-wide line-clamp-2">
-                                {{ row.nama_indikator || row['Nama Indikator'] || Object.values(row)[0] }}
+                                {{ row.nama_data || row['Nama Indikator'] || Object.values(row)[0] }}
                             </p>
                             <div v-if="selectedIndices.includes(index)" class="mt-2 h-1 w-full rounded-full overflow-hidden bg-gray-100">
                                 <div class="h-full" :style="{ backgroundColor: chartColors[selectedIndices.indexOf(index) % chartColors.length], width: '40%' }"></div>
@@ -510,7 +510,7 @@ const statsCards = computed(() => [
                             <tr v-for="(row, idx) in filteredData" :key="idx" class="hover:bg-blue-50/20 transition-colors group">
                                 <td class="p-5 bg-white border-r border-gray-200 font-bold text-[#000B58] text-sm sticky left-0 z-10 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-[#f8fafc]">
                                     <div class="line-clamp-2 w-[280px]">
-                                        {{ idx + 1 }}. {{ row.nama_indikator || row['Nama Indikator'] || 'Data' }}
+                                        {{ idx + 1 }}. {{ row.nama_data || row['Nama Indikator'] || 'Data' }}
                                     </div>
                                 </td>
 

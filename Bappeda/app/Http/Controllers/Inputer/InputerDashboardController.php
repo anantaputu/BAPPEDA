@@ -11,6 +11,7 @@ use App\Models\DataUpload;
 use App\Models\Bookmark;
 use App\Models\Data;
 
+
 class InputerDashboardController extends Controller
 {
     public function index()
@@ -65,7 +66,7 @@ class InputerDashboardController extends Controller
                     'id' => $log->id_upload,
                     'user' => Auth::user()->name,
                     'action' => 'Mengunggah Data',
-                    'target' => $log->data->nama_indikator ?? 'Indikator tidak diketahui',
+                    'target' => $log->data->nama_data ?? 'Indikator tidak diketahui',
                     'status' => $log->status,
                     'time' => $log->created_at->diffForHumans(),
                 ];
@@ -77,7 +78,7 @@ class InputerDashboardController extends Controller
         foreach ($indikators as $dataset) {
             $rowObject = [
                 'id_data'            => $dataset->id_data,
-                'nama_indikator'     => $dataset->nama_indikator,
+                'nama_data'     => $dataset->nama_data,
                 'satuan'             => $dataset->satuan,
                 'informasi_tambahan' => $dataset->informasi_tambahan,
                 'tahun_terbit' => $dataset->tahun_terbit,
@@ -91,7 +92,7 @@ class InputerDashboardController extends Controller
         // 5. PINNED DATA (Data Favorit)
         $pinnedDatasets = Bookmark::join('data', 'bookmark.dataset_id', '=', 'data.id_data')
             ->where('bookmark.user_id', $userId)
-            ->select('data.id_data', 'data.nama_indikator', 'data.tahun_terbit') 
+            ->select('data.id_data', 'data.nama_data', 'data.tahun_terbit') 
             ->get();
     
         // RETURN KE HALAMAN DASHBOARD (Bukan Index Data)

@@ -309,7 +309,7 @@ const isSpreadsheetView = ref(true); // Toggle antara tampilan Spreadsheet dan L
                                         
                                         <td class="p-3 text-xs font-bold text-gray-700 border-r border-gray-100 sticky left-0 bg-white group-hover:bg-blue-50 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                                             <a :href="`/dataset/${item.id_data}`" class="hover:text-blue-600 hover:underline leading-relaxed block">
-                                                {{ item.nama_indikator }}
+                                                {{ item.nama_data }}
                                             </a>
                                             <div class="flex gap-2 mt-1 opacity-60 text-[9px] uppercase font-black text-gray-400">
                                                 <span v-if="form.group_by !== 'tema'">{{ item.tema?.nama_tema }}</span>
@@ -342,7 +342,7 @@ const isSpreadsheetView = ref(true); // Toggle antara tampilan Spreadsheet dan L
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2.5" /></svg>
                                                 </Link>
 
-                                                <button @click="openDeleteModal({ id_upload: item.id_data, nama_indikator: item.nama_indikator })" title="Hapus Data"
+                                                <button @click="openDeleteModal({ id_upload: item.id_data, nama_data: item.nama_data })" title="Hapus Data"
                                                     class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2.5" /></svg>
                                                 </button>
@@ -384,7 +384,7 @@ const isSpreadsheetView = ref(true); // Toggle antara tampilan Spreadsheet dan L
                                 <div v-if="u.data">
                                     <Link :href="`/dataset/${u.data.id_data}`" 
                                         class="text-[13px] text-[#000B58] font-black uppercase tracking-tight group-hover:text-[#00139E] transition-colors line-clamp-2">
-                                        {{ u.data.nama_indikator }}
+                                        {{ u.data.nama_data }}
                                     </Link>
                                     <div class="flex flex-col gap-1 mt-2">
                                         <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">ID: #{{ u.data.id_data }}</span>
@@ -466,7 +466,7 @@ const isSpreadsheetView = ref(true); // Toggle antara tampilan Spreadsheet dan L
         <DeleteModal 
             :show="showDeleteModal" 
             :title="'Hapus Data?'"
-            :description="'Entri data \'' + (dataToDelete?.data?.nama_indikator || dataToDelete?.nama_indikator || 'ini') + '\' akan dihapus dari riwayat upload. Pastikan Anda telah memiliki cadangan data.'"
+            :description="'Entri data \'' + (dataToDelete?.data?.nama_data || dataToDelete?.nama_data || 'ini') + '\' akan dihapus dari riwayat upload. Pastikan Anda telah memiliki cadangan data.'"
             @close="showDeleteModal = false"
             @confirm="executeDeleteAction"
         />

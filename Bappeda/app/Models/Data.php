@@ -19,7 +19,7 @@ class Data extends Model
    protected $fillable = [
        'id_user', 
        'id_upload',
-       'nama_indikator',
+       'nama_data',
        'deskripsi',
        'id_tema',
        'id_urusan',
@@ -27,7 +27,6 @@ class Data extends Model
        'id_frekuensi',
        'satuan',
        'sumber',
-       'status',
        'tahun_terbit',
        'informasi_tambahan',
    ];

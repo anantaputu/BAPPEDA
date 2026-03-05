@@ -77,7 +77,7 @@ class DashboardController extends Controller
             return $query->with('tema')->limit(3)->get()->map(function ($item) {
                 return [
                     'id'    => $item->id_data,
-                    'title' => $item->nama_indikator,
+                    'title' => $item->nama_data,
                     'tags'  => ['XLSX', $item->tema->nama_tema ?? 'Umum'],
                     'org'   => $item->sumber ?? 'Pemerintah',
                 ];

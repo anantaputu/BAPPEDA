@@ -84,7 +84,7 @@ const resetFilter = () => {
                             <span class="text-[10px] font-bold text-gray-300 italic">{{ item.tahun }}</span>
                         </div>
                         <h4 class="text-lg font-black text-gray-800 leading-tight mb-4 group-hover:text-blue-600 transition-colors">
-                            {{ item.nama_indikator }}
+                            {{ item.nama_data }}
                         </h4>
                         <p class="text-xs text-gray-400 mb-6 line-clamp-2">{{ item.deskripsi || 'Tidak ada deskripsi detail.' }}</p>
                         

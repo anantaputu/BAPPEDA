@@ -17,7 +17,7 @@ const excelData = reactive({ headers: {}, preview: [] });
 
 // FORM GLOBAL
 const form = useForm({
-    nama_indikator: '', deskripsi: '', id_tema: '', id_urusan: '', 
+    nama_data: '', deskripsi: '', id_tema: '', id_urusan: '', 
     id_bidang: '', id_frekuensi: '', satuan: '', sumber: '', 
     kata_kunci: '', periode: new Date().getFullYear().toString(),
     file_path: '', mapping: {}, new_fields: {}
@@ -45,8 +45,8 @@ const handleFileUpload = async (event) => {
             form.mapping = res.default_mapping;
             form.new_fields = res.default_new_fields;
             
-            if (!form.nama_indikator) {
-                form.nama_indikator = res.suggested_name;
+            if (!form.nama_data) {
+                form.nama_data = res.suggested_name;
             }
             
             step.value = 2;
@@ -132,8 +132,8 @@ const submitAll = async () => {
                 <div class="p-10 grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="md:col-span-2 space-y-2">
                         <label class="form-label-premium">Nama Indikator <span class="text-red-500">*</span></label>
-                        <input v-model="form.nama_indikator" type="text" class="form-input-premium font-bold text-gray-800" placeholder="Contoh: Jumlah Penduduk Miskin Kota Mataram">
-                        <p class="text-red-500 text-[10px] font-bold mt-1 uppercase ml-4" v-if="form.errors.nama_indikator">{{ form.errors.nama_indikator }}</p>
+                        <input v-model="form.nama_data" type="text" class="form-input-premium font-bold text-gray-800" placeholder="Contoh: Jumlah Penduduk Miskin Kota Mataram">
+                        <p class="text-red-500 text-[10px] font-bold mt-1 uppercase ml-4" v-if="form.errors.nama_data">{{ form.errors.nama_data }}</p>
                     </div>
 
                     <div class="md:col-span-2 space-y-2">

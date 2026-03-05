@@ -22,7 +22,7 @@ class LogActivityController extends Controller
                 'time' => Carbon::parse($log->created_at)->diffForHumans(),
                 'date_full' => Carbon::parse($log->created_at)->format('d M Y, H:i'),
                 'action' => 'Melakukan upload indikator',
-                'target' => $log->data->nama_indikator ?? 'Indikator Dihapus',
+                'target' => $log->data->nama_data ?? 'Indikator Dihapus',
                 'status' => $log->status, // valid, pending, rejected
             ];
         });

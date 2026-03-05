@@ -27,7 +27,7 @@ class DataSeeder extends Seeder
 
         // --- DATA 1 ---
         $data1 = Data::create([
-            'nama_indikator'    => 'Persentase Penduduk Miskin',
+            'nama_data'    => 'Persentase Penduduk Miskin',
             'deskripsi'         => 'Mengukur tingkat kemiskinan penduduk di wilayah tertentu.',
             'id_tema'           => $defaultTema,
             'id_urusan'         => 7, // Sosial (berdasarkan UrusanSeeder Anda)
@@ -45,7 +45,7 @@ class DataSeeder extends Seeder
 
         // --- DATA 2 ---
         $data2 = Data::create([
-            'nama_indikator'    => 'Angka Harapan Hidup',
+            'nama_data'    => 'Angka Harapan Hidup',
             'deskripsi'         => 'Rata-rata perkiraan tahun hidup yang dapat ditempuh oleh seseorang.',
             'id_tema'           => 2, // SDGs
             'id_urusan'         => 2, // Kesehatan
@@ -62,7 +62,7 @@ class DataSeeder extends Seeder
 
         // --- DATA 3 ---
         $data3 = Data::create([
-            'nama_indikator'    => 'Tingkat Pengangguran Terbuka',
+            'nama_data'    => 'Tingkat Pengangguran Terbuka',
             'deskripsi'         => 'Persentase jumlah pengangguran terhadap jumlah angkatan kerja.',
             'id_tema'           => $defaultTema,
             'id_urusan'         => 8, // Tenaga Kerja
@@ -79,7 +79,7 @@ class DataSeeder extends Seeder
 
         // --- DATA 4 ---
         Data::create([
-            'nama_indikator'    => 'Indeks Pembangunan Manusia (IPM)',
+            'nama_data'    => 'Indeks Pembangunan Manusia (IPM)',
             'deskripsi'         => 'Menjelaskan bagaimana penduduk dapat mengakses hasil pembangunan.',
             'id_tema'           => 3, // RPJMD
             'id_urusan'         => $defaultUrusan,
@@ -94,7 +94,7 @@ class DataSeeder extends Seeder
 
         // --- DATA 5 ---
         Data::create([
-            'nama_indikator'    => 'Rata-rata Lama Sekolah',
+            'nama_data'    => 'Rata-rata Lama Sekolah',
             'deskripsi'         => 'Jumlah tahun yang dihabiskan oleh penduduk dalam pendidikan formal.',
             'id_tema'           => $defaultTema,
             'id_urusan'         => 1, // Pendidikan
@@ -109,7 +109,7 @@ class DataSeeder extends Seeder
 
         // --- DATA 6 ---
         Data::create([
-            'nama_indikator'    => 'Cakupan Layanan Air Minum',
+            'nama_data'    => 'Cakupan Layanan Air Minum',
             'deskripsi'         => 'Persentase rumah tangga yang memiliki akses air minum layak.',
             'id_tema'           => 1,
             'id_urusan'         => 3, // PU
@@ -124,7 +124,7 @@ class DataSeeder extends Seeder
 
         // --- DATA 7 ---
         Data::create([
-            'nama_indikator'    => 'Jumlah Kematian Ibu',
+            'nama_data'    => 'Jumlah Kematian Ibu',
             'deskripsi'         => 'Jumlah kasus kematian ibu saat persalinan.',
             'id_tema'           => 2,
             'id_urusan'         => 2,
@@ -139,7 +139,7 @@ class DataSeeder extends Seeder
 
         // --- DATA 8 ---
         Data::create([
-            'nama_indikator'    => 'Rasio Konektivitas Jalan',
+            'nama_data'    => 'Rasio Konektivitas Jalan',
             'deskripsi'         => 'Tingkat hubungan antar wilayah melalui infrastruktur jalan.',
             'id_tema'           => 5, // Program Unggulan
             'id_urusan'         => 3,
@@ -154,7 +154,7 @@ class DataSeeder extends Seeder
 
         // --- DATA 9 ---
         Data::create([
-            'nama_indikator'    => 'Persentase Rumah Layak Huni',
+            'nama_data'    => 'Persentase Rumah Layak Huni',
             'deskripsi'         => 'Proporsi rumah tangga yang menempati rumah layak huni.',
             'id_tema'           => 4, // Renstra
             'id_urusan'         => 4, // Perumahan
@@ -169,7 +169,7 @@ class DataSeeder extends Seeder
 
         // --- DATA 10 ---
         Data::create([
-            'nama_indikator'    => 'Prevalensi Stunting',
+            'nama_data'    => 'Prevalensi Stunting',
             'deskripsi'         => 'Tingkat kejadian stunting pada balita.',
             'id_tema'           => 2,
             'id_urusan'         => 2,

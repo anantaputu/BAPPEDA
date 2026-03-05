@@ -105,7 +105,7 @@ class DataOutputController extends Controller
         $upload->load('data');
         
         // Nama File yang Rapi
-        $safeName = Str::slug($upload->data->nama_indikator ?? 'Data');
+        $safeName = Str::slug($upload->data->nama_data ?? 'Data');
         $fileName = 'Data_' . $safeName . '_' . $upload->tahun . '.xlsx';
 
         $writer = new Xlsx($spreadsheet);

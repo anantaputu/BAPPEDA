@@ -26,7 +26,7 @@ class DatasetController extends Controller
         if ($request->filled('urusan')) $query->where('id_urusan', $request->urusan);
         if ($request->filled('bidang')) $query->where('id_bidang', $request->bidang);
         if ($request->filled('frekuensi')) $query->where('id_frekuensi', $request->frekuensi);
-        if ($request->filled('search')) $query->where('nama_indikator', 'like', '%' . $request->search . '%');
+        if ($request->filled('search')) $query->where('nama_data', 'like', '%' . $request->search . '%');
 
         $allData = $query->get();
 
@@ -79,7 +79,7 @@ class DatasetController extends Controller
         if ($request->filled('tema')) $query->where('id_tema', $request->tema);
         if ($request->filled('urusan')) $query->where('id_urusan', $request->urusan);
         if ($request->filled('bidang')) $query->where('id_bidang', $request->bidang);
-        if ($request->filled('q')) $query->where('nama_indikator', 'like', '%' . $request->q . '%');
+        if ($request->filled('q')) $query->where('nama_data', 'like', '%' . $request->q . '%');
 
         return Inertia::render('Public/Katalog', [
             'indicators' => $query->latest()->paginate(12)->withQueryString(),
@@ -124,7 +124,7 @@ public function toggleBookmark($id)
 
         // 2. Format Data Dasar
         $rowObject = [
-            'Nama Indikator' => $dataset->nama_indikator,
+            'Nama Indikator' => $dataset->nama_data,
             'Satuan'         => $dataset->satuan ?? '-',
         ];
 
