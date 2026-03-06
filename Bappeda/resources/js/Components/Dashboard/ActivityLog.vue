@@ -12,30 +12,34 @@ defineProps({
 
 const page = usePage()
 const user = computed(() => page.props.auth.user)
-const cantManage = computed(() => user.value?.role === 'Admin')
+// Logika akses: Admin Super atau Admin bisa melihat semua log
+const canManage = computed(() => {
+    const role = user.value?.role;
+    return role === 'Admin Super' || role === 'Admin';
+});
 
 const getStatusClass = (status) => {
     const map = {
-        // Status disesuaikan agar tetap profesional
-        'valid': 'bg-blue-50 text-[#00139E] border-blue-100', // Gunakan Biru Royal untuk valid
-        'pending': 'bg-amber-50 text-amber-600 border-amber-100',
-        'rejected': 'bg-rose-50 text-rose-600 border-rose-100',
+        'valid': 'bg-inovasi/10 text-inovasi border-inovasi/20', // Hijau Inovasi
+        'pending': 'bg-profesional/10 text-profesional border-profesional/20', // Oranye Profesional
+        'rejected': 'bg-integritas/10 text-integritas border-integritas/20', // Merah Integritas
     };
-    return map[status] || 'bg-gray-50 text-gray-500 border-gray-100';
+    return map[status?.toLowerCase()] || 'bg-bgsoft text-textsecondary border-gray-200';
 };
 </script>
 
 <template>
-    <div class="bg-white rounded-[2.5rem] p-10 shadow-2xl shadow-gray-100/50 border border-gray-400">
+    <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-400">
         <div class="flex items-center justify-between mb-10">
             <div class="flex items-center gap-3">
-                <div class="w-2 h-6 bg-[#00139E] rounded-full"></div>
-                <h3 class="text-xl font-black text-[#000B58] uppercase tracking-tight">Log Aktivitas Terbaru</h3>
+                <h3 class="text-sm font-black text-primary uppercase tracking-[0.2em] border-l-4 border-secondary pl-4">
+                    Log Aktivitas Terbaru
+                </h3>
             </div>
             <Link 
-                v-if="cantManage"
+                v-if="canManage"
                 href="/admin/logs"
-                class="text-[10px] font-black text-[#00139E] uppercase tracking-[0.2em] hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors border border-transparent hover:border-blue-100"
+                class="text-[10px] font-black text-secondary uppercase tracking-[0.2em] hover:bg-bgsoft px-4 py-2 rounded-xl transition-all border border-transparent hover:border-gray-200"
             >
                 Lihat Semua
             </Link>
@@ -44,29 +48,28 @@ const getStatusClass = (status) => {
         <div class="space-y-2">
             <div v-for="(activity, index) in activities" :key="activity.id || index" class="flex gap-6 relative group">
                 <div class="flex flex-col items-center">
-                    <div class="w-4 h-4 rounded-full border-4 border-white bg-[#00139E] z-10 shadow-sm transition-transform group-hover:scale-125"></div>
-                    <div v-if="index !== activities.length - 1" class="w-0.5 h-full bg-gray-100 absolute top-4"></div>
+                    <div class="w-4 h-4 rounded-full border-4 border-white bg-secondary z-10 shadow-sm transition-transform group-hover:scale-125 duration-300"></div>
+                    <div v-if="index !== activities.length - 1" class="w-0.5 h-full bg-bgsoft absolute top-4"></div>
                 </div>
 
                 <div class="flex-1 pb-10">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="font-black text-[#000B58] text-[13px] uppercase tracking-tight">{{ activity.user }}</span>
-                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{{ activity.time }}</span>
+                        <span class="font-black text-primary text-[13px] uppercase tracking-tight">{{ activity.user }}</span>
+                        <span class="text-[10px] text-textsecondary font-bold uppercase tracking-widest">{{ activity.time }}</span>
                     </div>
                     
-                    <p class="text-[12px] text-gray-500 font-medium leading-relaxed mb-3">
+                    <p class="text-[12px] text-textsecondary font-medium leading-relaxed mb-4">
                         {{ activity.action }} 
-                        <span class="text-[#00139E] font-black">"{{ activity.target }}"</span>
+                        <span class="text-secondary font-black">"{{ activity.target }}"</span>
                     </p>
-
-                    <span :class="['text-[9px] px-3 py-1 rounded-lg font-black uppercase tracking-widest border shadow-sm', getStatusClass(activity.status)]">
-                        {{ activity.status }}
-                    </span>
                 </div>
             </div>
 
-            <div v-if="activities.length === 0" class="py-12 text-center">
-                <p class="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Belum ada aktivitas terekam</p>
+            <div v-if="activities.length === 0" class="py-20 text-center bg-bgsoft/50 rounded-xl border-2 border-dashed border-gray-200">
+                <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p class="text-[10px] font-black text-textsecondary/40 uppercase tracking-[0.3em]">Belum ada aktivitas terekam</p>
             </div>
         </div>
     </div>
@@ -74,11 +77,11 @@ const getStatusClass = (status) => {
 
 <style scoped>
 .flex-1 {
-    animation: fadeIn 0.5s ease-out;
+    animation: slideIn 0.4s ease-out forwards;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateX(10px); }
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(12px); }
     to { opacity: 1; transform: translateX(0); }
 }
 </style>

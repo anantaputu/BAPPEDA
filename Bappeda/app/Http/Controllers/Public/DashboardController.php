@@ -58,19 +58,33 @@ class DashboardController extends Controller
             'values' => $bidangValues,
         ];
 
-        $trenData = Data::select(
+        $trenDataRaw = Data::select(
                 DB::raw("COUNT(*) as jumlah"),
-                DB::raw("TRIM(TO_CHAR(created_at, 'Month')) as bulan"), 
                 DB::raw("EXTRACT(MONTH FROM created_at) as bulan_num")
             )
             ->whereYear('created_at', date('Y')) 
-            ->groupBy(DB::raw("bulan"), DB::raw("bulan_num"))
+            ->groupBy(DB::raw("bulan_num"))
             ->orderBy('bulan_num')
-            ->get();
+            ->get()
+            ->pluck('jumlah', 'bulan_num');
+
+        $months = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        $finalLabels = [];
+        $finalValues = [];
+
+        foreach ($months as $num => $name) {
+            $finalLabels[] = $name;
+            $finalValues[] = $trenDataRaw->get($num) ?? 0;
+        }
 
         $trenChart = [
-            'labels' => $trenData->pluck('bulan')->toArray(),
-            'values' => $trenData->pluck('jumlah')->toArray(),
+            'labels' => $finalLabels,
+            'values' => $finalValues,
         ];
 
         $mapDataset = function ($query) {

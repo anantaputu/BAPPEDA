@@ -64,22 +64,20 @@ const executeDeleteAction = () => {
 <template>
     <Head title="Kelola User" />
 
-    <div class="bg-white rounded-[2.5rem] p-10 shadow-2xl shadow-gray-100 border border-gray-400 min-h-[70vh]">
-        
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+    <div class="min-h-full">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-5">
             <div>
-                <h1 class="text-4xl font-black text-[#000B58] tracking-tight uppercase">
+                <h1 class="text-2xl font-black text-primary uppercase tracking-tight">
                     Manajemen <span class="text-[#00139E]">User</span>
                 </h1>
-                <p class="text-xs text-gray-400 font-bold uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
-                    <span class="w-2 h-2 bg-[#00139E] rounded-full animate-pulse"></span>
+                <p class="text-sm text-textsecondary font-medium">
                     Total Terdaftar: {{ users.length }} Pengguna
                 </p>
             </div>
-
             <Link
                 href="/admin/users/create"
-                class="bg-[#00139E] text-white px-8 py-4 rounded-2xl text-lg font-bold hover:bg-[#000B58] hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 shadow-xl shadow-blue-900/10"
+                
+                class="flex-1 md:flex-none bg-primary text-white px-10 py-4 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-secondary transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3 active:scale-95"
             >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -88,84 +86,74 @@ const executeDeleteAction = () => {
             </Link>
         </div>
 
-        <div class="overflow-hidden rounded-[2rem] border border-gray-400 bg-white">
+        <div class="overflow-hidden rounded-xl border border-gray-400 bg-white shadow-sm">
             <table class="w-full border-collapse">
                 <thead>
-                    <tr class="bg-slate-50 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-400">
+                    <tr class="bg-bgsoft text-left text-[10px] font-black text-textsecondary uppercase tracking-[0.2em] border-b border-gray-400">
                         <th class="p-8">Pengguna</th>
                         <th>Peran</th>
-                        <th>Status Akses</th>
+                        <!-- <th>Status Akses</th> -->
                         <th class="text-right p-8">Aksi</th>
                     </tr>
                 </thead>
 
-                <tbody class="text-sm font-bold text-gray-800">
-                    <tr v-for="user in users" :key="user.id" class="border-b border-gray-400 last:border-0 hover:bg-blue-50/20 transition-all group">
+                <tbody class="text-sm font-bold text-primary">
+                    <tr v-for="user in users" :key="user.id" 
+                        class="border-b border-gray-100 last:border-0 hover:bg-bgsoft/50 transition-all group">
+                        
                         <td class="p-8">
-                            <p class="text-md text-[#000B58] font-black uppercase tracking-tight">@{{ user.username }}</p>
-                            <p class="text-xs text-slate-400 font-medium lowercase tracking-widest mt-1">{{ user.email }}</p>
+                            <div class="flex flex-col">
+                                <p class="text-md text-primary font-black uppercase tracking-tight">
+                                    @{{ user.username }}
+                                </p>
+                                <p class="text-[10px] text-textsecondary font-bold lowercase tracking-widest mt-1 opacity-70">
+                                    {{ user.email }}
+                                </p>
+                            </div>
                         </td>
+
                         <td>
-                            <span :class="user.role?.nama_role === 'Admin' ? 'text-[#00139E] bg-blue-50 border-blue-100' : 'text-slate-400 bg-slate-50 border-slate-100'" 
+                            <span :class="user.role?.nama_role === 'Admin' 
+                                    ? 'text-secondary bg-secondary/10 border-secondary/20' 
+                                    : 'text-textsecondary bg-bgsoft border-gray-200'" 
                                   class="text-[9px] font-black uppercase px-3 py-1.5 rounded-xl border inline-block tracking-widest shadow-sm">
                                 {{ user.role?.nama_role || 'No Role' }}
                             </span>
                         </td>
-                        <td>
-                            <button @click="user.role?.nama_role !== 'Admin' ? openStatusModal(user) : null" 
-                                    :disabled="user.role?.nama_role === 'Admin'"
-                                    :class="[
-                                        user.status_aktif ? 'bg-blue-50 text-[#00139E] border-blue-100' : 'bg-amber-50 text-amber-600 border-amber-100',
-                                        user.role?.nama_role === 'Admin' ? 'opacity-30 cursor-not-allowed' : 'hover:scale-105 active:scale-95'
-                                    ]"
-                                    class="text-[9px] font-black uppercase px-4 py-2 rounded-xl border transition-all tracking-widest shadow-sm">
+
+                        <!-- <td>
+                            <div
+                                class="text-[9px] font-black uppercase px-4 py-2 rounded-xl border transition-all tracking-widest shadow-sm">
                                 {{ user.status_aktif ? 'Aktif' : 'Non-Aktif' }}
-                            </button>
-                        </td>
+                            </div>
+                        </td> -->
+
                         <td class="p-8 text-right space-x-3">
                             <template v-if="user.role?.nama_role !== 'Admin'">
-                                <Link :href="`/admin/users/${user.id}/edit`" class="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-blue-50 text-[#00139E] hover:bg-[#00139E] hover:text-white transition-all">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                <Link :href="`/admin/users/${user.id}/edit`" 
+                                      class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-bgsoft text-primary hover:bg-secondary hover:text-white transition-all shadow-sm border border-gray-200">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                    </svg>
                                 </Link>
-                                <button @click="openDeleteModal(user)" class="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                
+                                <button @click="openDeleteModal(user)" 
+                                        class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-integritas/10 text-integritas hover:bg-integritas hover:text-white transition-all shadow-sm border border-integritas/20">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
                                 </button>
                             </template>
-                            <span v-else class="text-[10px] font-black text-slate-300 uppercase italic tracking-widest">Sistem Terkunci</span>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <Transition
-            enter-active-class="duration-300 ease-out"
-            enter-from-class="opacity-0 scale-95"
-            enter-to-class="opacity-100 scale-100"
-            leave-active-class="duration-200 ease-in"
-            leave-from-class="opacity-100 scale-100"
-            leave-to-class="opacity-0 scale-95"
-        >
-            <div v-if="showStatusModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                <div class="absolute inset-0 bg-[#000B58]/60 backdrop-blur-md" @click="showStatusModal = false"></div>
-                <div class="relative bg-white w-full max-w-md rounded-[3rem] p-10 shadow-2xl text-center border border-gray-100">
-                    <div class="mx-auto w-24 h-24 rounded-[2rem] bg-blue-50 text-[#00139E] flex items-center justify-center mb-8">
-                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <h3 class="text-2xl font-black text-[#000B58] mb-4 uppercase tracking-tight">{{ statusModalConfig.title }}</h3>
-                    <p class="text-slate-500 text-sm font-medium leading-relaxed mb-10 px-2">{{ statusModalConfig.description }}</p>
-                    <div class="flex flex-col gap-3">
-                        <button @click="executeStatusAction" :class="statusModalConfig.confirmClass" class="w-full text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl transition-all shadow-lg text-xs">{{ statusModalConfig.confirmText }}</button>
-                        <button @click="showStatusModal = false" class="w-full bg-slate-50 text-slate-400 font-bold py-4 rounded-2xl transition-colors uppercase tracking-widest text-[10px]">Batalkan</button>
-                    </div>
-                </div>
-            </div>
-        </Transition>
-
         <DeleteModal 
             :show="showDeleteModal" 
-            :title="'Hapus Akun Permanen?'"
-            :description="'Menghapus @' + userToDelete?.username + ' akan menghilangkan data secara permanen dari sistem BAPPEDA. Tindakan ini tidak dapat dibatalkan.'"
+            :title="'Konfirmasi Hapus'"
+            :description="'Akun @' + userToDelete?.username + ' akan dihapus permanen dari sistem.'"
             @close="showDeleteModal = false"
             @confirm="executeDeleteAction"
         />

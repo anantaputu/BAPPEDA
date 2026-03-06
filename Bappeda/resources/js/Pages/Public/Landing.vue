@@ -37,7 +37,7 @@ const props = defineProps({
                     Platform digital BAPPEDA Provinsi Nusa Tenggara Barat untuk mempermudah penyetoran, validasi, dan monitoring data kinerja pembangunan daerah secara real-time.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                    <Link href="/learnmore" class="bg-primary text-white px-8 py-4 rounded-xl text-lg font-bold hover:bg-secondary hover:-translate-y-1 transition-all duration-300 shadow-lg shadow-secondary/20">
+                    <Link href="/learnmore" class="bg-primary text-white px-8 py-4 rounded-xl text-lg font-bold hover:bg-secondary transition-all duration-300">
                         Pelajari lebih lanjut
                     </Link>
                 </div>

@@ -91,35 +91,12 @@ const statsCards = computed(() => [
 const barChartData = computed(() => ({
     labels: props.temaChart?.labels || [],
     datasets: [{
-        label: 'Jumlah Indikator',
+        label: 'Jumlah Data',
         backgroundColor: '#1F3A63',
         borderRadius: 8,
         data: props.temaChart?.values || []
     }]
 }));
-
-const barChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: {
-            display: false,
-        }
-    },
-    scales: {
-        y: {
-            beginAtZero: true,
-            ticks: {
-                stepSize: 1
-            }
-        },
-        x: {
-            grid: {
-                display: false
-            }
-        }
-    }
-};
 
 const doughnutData = computed(() => ({
     labels: props.frekuensiChart?.labels || [],
@@ -135,7 +112,7 @@ const lineChartData = computed(() => ({
     labels: props.trenChart?.labels || [],
     datasets: [{
         label: 'Dataset Baru',
-        borderColor: '#0284C7', // secondary
+        borderColor: '#0284C7',
         backgroundColor: 'rgba(2, 132, 199, 0.1)',
         fill: true,
         tension: 0.4,
@@ -172,9 +149,9 @@ const lineChartData = computed(() => ({
 
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <BarChartIndikator 
-                title="Distribusi Indikator Berdasarkan Tema"
+                title="Distribusi Data"
                 :chartData="barChartData" 
-                :chartOptions="barChartOptions"
+                class="lg:col-span-2"
             />
 
             <div class="bg-primary text-white p-10 rounded-xl shadow-xl relative overflow-hidden flex flex-col h-full">
@@ -244,7 +221,7 @@ const lineChartData = computed(() => ({
             <div class="lg:col-span-2 bg-white p-8 rounded-xl border border-gray-400 shadow-sm flex flex-col h-full">
                 <div class="flex justify-between items-center mb-8">
                     <h3 class="text-sm font-black text-primary uppercase tracking-[0.2em] border-l-4 border-secondary pl-4">
-                        Pertumbuhan Dataset
+                        Pertumbuhan Data
                     </h3>
                     <div class="text-right">
                         <span class="text-[10px] font-bold text-textsecondary block leading-none uppercase">Total Tren</span>
@@ -252,7 +229,7 @@ const lineChartData = computed(() => ({
                     </div>
                 </div>
                 <div class="flex-grow min-h-[350px]">
-                    <LineChartTren :chartData="lineChartData" :options="{ maintainAspectRatio: false, responsive: true }" />
+                    <LineChartTren :chartData="lineChartData"/>
                 </div>
             </div>
 

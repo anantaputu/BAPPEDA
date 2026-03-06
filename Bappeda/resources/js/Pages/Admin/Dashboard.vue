@@ -44,99 +44,55 @@ const props = defineProps({
     },
 });
 
-// --- KONFIGURASI WARNA BIRU ADMIN ---
+// --- KONFIGURASI WARNA (Diselaraskan dengan Brand BAPPEDA) ---
 const colors = {
-    // Navy untuk elemen utama/total
-    navy: { bg: 'bg-[#000B58]/10', text: 'text-[#000B58]', bar: 'bg-[#000B58]' },
-    // Royal untuk elemen aktif/proses
-    royal: { bg: 'bg-[#00139E]/10', text: 'text-[#00139E]', bar: 'bg-[#00139E]' },
-    // Biru Terang untuk variasi
-    bright: { bg: 'bg-blue-50', text: 'text-blue-600', bar: 'bg-blue-600' },
+    // Menggunakan skema Navy (Primary) untuk semua stat agar konsisten
+    navy: { 
+        bg: 'bg-primary/5', 
+        text: 'text-primary', 
+        bar: 'bg-secondary' 
+    },
 };
 
-// 2. KONFIGURASI STATS CARDS (Dynamic Data dengan Skema Biru)
+// 2. KONFIGURASI STATS CARDS (Diseragamkan warnanya)
 const statsCards = computed(() => [
     { 
         label: 'TOTAL USER', 
         value: props.stats.total_user || 0, 
         icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', 
-        color: 'navy', 
-        progress: 100 
+        color: 'navy' 
     },
     { 
-        label: 'USER AKTIF', 
-        value: props.stats.user_active || 0, 
-        icon: 'M9 12l2 2 4-4m5.618-4.016A9 9 0 112.182 12a9 9 0 0115.818-4.016z', 
-        color: 'royal', 
-        progress: (props.stats.total_user > 0) ? ((props.stats.user_active / props.stats.total_user) * 100) : 0
-    },
-    { 
-        label: 'TOTAL DATASET', 
+        label: 'TOTAL DATA', 
         value: props.stats.total_dataset || 0, 
         icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4', 
-        color: 'navy', 
-        progress: 100 
-    },
-    { 
-        label: 'DATA VALID', 
-        value: props.stats.data_valid || 0, 
-        icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', 
-        color: 'royal', 
-        progress: (props.stats.total_dataset > 0) ? ((props.stats.data_valid / props.stats.total_dataset) * 100) : 0
-    },
+        color: 'navy' 
+    }
 ]);
 
-// 3. BAR CHART CONFIG
+// 3. BAR CHART DATA
 const barChartData = computed(() => ({
     labels: props.temaChart?.labels || [],
     datasets: [{
         label: 'Jumlah Indikator',
-        backgroundColor: '#000B58', // Biru Navy
-        borderRadius: 6,
+        backgroundColor: '#1F3A63', // primary
+        borderRadius: 8,
         data: props.temaChart?.values || []
     }]
 }));
 
-const barChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-        y: { 
-            grid: { color: '#F1F5F9' }, 
-            ticks: { font: { size: 10, weight: 'bold' }, color: '#64748b' } 
-        },
-        x: { 
-            grid: { display: false }, 
-            ticks: { font: { size: 10, weight: 'bold' }, color: '#64748b' } 
-        }
-    }
-};
-
-// 4. DOUGHNUT CHART CONFIG (Palet Biru Monokromatik)
+// 4. DOUGHNUT CHART (Palet Biru Monokromatik)
 const doughnutData = computed(() => {
     const hasData = props.bidangChart?.labels?.length > 0;
     const labels = hasData ? props.bidangChart.labels : ['Kosong'];
     const values = hasData ? props.bidangChart.values : [1];
     
-    // Gradasi Biru
-    const backgroundColors = [
-        '#000B58', // Navy
-        '#00139E', // Royal
-        '#2563EB', // Blue 600
-        '#3B82F6', // Blue 500
-        '#60A5FA', // Blue 400
-        '#93C5FD'  // Blue 300
-    ];
-
     return {
         labels: labels,
         datasets: [{
             data: values,
-            backgroundColor: backgroundColors.slice(0, labels.length),
-            borderWidth: 2,
-            borderColor: '#ffffff',
-            hoverOffset: 4,
+            backgroundColor: ['#1F3A63', '#0284C7', '#4A6CF7', '#EEF2F5', '#A2B5CB'],
+            borderWidth: 0,
             cutout: '75%'
         }]
     };
@@ -156,19 +112,22 @@ const percentValid = computed(() => {
 <template>
     <Head title="Dashboard Admin" />
 
-    <div class="space-y-8 px-4 sm:px-0">
-        <div class="flex items-center justify-between mb-4">
+    <div class="space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-5">
             <div>
-                <h1 class="text-2xl font-black text-[#000B58] uppercase tracking-tight">Dashboard Kontrol</h1>
-                <p class="text-sm text-slate-400 font-medium italic">Monitoring aktivitas sistem dan validasi data daerah.</p>
+                <h1 class="text-2xl font-black text-primary uppercase tracking-tight">Dashboard Kontrol</h1>
+                <p class="text-sm text-textsecondary font-medium">Monitoring aktivitas sistem dan validasi data daerah.</p>
             </div>
-            <div class="hidden md:flex bg-white px-4 py-2 rounded-2xl border border-slate-200 items-center gap-3">
-                <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
-                <span class="text-xs font-bold text-[#000B58] uppercase tracking-widest">Sistem Aktif</span>
+            <div class="flex bg-bgsoft px-4 py-2 rounded-xl border border-gray-200 items-center gap-3 w-fit">
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-inovasi opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-inovasi"></span>
+                </span>
+                <span class="text-[10px] font-black text-primary uppercase tracking-widest">Sistem Aktif</span>
             </div>
         </div>
 
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
             <StatCard
                 v-for="(stat, index) in statsCards" 
                 :key="index" 
@@ -178,18 +137,11 @@ const percentValid = computed(() => {
         </section>
 
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-400">
-                <h3 class="text-xs font-black text-[#000B58] uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <span class="w-1.5 h-4 bg-[#00139E] rounded-full"></span>
-                    Distribusi Indikator per Tema
-                </h3>
-                <div>
-                    <BarChartIndikator 
-                        :chartData="barChartData" 
-                        :chartOptions="barChartOptions" 
-                    />
-                </div>
-            </div>
+            <BarChartIndikator 
+                class="lg:col-span-2"
+                title="Distribusi Data"
+                :chartData="barChartData" 
+            />
 
             <ValidationDoughnut 
                 :doughnutData="doughnutData" 

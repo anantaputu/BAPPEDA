@@ -302,12 +302,6 @@ public function processBulkData($dataset, $years, $userId, $fileName = 'Multi Da
                 'satuan'         => $formData['satuan'] ?? '-',
                 'deskripsi'      => $formData['deskripsi'] ?? null,
                 'sumber'         => $formData['sumber'] ?? null,
-<<<<<<< Updated upstream
-=======
-                
-                // [PERBAIKAN DI SINI] Tangkap extra_fields yang diedit dan jadikan JSON
-                // Jika tidak ada extra_fields baru yang dikirim, biarkan informasi_tambahan yang lama
->>>>>>> Stashed changes
                 'informasi_tambahan' => isset($formData['extra_fields']) 
                                         ? json_encode($formData['extra_fields']) 
                                         : $dataMaster->informasi_tambahan,

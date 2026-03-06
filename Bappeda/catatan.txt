@@ -1,0 +1,2 @@
+Yang harus di tambah/edit/modif adalah Modal, inputer, route dan penamaan route serta folder, ini penting, dan juga middleware buat pengamanan lebih lanjut
+dan juga route di inputer 'gajelas masih'
