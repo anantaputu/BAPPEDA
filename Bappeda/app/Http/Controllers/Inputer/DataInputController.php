@@ -27,29 +27,46 @@ class DataInputController extends Controller
             'frekuensi' => Frekuensi::all(),
         ];
     }
-
-    public function index()
+public function index()
     {
-        $userId = auth()->id();
+        $user = Auth::user();
+        $userId = $user->id; // sesuaikan jika primary key user Anda bukan 'id'
+        
+        // Cek apakah yang login adalah admin
+        $isAdmin = optional($user->role)->nama_role === 'Admin'; 
 
-        $recentUploads = DataUpload::with(['data.urusan', 'data.bidang', 'user'])
-            ->where('id_user', $userId)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // 1. DATA UNTUK RIWAYAT UPLOAD (Tampilan CRUD)
+        $recentUploadsQuery = DataUpload::with(['data.urusan', 'data.bidang', 'user'])
+            ->orderBy('created_at', 'desc');
 
+        // Jika BUKAN Admin, batasi hanya data miliknya sendiri
+        if (!$isAdmin) {
+            $recentUploadsQuery->where('id_user', $userId);
+        }
+        $recentUploads = $recentUploadsQuery->get();
+
+        // 2. METADATA UNTUK FILTER SPREADSHEET
         $metadata = [
             'tema' => Tema::all(),
             'urusan' => Urusan::all(),
             'bidang' => Bidang::all(),
             'frekuensi' => Frekuensi::all(),
-            'tahun_terbit' => Data::select('tahun_terbit')->distinct()->orderBy('tahun_terbit', 'desc')->pluck('tahun_terbit'),
+            'tahun_terbit' => Data::select('tahun_terbit')->whereNotNull('tahun_terbit')->distinct()->orderBy('tahun_terbit', 'desc')->pluck('tahun_terbit'),
         ];
 
-        $query = \App\Models\Data::with(['values', 'tema', 'urusan', 'bidang', 'frekuensi'])
-            ->where('id_user', $userId);
+        // 3. AMBIL DATA UTAMA UNTUK SPREADSHEET
+        $query = \App\Models\Data::with(['values', 'tema', 'urusan', 'bidang', 'frekuensi']);
 
+        // Jika BUKAN Admin, batasi hanya data miliknya sendiri
+        if (!$isAdmin) {
+            $query->where('id_user', $userId);
+        }
+
+        // Terapkan filter jika ada request dari Vue
         if (request('search')) {
-            $query->where('nama_data', 'ilike', '%' . request('search') . '%');
+            // CATATAN: Pastikan nama kolomnya benar. Sebelumnya Anda menulis nama_data. 
+            // Jika di database namanya nama_indikator, gunakan nama_indikator.
+            $query->where('nama_indikator', 'ilike', '%' . request('search') . '%'); 
         }
         if (request('urusan')) $query->where('id_urusan', request('urusan'));
         if (request('bidang')) $query->where('id_bidang', request('bidang'));
@@ -59,6 +76,7 @@ class DataInputController extends Controller
 
         $allData = $query->get();
 
+        // 4. GROUPING DATA (Untuk tampilan Spreadsheet)
         $groupedData = [];
         $timeColumnsSet = [];
         $groupBy = request('group_by', 'tema'); 
@@ -80,9 +98,10 @@ class DataInputController extends Controller
         $timeColumns = array_keys($timeColumnsSet);
         sort($timeColumns); 
 
+        // RETURN KE HALAMAN INDEX / SPREADSHEET
         return Inertia::render('Inputer/Data/Index', [
             'recentUploads' => $recentUploads,
-            'isAdmin'       => Auth::user()->role->nama_role === 'Admin',
+            'isAdmin'       => $isAdmin,    
             'groupedData'   => $groupedData,
             'timeColumns'   => $timeColumns,
             'metadata'      => $metadata,

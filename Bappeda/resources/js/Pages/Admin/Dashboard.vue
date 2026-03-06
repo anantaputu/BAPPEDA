@@ -42,6 +42,11 @@ const props = defineProps({
         type: Array,
         default: () => []
     },
+    // [BARU] Menangkap data bookmark/pin dari Controller
+    pinnedData: {
+        type: Array,
+        default: () => [] 
+    }
 });
 
 // --- KONFIGURASI WARNA (Diselaraskan dengan Brand BAPPEDA) ---
@@ -118,13 +123,6 @@ const percentValid = computed(() => {
                 <h1 class="text-2xl font-black text-primary uppercase tracking-tight">Dashboard Kontrol</h1>
                 <p class="text-sm text-textsecondary font-medium">Monitoring aktivitas sistem dan validasi data daerah.</p>
             </div>
-            <div class="flex bg-bgsoft px-4 py-2 rounded-xl border border-gray-200 items-center gap-3 w-fit">
-                <span class="relative flex h-3 w-3">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-inovasi opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-inovasi"></span>
-                </span>
-                <span class="text-[10px] font-black text-primary uppercase tracking-widest">Sistem Aktif</span>
-            </div>
         </div>
 
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
@@ -136,7 +134,59 @@ const percentValid = computed(() => {
             />
         </section>
 
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <section class="mt-8 animate-in fade-in duration-500">
+            <div class="flex items-center justify-between gap-3 mb-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 shadow-sm border border-amber-100">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-primary uppercase tracking-widest">Pin Indikator Favorit</h3>
+                        <p class="text-[10px] text-textsecondary font-bold uppercase tracking-wider mt-0.5">Akses cepat ke data pantauan Anda</p>
+                    </div>
+                </div>
+                
+                <Link href="/inputer/data" class="text-[10px] font-black text-secondary hover:text-primary transition-colors uppercase tracking-widest bg-secondary/5 px-4 py-2 rounded-xl">
+                    Jelajahi Data &rarr;
+                </Link>
+            </div>
+
+            <div v-if="pinnedData && pinnedData.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <Link v-for="item in pinnedData" :key="item.id_data" :href="`/dataset/${item.id_data}`" 
+                    class="group relative bg-white p-5 rounded-[1.5rem] border border-gray-200 shadow-sm hover:border-secondary/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[120px]">
+                    
+                    <div class="absolute top-0 left-0 w-1.5 h-full bg-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    
+                    <div>
+                        <div class="flex justify-between items-start mb-2 gap-3">
+                            <h4 class="text-[13px] font-black text-primary line-clamp-2 leading-tight group-hover:text-secondary transition-colors">
+                                {{ item.nama_indikator }}
+                            </h4>
+                            <div class="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center shrink-0 group-hover:bg-amber-100 transition-colors">
+                                <svg class="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex items-center justify-between border-t border-gray-50 pt-3">
+                        <span class="text-[10px] font-bold text-textsecondary uppercase tracking-widest">Tahun Data</span>
+                        <span class="text-[11px] font-black text-secondary bg-primary/5 px-3 py-1.5 rounded-lg border border-primary/10">
+                            {{ item.tahun_terbit || '-' }}
+                        </span>
+                    </div>
+                </Link>
+            </div>
+
+            <div v-else class="w-full bg-white border border-dashed border-gray-300 rounded-[1.5rem] p-8 text-center flex flex-col items-center justify-center">
+                <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                </div>
+                <h4 class="text-sm font-black text-textsecondary uppercase tracking-widest">Belum ada data yang disematkan</h4>
+                <p class="text-[11px] text-gray-400 mt-2 font-medium">Buka halaman detail data dan klik ikon <span class="inline-block mx-1 w-3 h-3 text-amber-500"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg></span> untuk memantau indikator penting di sini.</p>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
             <BarChartIndikator 
                 class="lg:col-span-2"
                 title="Distribusi Data"
