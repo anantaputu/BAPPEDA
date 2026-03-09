@@ -83,7 +83,7 @@ const props = defineProps({
         </div>
     </section>
 
-    <section class="pt-32 bg-bgsoft/30">
+    <section class="pt-32 pb-6 bg-white">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center max-w-2xl mx-auto mb-24">
                 <h2 class="text-4xl md:text-5xl font-black text-primary mb-6">Layanan Unggulan</h2>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Bidang;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Inertia\Inertia;
 
 class BidangController extends Controller
@@ -63,8 +64,16 @@ class BidangController extends Controller
 
     public function destroy(Bidang $bidang)
     {
-        $bidang->delete();
+        $usedCount = $bidang->data()->count();
+        if ($usedCount > 0) {
+            return back()->with('error', "Bidang '{$bidang->nama_bidang}' tidak dapat dihapus karena masih dipakai oleh {$usedCount} indikator.");
+        }
 
-        return back()->with('success', 'Bidang berhasil dihapus');
+        try {
+            $bidang->delete();
+            return back()->with('success', 'Bidang berhasil dihapus');
+        } catch (QueryException $e) {
+            return back()->with('error', "Bidang '{$bidang->nama_bidang}' tidak dapat dihapus karena masih memiliki relasi data.");
+        }
     }
 }

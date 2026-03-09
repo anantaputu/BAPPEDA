@@ -91,51 +91,57 @@ class DatasetController extends Controller
         ]);
     }
     // DatasetController.php
-public function toggleBookmark($id)
-{
-    $user = auth()->user();
-    
-    // Cek apakah sudah di-pin
-    $existingBookmark = Bookmark::where('user_id', $user->id)
-        ->where('user_id', $user->id)
-        ->where('dataset_id', $id)
-        ->first();
+    public function toggleBookmark($id)
+    {
+        $user = auth()->user();
+        
+        // Cek apakah sudah di-pin
+        $existingBookmark = Bookmark::where('user_id', $user->id)
+            ->where('user_id', $user->id)
+            ->where('dataset_id', $id)
+            ->first();
 
-   if ($existingBookmark) {
-        // Hapus jika ada
-        $existingBookmark->delete();
-    } else {
+       if ($existingBookmark) {
+            // Hapus jika ada
+            $existingBookmark->delete();
+        } else {
 
-        Bookmark::create([
-            'user_id' => $user->id,
-            'dataset_id' => $id,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+            Bookmark::create([
+                'user_id' => $user->id,
+                'dataset_id' => $id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return back(); 
     }
 
-    return back(); 
-}
-
-   public function show(Request $request, $id)
+    public function show(Request $request, $id)
     {
-      
-        $dataset = Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'values', 'uploads'])->findOrFail($id);
+        $dataset = Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'katakunci', 'values', 'uploads'])->findOrFail($id);
+
+        $sortedValues = $dataset->values
+            ->filter(fn ($value) => !empty($value->tahun))
+            ->sortBy('tahun')
+            ->values();
+
+        // Fallback: jika tahun_terbit kosong, ambil periode terakhir dari data values.
+        $dataset->tahun = $dataset->tahun_terbit ?: optional($sortedValues->last())->tahun;
 
         // 2. Format Data Dasar
         $rowObject = [
+            'id_data'        => $dataset->id_data,
+            'nama_data'      => $dataset->nama_data,
             'Nama Indikator' => $dataset->nama_data,
             'Satuan'         => $dataset->satuan ?? '-',
         ];
 
-        // ========================================================
-        // [PERBAIKAN] 3. BONGKAR JSON INFORMASI TAMBAHAN KE KOLOM
-        // ========================================================
+        // ... (kode bongkar JSON informasi_tambahan Anda tetap sama)
         if (!empty($dataset->informasi_tambahan)) {
             $extraFields = json_decode($dataset->informasi_tambahan, true);
             if (is_array($extraFields)) {
                 foreach ($extraFields as $key => $val) {
-                    // Hindari duplikasi kolom Nama Data
                     if (strtolower($key) !== 'nama data' && strtolower($key) !== 'nama indikator') {
                         $rowObject[$key] = $val;
                     }
@@ -143,31 +149,58 @@ public function toggleBookmark($id)
             }
         }
 
-        // 4. Masukkan nilai waktu (Tahun/Bulan)
-        $sortedValues = $dataset->values->sortBy('tahun');
+        // 4. Masukkan nilai waktu (tahun/periode)
         foreach ($sortedValues as $val) {
             $rowObject[$val->tahun] = $val->nilai;
         }
 
         $fullChartData = [$rowObject];
+        $tableData = $fullChartData;
 
-        // 5. Paginasi statis
-        $paginatedData = new \Illuminate\Pagination\LengthAwarePaginator(
-            $fullChartData, 1, 20, 1,
-            ['path' => $request->url()]
-        );
+        $isPinned = false;
+        if (auth()->check()) {
+            $isPinned = DB::table('bookmark')
+                ->where('user_id', auth()->id())
+                ->where('dataset_id', $dataset->id_data)
+                ->exists();
+        }
 
-    $isPinned = DB::table('bookmark')
-    ->where('user_id', auth()->id())
-    ->where('dataset_id', $dataset->id_data)
-    ->exists();
+        $dataset->is_pinned = $isPinned;
 
-    $dataset->is_pinned = $isPinned;
+        $numericValues = $sortedValues
+            ->map(fn ($v) => is_numeric($v->nilai) ? (float) $v->nilai : null)
+            ->filter(fn ($v) => $v !== null)
+            ->values();
+
+        $valueStats = [
+            'jumlah_periode' => $sortedValues->count(),
+            'nilai_terkini' => optional($sortedValues->last())->nilai,
+            'periode_terkini' => optional($sortedValues->last())->tahun,
+            'nilai_terendah' => $numericValues->isNotEmpty() ? $numericValues->min() : null,
+            'nilai_tertinggi' => $numericValues->isNotEmpty() ? $numericValues->max() : null,
+            'rata_rata' => $numericValues->isNotEmpty() ? round($numericValues->avg(), 2) : null,
+        ];
+
+        $datasetMeta = [
+            'nama_data' => $dataset->nama_data,
+            'satuan' => $dataset->satuan ?: '-',
+            'sumber' => $dataset->sumber ?: '-',
+            'tahun_terbit' => $dataset->tahun_terbit ?: '-',
+            'tema' => $dataset->tema?->nama_tema ?: '-',
+            'urusan' => $dataset->urusan?->nama_urusan ?: '-',
+            'bidang' => $dataset->bidang?->nama_bidang ?: '-',
+            'frekuensi' => $dataset->frekuensi?->nama_frekuensi ?: '-',
+            'deskripsi' => $dataset->deskripsi ?: null,
+            'created_at' => optional($dataset->created_at)->format('d M Y, H:i'),
+            'updated_at' => optional($dataset->updated_at)->format('d M Y, H:i'),
+        ];
 
         return Inertia::render('Public/DatasetDetail', [
             'dataset'   => $dataset,
-            'tableData' => $paginatedData,
+            'tableData' => $tableData,
             'allData'   => $fullChartData,
+            'valueStats' => $valueStats,
+            'datasetMeta' => $datasetMeta,
         ]);
     }
 }

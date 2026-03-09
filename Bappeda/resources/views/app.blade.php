@@ -11,6 +11,7 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
+        <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
         @routes
         @vite(['resources/js/app.js'])
         @inertiaHead

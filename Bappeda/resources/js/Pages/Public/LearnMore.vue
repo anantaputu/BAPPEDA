@@ -39,93 +39,94 @@ const submitContact = () => {
     <Head title="Panduan Penggunaan - Satu Data" />
 
     <section class="relative mt-20 py-24 overflow-hidden w-full bg-white">
-        <div class="absolute top-0 left-0 -translate-y-1/2 -translate-x-1/4 w-[500px] h-[500px] bg-[#00139E]/5 rounded-full blur-3xl -z-10"></div>
+        <div class="absolute top-0 left-0 -translate-y-1/2 -translate-x-1/4 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -z-10"></div>
         
-        <div class="max-w-[85%] mx-auto text-center">
-            <span class="inline-block px-4 py-1.5 mb-6 text-sm font-bold text-[#00139E] bg-[#A2B5CB]/20 rounded-full border border-[#A2B5CB]/30 tracking-wide uppercase">
+        <div class="max-w-[80%] mx-auto text-center">
+            <span class="inline-block px-4 py-1.5 mb-6 text-sm font-bold text-integritas bg-integritas/10 rounded-full border border-integritas/40 tracking-wide uppercase">
                 Pusat Bantuan
             </span>
-            <h1 class="text-5xl lg:text-6xl font-black text-[#000B58] mb-6">
-                Cara Penggunaan <br /> <span class="text-[#00139E]">Sistem Satu Data</span>
+            <h1 class="text-5xl lg:text-7xl font-black text-primary leading-[1.1] mb-6">
+                Cara Penggunaan <br /> 
+                <span class="text-secondary">Sistem Satu Data</span>
             </h1>
-            <p class="text-lg text-gray-500 max-w-2xl mx-auto font-medium">
+            <p class="text-lg text-textsecondary max-w-2xl mx-auto font-medium leading-relaxed">
                 Panduan lengkap bagi OPD dan Inputer untuk mengelola data kinerja pembangunan secara efisien dan akurat.
             </p>
         </div>
     </section>
 
-    <section class="py-20 bg-gray-50/50">
-        <div class="max-w-[85%] mx-auto">
-            <div class="grid lg:grid-cols-3 gap-8">
+    <section class="py-20 bg-white">
+        <div class="max-w-[80%] mx-auto">
+            <div class="grid lg:grid-cols-3 gap-12">
                 <div v-for="(step, index) in steps" :key="index" class="relative group">
-                    <div class="bg-white p-10 rounded-[3rem] border border-gray-300 h-full hover:border-[#00139E] transition-all duration-300">
-                        <div class="text-6xl font-black text-[#A2B5CB]/20 absolute top-8 right-10 group-hover:text-[#00139E]/10 transition-colors">
+                    <div class="bg-white p-12 rounded-xl border border-gray-400 h-full hover:border-secondary transition-all duration-300 shadow-xl shadow-primary/5">
+                        <div class="text-6xl font-black text-primary/5 absolute top-8 right-10 group-hover:text-secondary/10 transition-colors">
                             0{{ index + 1 }}
                         </div>
-                        <div class="w-16 h-16 bg-[#00139E] rounded-2xl flex items-center justify-center text-white mb-8 shadow-lg shadow-[#00139E]/20">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div class="w-20 h-20 bg-primary rounded-xl flex items-center justify-center text-white mb-10 border border-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="step.icon" />
                             </svg>
                         </div>
-                        <h3 class="text-2xl font-black text-[#000B58] mb-4">{{ step.title }}</h3>
-                        <p class="text-gray-500 leading-relaxed font-medium">{{ step.description }}</p>
+                        <h3 class="text-2xl font-black text-primary mb-4">{{ step.title }}</h3>
+                        <p class="text-textsecondary leading-relaxed font-medium">{{ step.description }}</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="py-32">
+    <section class="py-32 bg-white">
         <div class="max-w-[80%] mx-auto">
-            <div class="bg-[#000B58] rounded-[4rem] p-12 lg:p-20 overflow-hidden relative">
-                <div class="absolute bottom-0 right-0 w-96 h-96 bg-[#00139E] rounded-full blur-[120px] opacity-30 translate-x-1/2 translate-y-1/2"></div>
+            <div class="bg-primary rounded-xl p-12 lg:p-20 overflow-hidden relative border border-gray-400">
+                <div class="absolute bottom-0 right-0 w-96 h-96 bg-secondary/20 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2"></div>
 
                 <div class="grid lg:grid-cols-2 gap-16 items-center relative z-10">
                     <div>
                         <h2 class="text-4xl lg:text-5xl font-black text-white mb-8 leading-tight">
                             Kelola Data Anda <br/> Dalam Berbagai Format
                         </h2>
-                        <p class="text-blue-100/70 text-lg mb-10 leading-relaxed font-medium">
+                        <p class="text-white/70 text-lg mb-10 leading-relaxed font-medium">
                             Setelah data divalidasi, Anda dapat menggunakan fitur ekspor untuk kebutuhan pelaporan internal maupun presentasi pimpinan hanya dengan satu klik.
                         </p>
                         
-                        <div class="space-y-6">
-                            <div class="flex items-start gap-5">
-                                <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div class="space-y-8">
+                            <div class="flex items-start gap-6">
+                                <div class="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/20">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                     </svg>
                                 </div>
                                 <div>
-                                    <h4 class="text-white font-bold text-xl mb-1">Export ke PDF</h4>
-                                    <p class="text-blue-100/50">Cocok untuk laporan resmi yang siap cetak dengan tata letak yang rapi.</p>
+                                    <h4 class="text-white font-black text-xl mb-1">Export ke PDF</h4>
+                                    <p class="text-white/50 font-medium">Cocok untuk laporan resmi yang siap cetak dengan tata letak yang rapi.</p>
                                 </div>
                             </div>
 
-                            <div class="flex items-start gap-5">
-                                <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div class="flex items-start gap-6">
+                                <div class="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center shrink-0 border border-white/20">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                 </div>
                                 <div>
-                                    <h4 class="text-white font-bold text-xl mb-1">Export ke Excel (XLSX)</h4>
-                                    <p class="text-blue-100/50">Memudahkan pengolahan data lebih lanjut menggunakan rumus atau pivot table.</p>
+                                    <h4 class="text-white font-black text-xl mb-1">Export ke Excel (XLSX)</h4>
+                                    <p class="text-white/50 font-medium">Memudahkan pengolahan data lebih lanjut menggunakan rumus atau pivot table.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="hidden lg:block">
-                        <div class="bg-white/5 border border-white/10 p-8 rounded-[3rem] backdrop-blur-sm">
+                        <div class="bg-white/5 border border-white/10 p-10 rounded-xl backdrop-blur-sm">
                              <div class="space-y-4">
-                                <div v-for="i in 4" :key="i" class="h-12 bg-white/10 rounded-2xl w-full flex items-center px-6 justify-between">
+                                <div v-for="i in 4" :key="i" class="h-14 bg-white/10 rounded-xl w-full flex items-center px-6 justify-between border border-white/5">
                                     <div class="h-2 bg-white/20 rounded-full w-1/3"></div>
                                     <div class="h-2 bg-white/20 rounded-full w-12"></div>
                                 </div>
-                                <div class="pt-6 flex justify-end gap-3">
-                                    <div class="px-6 py-3 bg-red-500/20 text-red-400 rounded-xl text-xs font-black uppercase tracking-widest">PDF</div>
-                                    <div class="px-6 py-3 bg-green-500/20 text-green-400 rounded-xl text-xs font-black uppercase tracking-widest">Excel</div>
+                                <div class="pt-8 flex justify-end gap-4">
+                                    <div class="px-6 py-3 bg-white/10 text-white rounded-xl text-xs font-black uppercase tracking-widest border border-white/20">PDF</div>
+                                    <div class="px-6 py-3 bg-secondary text-white rounded-xl text-xs font-black uppercase tracking-widest">Excel</div>
                                 </div>
                              </div>
                         </div>
@@ -135,37 +136,36 @@ const submitContact = () => {
         </div>
     </section>
 
-    <section class="pb-32">
+    <section class="pb-32 bg-white">
         <div class="max-w-3xl mx-auto px-6">
-            <div class="bg-white border border-gray-300 rounded-[3rem] p-8 md:p-12 shadow-2xl shadow-[#000B58]/5 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-[#00139E]/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+            <div class="bg-white border border-gray-400 rounded-xl p-8 md:p-12 shadow-xl shadow-primary/5 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
                 
-                <div class="text-center mb-10">
-                    <h3 class="text-3xl font-black text-[#000B58] mb-3">Berikan Masukan</h3>
-                    <p class="text-gray-500 font-medium">Kirimkan pesan kepada tim teknis BAPPEDA jika Anda mengalami kendala akses atau data.</p>
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl font-black text-primary mb-4">Berikan Masukan</h3>
+                    <p class="text-textsecondary font-medium">Kirimkan pesan kepada tim teknis BAPPEDA jika Anda mengalami kendala akses atau data.</p>
                 </div>
 
-                <form @submit.prevent="submitContact" class="space-y-6">
+                <form @submit.prevent="submitContact" class="space-y-8">
                     <div>
-                        <div>
-                            <label class="block text-sm font-black text-[#000B58] uppercase tracking-wider mb-2 ml-2">Nama Lengkap</label>
-                            <input type="text" v-model="contactForm.name" placeholder="Masukkan nama..." 
-                                class="w-full px-6 py-4 rounded-2xl border border-gray-300 focus:ring-4 focus:ring-[#00139E]/10 focus:border-[#00139E] transition-all outline-none font-medium">
-                        </div>
+                        <label class="block text-xs font-black text-primary uppercase tracking-[0.2em] mb-3 ml-1">Nama Lengkap</label>
+                        <input type="text" v-model="contactForm.name" placeholder="Masukkan nama..." 
+                            class="w-full px-6 py-4 rounded-xl border border-gray-400 focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all outline-none font-medium text-primary">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-black text-[#000B58] uppercase tracking-wider mb-2 ml-2">Pesan Anda</label>
+                        <label class="block text-xs font-black text-primary uppercase tracking-[0.2em] mb-3 ml-1">Pesan Anda</label>
                         <textarea v-model="contactForm.message" rows="4" placeholder="Apa kendala Anda?" 
-                            class="w-full px-6 py-4 rounded-2xl border border-gray-300 focus:ring-4 focus:ring-[#00139E]/10 focus:border-[#00139E] transition-all outline-none font-medium resize-none"></textarea>
+                            class="w-full px-6 py-4 rounded-xl border border-gray-400 focus:ring-4 focus:ring-primary/5 focus:border-primary transition-all outline-none font-medium resize-none text-primary"></textarea>
                     </div>
 
                     <div class="text-center pt-4">
                         <button type="submit" :disabled="contactForm.processing"
-                            class="bg-[#00139E] text-white px-12 py-4 rounded-2xl text-lg font-bold hover:bg-[#000B58] hover:-translate-y-1 transition-all inline-flex items-center gap-3 disabled:opacity-50">
-                            <span>{{ contactForm.processing ? 'Mengirim...' : 'Kirim Masukkan' }}</span>
+                            class="bg-primary text-white px-12 py-4 rounded-xl text-lg font-black hover:bg-secondary transition-all inline-flex items-center gap-3 disabled:opacity-50 shadow-lg shadow-primary/20">
+                            <span>{{ contactForm.processing ? 'MENGIRIM...' : 'KIRIM MASUKKAN' }}</span>
                         </button>
-                        <div v-if="$page.props.flash.success" class="mt-4 p-4 bg-green-100 text-green-700 rounded-2xl font-bold text-sm">
+                        
+                        <div v-if="$page.props.flash.success" class="mt-6 p-4 bg-integritas/10 text-integritas border border-integritas/20 rounded-xl font-bold text-sm">
                             {{ $page.props.flash.success }}
                         </div>
                     </div>

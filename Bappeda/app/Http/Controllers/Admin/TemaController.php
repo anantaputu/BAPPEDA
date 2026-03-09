@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Tema;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Inertia\Inertia;
 
 
@@ -59,8 +60,16 @@ class TemaController extends Controller
 
     public function destroy(Tema $tema)
     {
-        $tema->delete();
+        $usedCount = $tema->data()->count();
+        if ($usedCount > 0) {
+            return back()->with('error', "Tema '{$tema->nama_tema}' tidak dapat dihapus karena masih dipakai oleh {$usedCount} indikator.");
+        }
 
-        return back()->with('success', 'Tema berhasil dihapus');
+        try {
+            $tema->delete();
+            return back()->with('success', 'Tema berhasil dihapus');
+        } catch (QueryException $e) {
+            return back()->with('error', "Tema '{$tema->nama_tema}' tidak dapat dihapus karena masih memiliki relasi data.");
+        }
     }
 }

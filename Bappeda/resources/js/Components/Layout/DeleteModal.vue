@@ -1,4 +1,6 @@
 <script setup>
+import IconifyIcon from '@/Components/Base/IconifyIcon.vue';
+
 defineProps({
     show: Boolean,
     title: {
@@ -22,9 +24,7 @@ defineEmits(['close', 'confirm']);
             <div class="relative bg-white w-full max-w-sm rounded-xl p-8 border border-gray-400">
                 
                 <div class="mx-auto w-16 h-16 bg-integritas/10 rounded-xl flex items-center justify-center mb-6 border border-integritas/20">
-                    <svg class="w-8 h-8 text-integritas" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <IconifyIcon icon="solar:trash-bin-trash-bold" width="32" height="32" class="text-integritas" />
                 </div>
 
                 <div class="text-center mb-8">

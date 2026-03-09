@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
+import AlertModal from '@/Components/Layout/AlertModal.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref, reactive } from 'vue';
 import axios from 'axios';
@@ -14,6 +15,17 @@ const props = defineProps({
 const step = ref(1); 
 const isLoading = ref(false);
 const excelData = reactive({ headers: {}, preview: [] });
+const showAlertModal = ref(false);
+const alertTitle = ref('Informasi');
+const alertMessage = ref('');
+const alertType = ref('info');
+
+const openAlert = (title, message, type = 'info') => {
+    alertTitle.value = title;
+    alertMessage.value = message;
+    alertType.value = type;
+    showAlertModal.value = true;
+};
 
 // FORM GLOBAL
 const form = useForm({
@@ -52,7 +64,7 @@ const handleFileUpload = async (event) => {
             step.value = 2;
         }
     } catch (error) {
-        alert('Gagal membaca file: ' + (error.response?.data?.message || error.message));
+        openAlert('Gagal Membaca File', error.response?.data?.message || error.message, 'error');
     } finally {
         isLoading.value = false;
     }
@@ -83,8 +95,7 @@ const submitAll = async () => {
         if (response.data.status === 'success') {
             // Gunakan router.visit untuk redirect bersih via Inertia
             router.visit('/inputer/data', {
-                method: 'get',
-                onSuccess: () => alert('Dataset berhasil disimpan!')
+                method: 'get'
             }); 
         }
     } catch (error) {
@@ -97,12 +108,12 @@ const submitAll = async () => {
                 form.setError(key, serverErrors[key][0]);
             });
 
-            alert('Validasi Gagal: Mohon lengkapi isian bertanda bintang (*)');
+            openAlert('Validasi Gagal', 'Mohon lengkapi isian bertanda bintang (*).', 'warning');
             
             // Scroll otomatis ke field yang bermasalah
             document.getElementById('form-metadata')?.scrollIntoView({ behavior: 'smooth' });
         } else {
-            alert('Gagal menyimpan: ' + (error.response?.data?.message || 'Terjadi kesalahan sistem'));
+            openAlert('Gagal Menyimpan', error.response?.data?.message || 'Terjadi kesalahan sistem', 'error');
         }
     } finally {
         isLoading.value = false;
@@ -314,6 +325,14 @@ const submitAll = async () => {
             <div class="h-10"></div>
         </div>
     </div>
+
+    <AlertModal
+        :show="showAlertModal"
+        :title="alertTitle"
+        :description="alertMessage"
+        :type="alertType"
+        @close="showAlertModal = false"
+    />
 </template>
 
 <style scoped>

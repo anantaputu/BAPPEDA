@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import DeleteModal from '@/Components/Layout/DeleteModal.vue';
+import AlertModal from '@/Components/Layout/AlertModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch, computed } from 'vue';
 import debounce from 'lodash/debounce';
@@ -16,35 +17,52 @@ const props = defineProps({
     filters: { type: Object, default: () => ({}) }
 });
 
-// ==========================================
-// 1. LOGIKA CRUD (DI PERTAHANKAN)
-// ==========================================
 const showDeleteModal = ref(false);
 const dataToDelete = ref(null);
+const showAlertModal = ref(false);
+const alertTitle = ref('Informasi');
+const alertMessage = ref('');
+const alertType = ref('info');
 
-const getStatusClass = (status) => {
-    const map = {
-        'valid': 'bg-inovasi/10 text-inovasi border-inovasi/20',
-        'processing': 'bg-profesional/10 text-profesional border-profesional/20',
-        'pending': 'bg-profesional/10 text-profesional border-profesional/20',
-        'rejected': 'bg-integritas/10 text-integritas border-integritas/20',
-    };
-    return map[status?.toLowerCase()] || 'bg-bgsoft text-textsecondary border-gray-200';
+const openAlert = (title, message, type = 'info') => {
+    alertTitle.value = title;
+    alertMessage.value = message;
+    alertType.value = type;
+    showAlertModal.value = true;
 };
 
-const openDeleteModal = (upload) => {
-    dataToDelete.value = upload;
+const openDeleteModal = (item, type = 'data') => {
+    // Kita standarisasi agar dataToDelete selalu berisi id_data
+    if (type === 'riwayat') {
+        dataToDelete.value = {
+            id_data: item.data?.id_data,
+            nama_data: item.data?.nama_data
+        };
+    } else {
+        dataToDelete.value = {
+            id_data: item.id_data,
+            nama_data: item.nama_data
+        };
+    }
     showDeleteModal.value = true;
 };
 
 const executeDeleteAction = () => {
-    if (dataToDelete.value) {
-        router.delete(`/inputer/data/${dataToDelete.value.id_upload}`, {
+    if (dataToDelete.value && dataToDelete.value.id_data) {
+        // Mengarah ke destroy($id) di DataInputController
+        router.delete(`/inputer/data/${dataToDelete.value.id_data}`, {
+            preserveScroll: true,
             onSuccess: () => {
                 showDeleteModal.value = false;
                 dataToDelete.value = null;
+            },
+            onError: (err) => {
+                console.error("Gagal Hapus:", err);
+                openAlert('Gagal Menghapus', 'Pastikan Anda memiliki akses untuk menghapus data ini.', 'error');
             }
         });
+    } else {
+        openAlert('Data Tidak Ditemukan', 'ID data tidak ditemukan.', 'warning');
     }
 };
 
@@ -114,11 +132,12 @@ const getValue = (values, timeKey) => {
 };
 
 const getGroupLabel = () => {
-    const labels = { urusan: '🏛️ Urusan', bidang: '🏢 Bidang', frekuensi: '⏰ Frekuensi' };
+    const labels = { tema: 'Tema', urusan: 'Urusan', bidang: 'Bidang', frekuensi: 'Frekuensi' };
     return labels[form.value.group_by] || 'Tema';
 };
 
-const isSpreadsheetView = ref(true);
+const isSpreadsheetView = ref(false);
+const hasSpreadsheetData = computed(() => Object.keys(props.groupedData || {}).length > 0);
 </script>
 
 <template>
@@ -162,76 +181,98 @@ const isSpreadsheetView = ref(true);
 
         <div v-if="isSpreadsheetView" class="space-y-6">
             <div class="bg-white p-8 rounded-xl shadow-2xl shadow-primary/5 border border-gray-400">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-6">
-        
-        <div class="xl:col-span-2 space-y-2">
-            <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
-                Cari Nama Data
-            </label>
-            <div class="relative">
-                <input v-model="form.search" type="text" placeholder="Ketik kata kunci..." 
-                    class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300 placeholder:text-gray-300 shadow-sm">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-6">
+                    
+                    <div class="xl:col-span-2 space-y-2">
+                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
+                            Cari Nama Data
+                        </label>
+                        <div class="relative">
+                            <input v-model="form.search" type="text" placeholder="Ketik kata kunci..." 
+                                class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300 placeholder:text-gray-300 shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
+                            Kelompokkan
+                        </label>
+                        <div class="relative group">
+                            <select v-model="form.group_by" 
+                                class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
+                                <option value="tema">Per Tema</option>
+                                <option value="urusan">Per Urusan</option>
+                                <option value="bidang">Per Bidang</option>
+                                <option value="frekuensi">Per Frekuensi</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
+                            Tema
+                        </label>
+                        <select v-model="form.tema"
+                            class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
+                            <option value="">Semua Tema</option>
+                            <option v-for="t in metadata.tema" :key="t.id_tema" :value="t.id_tema">{{ t.nama_tema }}</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
+                            Urusan
+                        </label>
+                        <select v-model="form.urusan" 
+                            class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
+                            <option value="">Semua Urusan</option>
+                            <option v-for="u in metadata.urusan" :key="u.id_urusan" :value="u.id_urusan">{{ u.nama_urusan }}</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
+                            Bidang
+                        </label>
+                        <select v-model="form.bidang" 
+                            class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
+                            <option value="">Semua Bidang</option>
+                            <option v-for="b in metadata.bidang" :key="b.id_bidang" :value="b.id_bidang">{{ b.nama_bidang }}</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
+                            Frekuensi
+                        </label>
+                        <select v-model="form.frekuensi"
+                            class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
+                            <option value="">Semua Frekuensi</option>
+                            <option v-for="f in metadata.frekuensi" :key="f.id_frekuensi" :value="f.id_frekuensi">{{ f.nama_frekuensi }}</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[9px] font-black text-inovasi uppercase tracking-[0.2em] ml-2">
+                            Filter Periode
+                        </label>
+                        <input v-model="form.periode" type="text" placeholder="Cth: 2020..." 
+                            class="w-full bg-white border border-inovasi/30 rounded-xl px-4 py-3 text-xs font-bold text-inovasi focus:outline-none focus:border-inovasi focus:ring-4 focus:ring-inovasi/5 transition-all duration-300 placeholder:text-inovasi/30 shadow-sm">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
+                            Tahun Terbit
+                        </label>
+                        <select v-model="form.tahun_terbit" 
+                            class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
+                            <option value="">Semua</option>
+                            <option v-for="t in metadata.tahun_terbit" :key="t" :value="t">{{ t }}</option>
+                        </select>
+                    </div>
+
+                </div>
             </div>
-        </div>
-
-        <div class="space-y-2">
-            <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
-                Kelompokkan
-            </label>
-            <div class="relative group">
-                <select v-model="form.group_by" 
-                    class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
-                    <option value="tema">Per Tema</option>
-                    <option value="urusan">Per Urusan</option>
-                    <option value="bidang">Per Bidang</option>
-                    <option value="frekuensi">Per Frekuensi</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="space-y-2">
-            <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
-                Urusan
-            </label>
-            <select v-model="form.urusan" 
-                class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
-                <option value="">Semua Urusan</option>
-                <option v-for="u in metadata.urusan" :key="u.id_urusan" :value="u.id_urusan">{{ u.nama_urusan }}</option>
-            </select>
-        </div>
-
-        <div class="space-y-2">
-            <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
-                Bidang
-            </label>
-            <select v-model="form.bidang" 
-                class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
-                <option value="">Semua Bidang</option>
-                <option v-for="b in metadata.bidang" :key="b.id_bidang" :value="b.id_bidang">{{ b.nama_bidang }}</option>
-            </select>
-        </div>
-
-        <div class="space-y-2">
-            <label class="block text-[9px] font-black text-inovasi uppercase tracking-[0.2em] ml-2">
-                Filter Field
-            </label>
-            <input v-model="form.periode" type="text" placeholder="Cth: 2020..." 
-                class="w-full bg-white border border-inovasi/30 rounded-xl px-4 py-3 text-xs font-bold text-inovasi focus:outline-none focus:border-inovasi focus:ring-4 focus:ring-inovasi/5 transition-all duration-300 placeholder:text-inovasi/30 shadow-sm">
-        </div>
-
-        <div class="space-y-2">
-            <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
-                Tahun Terbit
-            </label>
-            <select v-model="form.tahun_terbit" 
-                class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
-                <option value="">Semua</option>
-                <option v-for="t in metadata.tahun_terbit" :key="t" :value="t">{{ t }}</option>
-            </select>
-        </div>
-
-    </div>
-</div>
             <div class="bg-white border border-gray-400 rounded-xl overflow-hidden shadow-sm flex flex-col max-h-[75vh]">
                 <div class="overflow-auto flex-1 custom-scrollbar">
                     <table class="w-full text-left border-collapse relative">
@@ -246,7 +287,7 @@ const isSpreadsheetView = ref(true);
                                 <th class="p-5 text-[10px] uppercase font-black tracking-widest w-[160px] text-center sticky right-0 bg-primary z-50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)]">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody class="text-sm font-bold text-primary">
+                        <tbody v-if="hasSpreadsheetData" class="text-sm font-bold text-primary">
                             <template v-for="(groupItems, groupName) in groupedData" :key="groupName">
                                 <tr class="bg-bgsoft sticky top-[58px] z-30">
                                     <td :colspan="filteredTimeColumns.length + 4" class="p-4 text-[11px] font-black text-primary uppercase tracking-[0.2em] border-b border-gray-300">
@@ -277,19 +318,30 @@ const isSpreadsheetView = ref(true);
                                     </td>
                                     <td class="p-4 text-center sticky right-0 bg-white group-hover:bg-bgsoft z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.03)] transition-colors">
                                         <div class="flex justify-center gap-2">
-                                            <a :href="`/export/data/${item.id_data}`" class="w-8 h-8 rounded-xl bg-inovasi/10 text-inovasi hover:bg-inovasi hover:text-white transition-all flex items-center justify-center shadow-sm border border-inovasi/20">
+                                            <a :href="`/export/data/${item.id_data}`" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-bgsoft text-primary hover:bg-secondary hover:text-white transition-all shadow-sm border border-gray-200">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12" stroke-width="2.5" /></svg>
                                             </a>
-                                            <Link :href="`/inputer/data/${item.id_data}/edit`" class="w-8 h-8 rounded-xl bg-secondary/10 text-secondary hover:bg-secondary hover:text-white transition-all flex items-center justify-center shadow-sm border border-secondary/20">
+                                            <Link :href="`/inputer/data/${item.id_data}/edit`" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-bgsoft text-primary hover:bg-secondary hover:text-white transition-all shadow-sm border border-gray-200">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2.5" /></svg>
                                             </Link>
-                                            <button @click="openDeleteModal({ id_upload: item.id_data, nama_data: item.nama_data })" class="w-8 h-8 rounded-xl bg-integritas/10 text-integritas hover:bg-integritas hover:text-white transition-all flex items-center justify-center shadow-sm border border-integritas/20">
+                                            <button @click="openDeleteModal(item)" 
+                                                class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-integritas/10 text-integritas hover:bg-integritas hover:text-white transition-all shadow-sm border border-integritas/20">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2.5" /></svg>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
                             </template>
+                        </tbody>
+                        <tbody v-else>
+                            <tr>
+                                <td :colspan="filteredTimeColumns.length + 4" class="p-10 text-center">
+                                    <p class="text-sm font-black uppercase tracking-widest text-primary">Data Tidak Ditemukan</p>
+                                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-textsecondary mt-2">
+                                        Ubah filter pencarian untuk menampilkan data indikator.
+                                    </p>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -305,7 +357,6 @@ const isSpreadsheetView = ref(true);
                         <th class="text-center">Urusan / Bidang</th>
                         <th class="text-center">Satuan</th>
                         <th class="text-center">Periode</th>
-                        <th class="text-center">Status</th>
                         <th v-if="isAdmin" class="text-center">Operator</th>
                         <th class="text-right p-8">Aksi</th>
                     </tr>
@@ -339,24 +390,20 @@ const isSpreadsheetView = ref(true);
                                 {{ u.periode }}
                             </span>
                         </td>
-                        <td class="text-center">
-                            <span :class="getStatusClass(u.status)" class="text-[9px] font-black uppercase px-4 py-2 rounded-xl border tracking-widest shadow-sm">
-                                {{ u.status }}
-                            </span>
-                        </td>
                         <td v-if="isAdmin" class="text-center">
                             <span class="text-[10px] font-black text-primary uppercase tracking-tighter bg-bgsoft px-3 py-1.5 rounded-lg border border-gray-200">
                                 {{ u.user?.name || 'Unknown' }}
                             </span>
                         </td>
                         <td class="p-8 text-right space-x-2">
-                            <a :href="`/export/data/${u.id_upload}`" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-bgsoft text-primary hover:bg-secondary hover:text-white transition-all shadow-sm border border-gray-200">
+                            <a v-if="u.data?.id_data" :href="`/export/data/${u.data.id_data}`" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-bgsoft text-primary hover:bg-secondary hover:text-white transition-all shadow-sm border border-gray-200">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12" stroke-width="2.5" /></svg>
                             </a>
                             <Link :href="`/inputer/data/${u.data?.id_data}/edit`" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-bgsoft text-primary hover:bg-secondary hover:text-white transition-all shadow-sm border border-gray-200">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2.5" /></svg>
                             </Link>
-                            <button @click="openDeleteModal(u)" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-integritas/10 text-integritas hover:bg-integritas hover:text-white transition-all shadow-sm border border-integritas/20">
+                            <button @click="openDeleteModal(u, 'riwayat')" 
+                                class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-integritas/10 text-integritas hover:bg-integritas hover:text-white transition-all shadow-sm border border-integritas/20">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2.5" /></svg>
                             </button>
                         </td>
@@ -368,9 +415,16 @@ const isSpreadsheetView = ref(true);
         <DeleteModal 
             :show="showDeleteModal" 
             :title="'Hapus Riwayat Data?'"
-            :description="'Entri data \'' + (dataToDelete?.data?.nama_data || dataToDelete?.nama_data || 'ini') + '\' akan dihapus. Pastikan Anda telah memiliki cadangan data.'"
+            :description="'Entri data \'' + (dataToDelete?.nama_data || 'ini') + '\' akan dihapus. Pastikan Anda telah memiliki cadangan data.'"
             @close="showDeleteModal = false"
             @confirm="executeDeleteAction"
+        />
+        <AlertModal
+            :show="showAlertModal"
+            :title="alertTitle"
+            :description="alertMessage"
+            :type="alertType"
+            @close="showAlertModal = false"
         />
     </div>
 </template>

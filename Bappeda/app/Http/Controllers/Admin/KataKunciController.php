@@ -3,62 +3,81 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\KataKunci;
+use App\Models\Katakunci;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class KataKunciController extends Controller
 {
     public function __construct()
     {
-
         $this->middleware('role:admin')->only(['edit', 'update', 'destroy']);
     }
+
     public function index()
     {
-        return Inertia::render('Admin/KataKunci/Index', [
-            'tema' => KataKunci::orderBy('id_tema')->get(),
+        return Inertia::render('Admin/Katakunci/Index', [
+            // Nama prop disesuaikan dengan yang diminta di Vue tadi: 'katakunci'
+            'katakunci' => Katakunci::orderBy('id_katakunci', 'desc')->get(),
         ]);
     }
 
     public function create()
     {
-        return Inertia::render('Admin/KataKunci/Create');
+        return Inertia::render('Admin/Katakunci/Create');
     }
 
     public function store(Request $request)
     {
+        // Sesuaikan dengan nama kolom di database: nama_katakunci
         $validated = $request->validate([
-            'nama_tema' => 'required|string|max:255|unique:tema,nama_tema',
+            'nama_katakunci' => 'required|string|max:255|unique:katakunci,nama_katakunci',
         ]);
 
-        KataKunci::create($validated);
+        Katakunci::create($validated);
 
-        return redirect('/admin/tema')->with('success', 'KataKunci berhasil ditambahkan');
+        return redirect('/admin/katakunci')->with('success', 'Kata Kunci berhasil ditambahkan');
     }
 
-    public function edit(KataKunci $tema)
+    public function edit($id)
     {
-        return Inertia::render('Admin/KataKunci/Edit', [
-            'tema' => $tema,
+        // Menggunakan find agar lebih aman dengan Primary Key id_katakunci
+        $katakunci = Katakunci::findOrFail($id);
+
+        return Inertia::render('Admin/Katakunci/Edit', [
+            'katakunci' => $katakunci,
         ]);
     }
 
-    public function update(Request $request, KataKunci $tema)
+    public function update(Request $request, $id)
     {
+        $katakunci = Katakunci::findOrFail($id);
+
+        // Validasi unique kecuali untuk ID saat ini
         $validated = $request->validate([
-            'nama_tema' => 'required|string|max:255|unique:tema,nama_tema,' . $tema->id_tema . ',id_tema',
+            'nama_katakunci' => 'required|string|max:255|unique:katakunci,nama_katakunci,' . $id . ',id_katakunci',
         ]);
 
-        $tema->update($validated);
+        $katakunci->update($validated);
 
-        return redirect('/admin/tema')->with('success', 'KataKunci berhasil diperbarui');
+        return redirect('/admin/katakunci')->with('success', 'Kata Kunci berhasil diperbarui');
     }
 
-    public function destroy(KataKunci $tema)
+    public function destroy($id)
     {
-        $tema->delete();
+        $katakunci = Katakunci::findOrFail($id);
 
-        return back()->with('success', 'KataKunci berhasil dihapus');
+        $usedCount = DB::table('data_katakunci_pivot')
+            ->where('id_katakunci', $katakunci->id_katakunci)
+            ->count();
+
+        if ($usedCount > 0) {
+            return redirect('/admin/katakunci')->with('error', "Kata kunci '{$katakunci->nama_katakunci}' tidak dapat dihapus karena masih dipakai oleh {$usedCount} indikator.");
+        }
+
+        $katakunci->delete();
+
+        return redirect('/admin/katakunci')->with('success', 'Kata Kunci berhasil dihapus');
     }
 }

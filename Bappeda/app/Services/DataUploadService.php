@@ -5,13 +5,25 @@ namespace App\Services;
 use App\Models\Data;
 use App\Models\DataUpload;
 use App\Models\DataValue;
+use App\Models\ActivityLog; // Pastikan model ini diimport
 use Illuminate\Support\Facades\DB;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use Exception;
 
 class DataUploadService
 {
-  public function getPreviewData($file)
+    private function hasDuplicateNamaData(string $namaData, ?int $ignoreId = null): bool
+    {
+        $query = Data::query()
+            ->whereRaw('LOWER(TRIM(nama_data)) = LOWER(TRIM(?))', [$namaData]);
+
+        if ($ignoreId !== null) {
+            $query->where('id_data', '!=', $ignoreId);
+        }
+
+        return $query->exists();
+    }
+
+    public function getPreviewData($file)
     {
         $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file->getPathname());
         
@@ -24,8 +36,6 @@ class DataUploadService
         $spreadsheet = $reader->load($file->getPathname());
         $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
 
-        // 1. CARI BARIS HEADER (Judul Kolom)
-        // KODE BARU (PERBAIKAN)
         $keywordsNama = ['nama data', 'uraian', 'indikator', 'data', 'kegiatan', 'program', 'sasaran', 'rincian'];
         $headerRowIndex = -1;
         $colNama = null; $colSatuan = null;
@@ -45,7 +55,6 @@ class DataUploadService
             }
         }
 
-        // Jika tidak ketemu, paksa baris 1 sebagai header, kolom A sebagai Nama Indikator
         if ($headerRowIndex === -1) {
             $headerRowIndex = 1;
             $headers = $rows[1];
@@ -53,19 +62,16 @@ class DataUploadService
             if (!$colNama) $colNama = 'A';
         }
 
-        // 2. KLASIFIKASI KOLOM (Waktu vs Ekstra)
         $waktuKeywords = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des', 'minggu', 'triwulan', 'semester', 'kondisi'];
         $ignoreHeaders = ['no', 'nomor'];
 
-        $colTahun = []; // Untuk waktu/nilai
-        $colExtra = []; // Untuk IUP, Keterangan, dll
+        $colTahun = [];
+        $colExtra = [];
 
         foreach ($headers as $colKey => $cellValue) {
-            if ($colKey === $colNama) continue; // Lewati kolom Nama Indikator
-
+            if ($colKey === $colNama) continue;
             $val = strtolower(trim((string)$cellValue));
             $asli = trim((string)$cellValue);
-            
             if (empty($val)) continue;
 
             if (in_array($val, ['satuan', 'unit', 'sat'])) {
@@ -79,28 +85,19 @@ class DataUploadService
 
             if (!$isIgnored) {
                 $isWaktu = false;
-                
-                // Deteksi jika angka tahun (2024, 2025)
                 if (preg_match('/(20\d{2})/', $val)) $isWaktu = true;
-                
-                // Deteksi jika mengandung nama bulan/minggu/semester
                 foreach ($waktuKeywords as $kw) {
                     if (str_contains($val, $kw)) { $isWaktu = true; break; }
                 }
 
-                if ($isWaktu) {
-                    $colTahun[$colKey] = $asli; // Masuk ke tabel nilai (Waktu)
-                } else {
-                    $colExtra[$colKey] = $asli; // Sisanya otomatis jadi Atribut Tambahan (IUP, dll)
-                }
+                if ($isWaktu) { $colTahun[$colKey] = $asli; } 
+                else { $colExtra[$colKey] = $asli; }
             }
         }
 
-        // 3. SUSUN DATA PREVIEW
         $previewData = [];
         foreach ($rows as $index => $row) {
             if ($index <= $headerRowIndex) continue;
-
             $namaIndikator = trim(str_replace(["\xA0", "\xc2\xa0"], ' ', ($row[$colNama] ?? '')));
             if (empty($namaIndikator) || strlen($namaIndikator) < 2) continue;
 
@@ -108,241 +105,235 @@ class DataUploadService
             foreach ($colTahun as $colKey => $tahun) $values[$tahun] = $row[$colKey] ?? null;
 
             $extraData = [];
-            foreach ($colExtra as $colKey => $namaHeader) {
-                $extraData[$namaHeader] = $row[$colKey] ?? '';
-            }
+            foreach ($colExtra as $colKey => $namaHeader) { $extraData[$namaHeader] = $row[$colKey] ?? ''; }
 
             $previewData[] = [
                 'nama_data' => $namaIndikator,
-                'satuan'         => $colSatuan ? ($row[$colSatuan] ?? '-') : '-',
-                'id_tema'        => null,
-                'id_urusan'      => null,
-                'id_bidang'      => null,
-                'values'         => $values,
-                'extra_fields'   => $extraData // Dikirim ke Vue
+                'satuan'    => $colSatuan ? ($row[$colSatuan] ?? '-') : '-',
+                'id_tema'   => null,
+                'id_urusan' => null,
+                'id_bidang' => null,
+                'id_katakunci' => [],
+                'values'    => $values,
+                'extra_fields' => $extraData
             ];
         }
 
         return [
-            'rows'          => $previewData,
-            'years'         => array_values($colTahun),
+            'rows' => $previewData,
+            'years' => array_values($colTahun),
             'extra_headers' => array_values($colExtra)
         ];
     }
 
-    // 3. FUNGSI SIMPAN BULK/MASSAL (Pindahan dari Controller)
-   // ==========================================
-    // FUNGSI SIMPAN BULK/MASSAL (DARI PREVIEW)
-    // ==========================================
-public function processBulkData($dataset, $years, $userId, $fileName = 'Multi Data Excel')
-{
-    DB::beginTransaction();
-    try {
-        foreach ($dataset as $row) {
+    /**
+     * PROSES SIMPAN MASSAL (BULK) + LOG
+     */
+    public function processBulkData($dataset, $years, $userId, $fileName = 'Multi Data Excel')
+    {
+        DB::beginTransaction();
+        try {
+            $seenNames = [];
 
-            $dataMaster = \App\Models\Data::updateOrCreate(
-                ['nama_data' => $row['nama_data']],
-                [
+            foreach ($dataset as $row) {
+                $namaData = trim($row['nama_data'] ?? '');
+                if ($namaData === '') {
+                    throw new Exception('Nama indikator tidak boleh kosong.');
+                }
+
+                $normalizedName = strtolower($namaData);
+                if (isset($seenNames[$normalizedName])) {
+                    throw new Exception("Duplikasi pada file upload: indikator '{$namaData}' muncul lebih dari sekali.");
+                }
+                $seenNames[$normalizedName] = true;
+
+                if ($this->hasDuplicateNamaData($namaData)) {
+                    throw new Exception("Indikator '{$namaData}' sudah ada. Gunakan menu edit untuk memperbarui data.");
+                }
+
+                $dataMaster = Data::create([
+                    'nama_data' => $namaData,
                     'id_user'      => $userId,
                     'id_tema'      => $row['id_tema'],
                     'id_urusan'    => $row['id_urusan'],
                     'id_bidang'    => $row['id_bidang'],
                     'id_frekuensi' => $row['id_frekuensi'] ?? 1,
                     'satuan'       => $row['satuan'] ?? '-',
-                    'informasi_tambahan' => isset($row['extra_fields']) 
-                                            ? json_encode($row['extra_fields']) 
-                                            : null,
+                    'informasi_tambahan' => isset($row['extra_fields']) ? json_encode($row['extra_fields']) : null,
                     'tahun_terbit' => $row['tahun_terbit'] ?? date('Y'),
-                ]
-            );
+                ]);
 
-            DataUpload::create([
-                'id_user'   => $userId,
-                'id_data'   => $dataMaster->id_data,
-                'periode'   => date('Y'),
-                'file_path' => $fileName,
-                'value'     => json_encode([
-                    'years' => $years,
-                    'nilai' => $row['values'] ?? []
-                ])
-            ]);
+                if (isset($row['id_katakunci']) && is_array($row['id_katakunci'])) {
+                    $dataMaster->katakunci()->sync($row['id_katakunci']);
+                }
 
-            $infoTambahanUpdate = false;
-            $infoTambahanArray = [];
+                // CATAT ACTIVITY LOG
+                ActivityLog::create([
+                    'id_user' => $userId,
+                    'id_data' => $dataMaster->id_data,
+                    'action' => 'UPLOAD',
+                    'target_name' => $dataMaster->nama_data,
+                    'description' => 'Unggah indikator baru via Bulk Excel',
+                    'ip_address' => request()->ip()
+                ]);
 
-            if ($dataMaster->informasi_tambahan) {
-                $infoTambahanArray = json_decode($dataMaster->informasi_tambahan, true) ?? [];
-            }
+                DataUpload::create([
+                    'id_user'   => $userId,
+                    'id_data'   => $dataMaster->id_data,
+                    'periode'   => date('Y'),
+                    'file_path' => $fileName,
+                    'value'     => json_encode(['years' => $years, 'nilai' => $row['values'] ?? []])
+                ]);
 
-            foreach ($years as $tahun) {
-
-                $nilai = $row['values'][$tahun] ?? null;
-
-                if ($nilai !== null && trim((string)$nilai) !== '') {
-
-                    $nilaiString = (string)$nilai;
-                    $catatanDalamKurung = null;
-
-                    if (preg_match('/\((.*?)\)/', $nilaiString, $matches)) {
-                        $catatanDalamKurung = trim($matches[1]);
-                        $nilaiString = trim(preg_replace('/\(.*?\)/', '', $nilaiString));
-                    }
-
-                    $nilaiClean = str_replace(',', '.', $nilaiString);
-                    $nilaiClean = preg_replace('/[^0-9\.\-]/', '', $nilaiClean);
-
-                    if ($nilaiClean !== '') {
-                        DataValue::updateOrCreate(
-                            [
-                                'id_data' => $dataMaster->id_data,
-                                'tahun' => $tahun
-                            ],
-                            [
-                                'nilai' => (float) $nilaiClean
-                            ]
-                        );
-                    }
-
-                    if ($catatanDalamKurung) {
-                        $labelTambahan = strtolower(trim($tahun)) === 'kondisi awal'
-                            ? 'Tahun Kondisi Awal'
-                            : "Catatan ($tahun)";
-
-                        $infoTambahanArray[$labelTambahan] = $catatanDalamKurung;
-                        $infoTambahanUpdate = true;
+                foreach ($years as $tahun) {
+                    $nilai = $row['values'][$tahun] ?? null;
+                    if ($nilai !== null && trim((string)$nilai) !== '') {
+                        $nilaiString = (string)$nilai;
+                        $nilaiClean = preg_replace('/[^0-9\.\-]/', '', str_replace(',', '.', $nilaiString));
+                        if ($nilaiClean !== '') {
+                            DataValue::updateOrCreate(
+                                ['id_data' => $dataMaster->id_data, 'tahun' => $tahun],
+                                ['nilai' => (float) $nilaiClean]
+                            );
+                        }
                     }
                 }
             }
-
-            if ($infoTambahanUpdate) {
-                $dataMaster->informasi_tambahan = json_encode($infoTambahanArray);
-                $dataMaster->save();
-            }
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw new Exception($e->getMessage());
         }
-
-        DB::commit();
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        throw new \Exception($e->getMessage());
     }
-}
 
+    /**
+     * PROSES SIMPAN SINGLE + LOG
+     */
     public function processSingleData($formData, $userId)
     {
         DB::beginTransaction();
         try {
-            $defaultTahun = $formData['values'][0]['tahun'] ?? date('Y');
+            $namaData = trim($formData['nama_data']);
+            if ($this->hasDuplicateNamaData($namaData)) {
+                throw new Exception("Indikator '{$namaData}' sudah ada. Gunakan menu edit untuk memperbarui data.");
+            }
 
-            // PERBAIKAN: Hapus 'status' => 'aktif'
-            $dataMaster = Data::updateOrCreate(
-                ['nama_data' => trim($formData['nama_data'])],
-                [
-                    'id_user'      => $userId,
-                    'id_tema'      => $formData['id_tema'],
-                    'id_urusan'    => $formData['id_urusan'],
-                    'id_bidang'    => $formData['id_bidang'],
-                    'id_frekuensi' => $formData['id_frekuensi'] ?? 1,
-                    'satuan'       => $formData['satuan'] ?? '-',
-                    'deskripsi'    => $formData['deskripsi'] ?? null,
-                    'sumber'       => $formData['sumber'] ?? null,
-                    'tahun_terbit' => $formData['tahun_terbit'] ?? date('Y'),
-                    'informasi_tambahan' => isset($formData['extra_fields']) && !empty($formData['extra_fields']) 
-                                            ? json_encode($formData['extra_fields']) 
-                                            : null,
-                ]
-            );
+            $dataMaster = Data::create([
+                'nama_data' => $namaData,
+                'id_user'      => $userId,
+                'id_tema'      => $formData['id_tema'],
+                'id_urusan'    => $formData['id_urusan'],
+                'id_bidang'    => $formData['id_bidang'],
+                'id_frekuensi' => $formData['id_frekuensi'] ?? 1,
+                'satuan'       => $formData['satuan'] ?? '-',
+                'deskripsi'    => $formData['deskripsi'] ?? null,
+                'sumber'       => $formData['sumber'] ?? null,
+                'tahun_terbit' => $formData['tahun_terbit'] ?? date('Y'),
+            ]);
+
+            if (isset($formData['id_katakunci']) && is_array($formData['id_katakunci'])) {
+                $dataMaster->katakunci()->sync($formData['id_katakunci']);
+            }
+
+            // CATAT ACTIVITY LOG
+            ActivityLog::create([
+                'id_user' => $userId,
+                'id_data' => $dataMaster->id_data,
+                'action' => 'UPLOAD',
+                'target_name' => $dataMaster->nama_data,
+                'description' => 'Input manual indikator baru',
+                'ip_address' => request()->ip()
+            ]);
 
             foreach ($formData['values'] as $item) {
-                $nilaiClean = preg_replace('/[^0-9,\.\-]/', '', $item['nilai']); 
-                
-                if (strpos($nilaiClean, ',') !== false && strpos($nilaiClean, '.') !== false) {
-                    $nilaiClean = str_replace('.', '', $nilaiClean);
-                    $nilaiClean = str_replace(',', '.', $nilaiClean);
-                } elseif (strpos($nilaiClean, ',') !== false) {
-                    $nilaiClean = str_replace(',', '.', $nilaiClean);
-                }
-                
+                $nilaiClean = preg_replace('/[^0-9\.\-]/', '', str_replace(',', '.', $item['nilai']));
                 DataValue::updateOrCreate(
-                    ['id_data' => $dataMaster->id_data, 'tahun' => $item['tahun']], 
+                    ['id_data' => $dataMaster->id_data, 'tahun' => $item['tahun']],
                     ['nilai' => (float) $nilaiClean]
                 );
             }
-                
+
             DataUpload::create([
                 'id_user'   => $userId,
                 'id_data'   => $dataMaster->id_data,
-                'periode'   => $defaultTahun, 
-                'file_path' => 'manual_input', 
-                'value'     => json_encode(['values' => $formData['values']]), 
+                'periode'   => $formData['values'][0]['tahun'] ?? date('Y'),
+                'file_path' => 'manual_input',
+                'value'     => json_encode(['values' => $formData['values']]),
             ]);
 
             DB::commit();
             return $dataMaster;
-
         } catch (Exception $e) {
             DB::rollBack();
             throw new Exception("Gagal memproses data: " . $e->getMessage());
         }
     }
 
+    /**
+     * PROSES UPDATE DATA + LOG
+     */
     public function updateSingleData($id, $formData, $userId)
     {
         DB::beginTransaction();
         try {
             $dataMaster = Data::findOrFail($id);
-            
-            // PERBAIKAN: Hapus 'status' => $formData['status']
+            $namaData = trim($formData['nama_data']);
+
+            if ($this->hasDuplicateNamaData($namaData, $dataMaster->id_data)) {
+                throw new Exception("Indikator '{$namaData}' sudah ada. Gunakan nama indikator yang berbeda.");
+            }
+
             $dataMaster->update([
-                'nama_data' => trim($formData['nama_data']),
-                'id_tema'        => $formData['id_tema'],
-                'id_urusan'      => $formData['id_urusan'],
-                'id_bidang'      => $formData['id_bidang'],
-                'id_frekuensi'   => $formData['id_frekuensi'] ?? 1,
-                'satuan'         => $formData['satuan'] ?? '-',
-                'deskripsi'      => $formData['deskripsi'] ?? null,
-                'sumber'         => $formData['sumber'] ?? null,
-                'informasi_tambahan' => isset($formData['extra_fields']) 
-                                        ? json_encode($formData['extra_fields']) 
-                                        : $dataMaster->informasi_tambahan,
+                'nama_data'    => $namaData,
+                'id_tema'      => $formData['id_tema'],
+                'id_urusan'    => $formData['id_urusan'],
+                'id_bidang'    => $formData['id_bidang'],
+                'id_frekuensi' => $formData['id_frekuensi'] ?? 1,
+                'satuan'       => $formData['satuan'] ?? '-',
+                'deskripsi'    => $formData['deskripsi'] ?? null,
+                'sumber'       => $formData['sumber'] ?? null,
+                'tahun_terbit' => $formData['tahun_terbit'] ?? $dataMaster->tahun_terbit,
+                'informasi_tambahan' => isset($formData['extra_fields']) ? json_encode($formData['extra_fields']) : $dataMaster->informasi_tambahan,
+            ]);
+
+            if (isset($formData['id_katakunci']) && is_array($formData['id_katakunci'])) {
+                $dataMaster->katakunci()->sync($formData['id_katakunci']);
+            }
+
+            // CATAT ACTIVITY LOG
+            ActivityLog::create([
+                'id_user' => $userId,
+                'id_data' => $dataMaster->id_data,
+                'action' => 'EDIT',
+                'target_name' => $dataMaster->nama_data,
+                'description' => 'Memperbarui rincian indikator',
+                'ip_address' => request()->ip()
             ]);
 
             $requestedYears = [];
             foreach ($formData['values'] as $item) {
-                $nilaiClean = preg_replace('/[^0-9,\.\-]/', '', $item['nilai']); 
-                if (strpos($nilaiClean, ',') !== false && strpos($nilaiClean, '.') !== false) {
-                    $nilaiClean = str_replace('.', '', $nilaiClean);
-                    $nilaiClean = str_replace(',', '.', $nilaiClean);
-                } elseif (strpos($nilaiClean, ',') !== false) {
-                    $nilaiClean = str_replace(',', '.', $nilaiClean);
-                }
-                
+                $nilaiClean = preg_replace('/[^0-9\.\-]/', '', str_replace(',', '.', $item['nilai']));
                 $requestedYears[] = $item['tahun'];
-
                 DataValue::updateOrCreate(
-                    ['id_data' => $dataMaster->id_data, 'tahun' => $item['tahun']], 
+                    ['id_data' => $dataMaster->id_data, 'tahun' => $item['tahun']],
                     ['nilai' => (float) $nilaiClean]
                 );
             }
 
             if (count($requestedYears) > 0) {
-                DataValue::where('id_data', $dataMaster->id_data)
-                    ->whereNotIn('tahun', $requestedYears)
-                    ->delete();
+                DataValue::where('id_data', $dataMaster->id_data)->whereNotIn('tahun', $requestedYears)->delete();
             }
-                
-            $defaultTahun = count($requestedYears) > 0 ? $requestedYears[0] : date('Y');
+
             DataUpload::create([
                 'id_user'   => $userId,
                 'id_data'   => $dataMaster->id_data,
-                'periode'   => $defaultTahun, 
-                'file_path' => 'edit_manual', 
-                'value'     => json_encode(['values' => $formData['values']]), 
+                'periode'   => $requestedYears[0] ?? date('Y'),
+                'file_path' => 'edit_manual',
+                'value'     => json_encode(['values' => $formData['values']]),
             ]);
 
             DB::commit();
             return $dataMaster;
-
         } catch (Exception $e) {
             DB::rollBack();
             throw new Exception("Gagal memperbarui data: " . $e->getMessage());

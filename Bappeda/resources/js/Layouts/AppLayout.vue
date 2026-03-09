@@ -4,24 +4,26 @@ import { usePage } from '@inertiajs/vue3';
 import Navbar from '@/Components/Layout/Navbar.vue';
 import Sidebar from '@/Components/Layout/Sidebar.vue';
 import LogoutModal from '@/Components/Layout/LogoutModal.vue';
+import AlertModal from '@/Components/Layout/AlertModal.vue';
+import IconifyIcon from '@/Components/Base/IconifyIcon.vue';
 
 const page = usePage();
 const logoPath = '/images/logo.png';
 const activeUrl = computed(() => page.url);
 const showLogoutModal = ref(false);
+const showFlashModal = ref(false);
+const flashTitle = ref('Informasi');
+const flashMessage = ref('');
+const flashType = ref('info');
 
-// 1. Tentukan apakah ini halaman internal (Dashboard/Admin)
 const isInternalPage = computed(() => {
     return activeUrl.value.startsWith('/admin') || activeUrl.value.startsWith('/inputer');
 });
 
-// 2. Sidebar hanya muncul di halaman internal DAN user sudah login
 const shouldShowSidebar = computed(() => {
     return isInternalPage.value && role.value !== 'anonymous';
 });
 
-// 3. Navbar muncul di halaman publik (Landing Page, Search, dll) 
-// Terlepas dari dia sudah login atau belum
 const shouldShowNavbar = computed(() => {
     return !isInternalPage.value;
 });
@@ -34,6 +36,30 @@ const toggleSidebar = () => {
 watch(() => page.url, () => {
     showLogoutModal.value = false;
 });
+
+watch(
+    () => page.props.flash,
+    (flash) => {
+        const successMessage = flash?.success || flash?.message;
+        const errorMessage = flash?.error;
+
+        if (errorMessage) {
+            flashTitle.value = 'Terjadi Kesalahan';
+            flashMessage.value = errorMessage;
+            flashType.value = 'error';
+            showFlashModal.value = true;
+            return;
+        }
+
+        if (successMessage) {
+            flashTitle.value = 'Berhasil';
+            flashMessage.value = successMessage;
+            flashType.value = 'success';
+            showFlashModal.value = true;
+        }
+    },
+    { deep: true, immediate: true }
+);
 
 const role = computed(() => {
     const userData = page.props.auth?.user; 
@@ -60,16 +86,16 @@ const menuGroups = computed(() => {
         groups.push({
             label: 'MENU UTAMA',
             items: [
-                { name: 'Dashboard', path: dashboardPath, icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+                { name: 'Dashboard', path: dashboardPath, icon: 'solar:home-2-bold' },
             ]
         });
     }
 
     if (role.value === 'admin') {
         groups.push({
-            label: 'ADMINISTRATOR',
+            label: '',
             items: [
-                { name: 'Kelola User', path: '/admin/users', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
+                { name: 'Kelola User', path: '/admin/users', icon: 'solar:users-group-rounded-bold' },
             ]
         });
     }
@@ -78,20 +104,32 @@ const menuGroups = computed(() => {
         groups.push({
             label: 'DATA REFERENSI',
             items: [
-                { name: 'Input Data Baru', path: '/inputer/data', icon: 'M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                { name: 'Input Data Baru', path: '/inputer/data', icon: 'solar:add-folder-bold' },
                 { 
                     name: 'Master Data',
-                    icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
+                    icon: 'solar:database-bold',
                     children: [
                         { name: 'Tema', path: '/admin/tema' },
                         { name: 'Urusan', path: '/admin/urusan' },
                         { name: 'Bidang', path: '/admin/bidang' },
                         { name: 'Frekuensi', path: '/admin/frekuensi' },
+                        { name: 'Kata Kunci', path: '/admin/katakunci'},
                     ]
                 },
             ]
         });
     }
+
+    if (role.value === 'admin') {
+        groups.push({
+            label: 'LOGS',
+            items: [
+                { name: 'Masukan Non-User', path: '/admin/contacts', icon: 'solar:chat-round-dots-bold' },
+                { name: 'Log Activity', path: '/admin/logs', icon: 'solar:document-text-bold' },
+            ]
+        });
+    }
+
     return groups;
 });
 </script>
@@ -118,9 +156,7 @@ const menuGroups = computed(() => {
                 @click="isSidebarOpen = true"
                 class="fixed top-1/2 left-6 z-[60] transform -translate-y-1/2 w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center hover:bg-secondary transition-all active:scale-90"
             >
-                <svg class="w-5 h-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" />
-                </svg>
+                <IconifyIcon icon="solar:double-alt-arrow-left-bold" width="20" height="20" class="rotate-180" />
             </button>
         </Transition>
 
@@ -141,5 +177,12 @@ const menuGroups = computed(() => {
         </div>
 
         <LogoutModal :show="showLogoutModal" @close="showLogoutModal = false" />
+        <AlertModal
+            :show="showFlashModal"
+            :title="flashTitle"
+            :description="flashMessage"
+            :type="flashType"
+            @close="showFlashModal = false"
+        />
     </div>
 </template>

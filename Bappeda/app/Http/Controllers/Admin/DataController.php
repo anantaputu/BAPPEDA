@@ -53,7 +53,20 @@ class DataController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama_data' => 'required|string|max:255',
+            'nama_data' => [
+                'required',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) {
+                    $exists = Data::query()
+                        ->whereRaw('LOWER(TRIM(nama_data)) = LOWER(TRIM(?))', [$value])
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('Nama indikator sudah ada. Gunakan nama lain.');
+                    }
+                },
+            ],
             'deskripsi'      => 'nullable|string',
 
             'id_tema'        => 'required|exists:tema,id_tema',
@@ -67,7 +80,7 @@ class DataController extends Controller
         ]);
 
         Data::create([
-            'nama_data' => $validated['nama_data'],
+            'nama_data' => trim($validated['nama_data']),
             'deskripsi'      => $validated['deskripsi'],
             'id_tema'        => $validated['id_tema'],
             'id_urusan'      => $validated['id_urusan'],
@@ -103,7 +116,21 @@ class DataController extends Controller
     public function update(Request $request, Data $data)
     {
         $validated = $request->validate([
-            'nama_data' => 'required|string|max:255',
+            'nama_data' => [
+                'required',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) use ($data) {
+                    $exists = Data::query()
+                        ->where('id_data', '!=', $data->id_data)
+                        ->whereRaw('LOWER(TRIM(nama_data)) = LOWER(TRIM(?))', [$value])
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('Nama indikator sudah ada. Gunakan nama lain.');
+                    }
+                },
+            ],
             'deskripsi'      => 'nullable|string',
 
             'id_tema'        => 'required|exists:tema,id_tema',
@@ -117,6 +144,7 @@ class DataController extends Controller
             'status'         => 'required|string',
         ]);
 
+        $validated['nama_data'] = trim($validated['nama_data']);
         $data->update($validated);
 
         return redirect('/admin/data')

@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\FrekuensiController;
 use App\Http\Controllers\Admin\KataKunciController;
 use App\Http\Controllers\Admin\SatuanController;
 use App\Http\Controllers\Admin\LogActivityController;
+use App\Http\Controllers\Admin\ContactController;
 
 use App\Http\Controllers\Inputer\InputerDashboardController;
 use App\Http\Controllers\Inputer\DataInputController;
@@ -32,12 +33,15 @@ use App\Http\Controllers\Inputer\DataOutputController;
 |--------------------------------------------------------------------------
 */
 Route::get('/', [LandingController::class, 'index']);
+Route::get('/visualisasi', [DashboardController::class, 'index'])->name('public.visualisasi');
 Route::get('/public-dashboard', [DashboardController::class, 'index'])->name('public.dashboard');
 Route::get('/search', [SearchController::class, 'index'])->name('public.search');
 Route::get('/learnmore', [LearnmoreController::class, 'index'])->name('public.learnmore');
 Route::post('/contact', [App\Http\Controllers\Public\ContactController::class, 'store'])->name('public.contact.store');
 Route::get('/dataset/{id}', [DatasetController::class, 'show'])->name('dataset.detail');
-Route::get('/export/data/{id}', [DataOutputController::class, 'export'])->name('public.export');
+Route::get('/export/data/{id}', [DataOutputController::class, 'export'])
+    ->whereNumber('id')
+    ->name('public.export');
 Route::get('/katalog', [App\Http\Controllers\Public\DatasetController::class, 'index'])->name('public.katalog');// ini ga penting nanta cuman kek search gitu
 Route::get('/data-spreadsheet', [App\Http\Controllers\Public\DatasetController::class, 'spreadsheetView'])->name('public.spreadsheet');// ini kumpulan data yang ditampilkan dalam bentuk spreadsheet, bisa untuk lihat data per indikator dengan semua tahunannya sekaligus
 
@@ -94,7 +98,9 @@ Route::middleware(['auth', 'role:admin|inputer'])->prefix('inputer')->name('inpu
 
     Route::delete('/data/{id}', [DataInputController::class, 'destroy'])->name('data.destroy');
 
-    Route::get('/export/{id}', [DataOutputController::class, 'export'])->name('export');
+    Route::get('/export/{id}', [DataOutputController::class, 'export'])
+        ->whereNumber('id')
+        ->name('export');
     
     Route::get('/data/input-single', [DataInputController::class, 'createSingle'])->name('createSingle');
     Route::post('/data/store-single', [DataInputController::class, 'storeSingle'])->name('storeSingle');
@@ -113,5 +119,6 @@ Route::post('/data/{id}/bookmark', [DatasetController::class, 'toggleBookmark'])
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/logs', [LogActivityController::class, 'index'])->name('admin.logs');
+    Route::get('/contacts', [ContactController::class, 'index'])->name('contacts.index');
     Route::resource('users', UserController::class);
 });

@@ -3,110 +3,52 @@
 namespace App\Http\Controllers\Inputer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Data;
 use App\Models\DataUpload;
-use App\Models\DataField;
-use Illuminate\Http\Request;
+use App\Models\DataValue;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Str;
 
 class DataOutputController extends Controller
 {
-    // PERUBAHAN 1: Parameter menerima $id (id_data), bukan model binding
-    public function export($id)
+    public function export(int $id)
     {
-        // PERUBAHAN 2: Cari Upload Terakhir yang Valid milik Dataset ini
-        $upload = DataUpload::where('id_data', $id)
-            ->where('status', 'valid')
-            ->latest() // Ambil yang paling baru
-            ->first();
+        $upload = $this->resolveUploadFromReference($id);
 
-        // Validasi jika belum ada file
         if (!$upload) {
-            return abort(404, 'Belum ada data valid untuk indikator ini.');
+            return abort(404, 'Data export tidak ditemukan untuk ID tersebut.');
         }
 
-        // --- DARI SINI KE BAWAH LOGIKANYA SAMA, TINGGAL COPY ---
-
-        // 1. Ambil Metadata Field
-        $fields = DataField::where('id_data', $upload->id_data)->get();
-
-        // 2. Ambil Data Values
-        $dataRows = is_string($upload->value) ? json_decode($upload->value, true) : $upload->value;
-
-        if (empty($dataRows) || !is_array($dataRows)) {
-            return abort(500, 'Data kosong atau format rusak.');
+        $rows = $this->resolveRowsFromUploadValue($upload->id_data, $upload->value);
+        if (empty($rows)) {
+            return abort(404, 'Data nilai untuk indikator ini belum tersedia.');
         }
 
-        // 3. Setup Spreadsheet
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Data Export');
 
-        // --- HEADER ---
-        $col = 1;
-        $rowHeader = 1;
+        $sheet->setCellValue('A1', 'No');
+        $sheet->setCellValue('B1', 'Periode');
+        $sheet->setCellValue('C1', 'Nilai');
+        $sheet->getStyle('A1:C1')->getFont()->setBold(true);
 
-        // Header Nomor Urut
-        $sheet->setCellValue('A1', 'NO');
-        $sheet->getStyle('A1')->getFont()->setBold(true);
-        $col++;
-
-        foreach ($fields as $field) {
-            $columnLetter = Coordinate::stringFromColumnIndex($col);
-            $cellAddress = $columnLetter . $rowHeader;
-
-            $sheet->setCellValue($cellAddress, $field->nama_field);
-            
-            // Style Header
-            $style = $sheet->getStyle($cellAddress);
-            $style->getFont()->setBold(true);
-            $style->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFEEEEEE');
-            $style->getAlignment()->setHorizontal('center');
-            
-            $col++;
-        }
-
-        // --- ISI DATA ---
         $currentRow = 2;
-        $no = 1;
-
-        foreach ($dataRows as $rowData) {
-            $col = 1;
-            
-            // Kolom Nomor
-            $sheet->setCellValue('A' . $currentRow, $no++);
-            $col++;
-
-            foreach ($fields as $field) {
-                // Ambil value berdasarkan ID Field
-                $val = $rowData[$field->id_field] ?? $rowData[(string)$field->id_field] ?? ''; 
-                
-                $columnLetter = Coordinate::stringFromColumnIndex($col);
-                $cellAddress = $columnLetter . $currentRow;
-
-                $sheet->setCellValue($cellAddress, $val);
-                $col++;
-            }
+        foreach ($rows as $index => $item) {
+            $sheet->setCellValue('A' . $currentRow, $index + 1);
+            $sheet->setCellValue('B' . $currentRow, $item['periode']);
+            $sheet->setCellValue('C' . $currentRow, $item['nilai']);
             $currentRow++;
         }
 
-        // --- FINISHING ---
-        $highestColumn = $sheet->getHighestColumn();
-        foreach (range('A', $highestColumn) as $colID) {
-            $sheet->getColumnDimension($colID)->setAutoSize(true);
-        }
+        $sheet->getColumnDimension('A')->setWidth(8);
+        $sheet->getColumnDimension('B')->setAutoSize(true);
+        $sheet->getColumnDimension('C')->setAutoSize(true);
 
-        // Load relasi data untuk nama file
-        $upload->load('data');
-        
-        // Nama File yang Rapi
         $safeName = Str::slug($upload->data->nama_data ?? 'Data');
-        $fileName = 'Data_' . $safeName . '_' . $upload->tahun . '.xlsx';
+        $fileName = 'Data_' . $safeName . '_' . ($upload->periode ?? now()->format('Y')) . '.xlsx';
 
         $writer = new Xlsx($spreadsheet);
 
@@ -117,5 +59,58 @@ class DataOutputController extends Controller
             'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
             'Cache-Control' => 'max-age=0',
         ]);
+    }
+
+    private function resolveUploadFromReference(int $id): ?DataUpload
+    {
+        $isDataId = Data::where('id_data', $id)->exists();
+        if ($isDataId) {
+            return DataUpload::with('data')
+                ->where('id_data', $id)
+                ->latest()
+                ->first();
+        }
+
+        return DataUpload::with('data')
+            ->where('id_upload', $id)
+            ->first();
+    }
+
+    private function resolveRowsFromUploadValue(int $idData, $rawValue): array
+    {
+        $decoded = is_string($rawValue) ? json_decode($rawValue, true) : $rawValue;
+        $rows = [];
+
+        if (is_array($decoded) && isset($decoded['values']) && is_array($decoded['values'])) {
+            foreach ($decoded['values'] as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                $periode = trim((string) ($item['tahun'] ?? ''));
+                $nilai = $item['nilai'] ?? '';
+                if ($periode !== '') {
+                    $rows[] = ['periode' => $periode, 'nilai' => $nilai];
+                }
+            }
+        }
+
+        if (empty($rows) && is_array($decoded) && isset($decoded['nilai']) && is_array($decoded['nilai'])) {
+            foreach ($decoded['nilai'] as $periode => $nilai) {
+                $periodeText = trim((string) $periode);
+                if ($periodeText !== '') {
+                    $rows[] = ['periode' => $periodeText, 'nilai' => $nilai];
+                }
+            }
+        }
+
+        if (empty($rows)) {
+            $fallback = DataValue::where('id_data', $idData)->orderBy('tahun')->get(['tahun', 'nilai']);
+            foreach ($fallback as $item) {
+                $rows[] = ['periode' => (string) $item->tahun, 'nilai' => $item->nilai];
+            }
+        }
+
+        usort($rows, fn ($a, $b) => strnatcasecmp((string) $a['periode'], (string) $b['periode']));
+        return $rows;
     }
 }

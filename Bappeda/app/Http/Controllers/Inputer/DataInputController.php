@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Inputer;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Data, Tema, Urusan, Bidang, Frekuensi, DataUpload};
+use App\Models\{Data, Tema, Urusan, Bidang, Frekuensi, Katakunci, DataUpload, ActivityLog};
 use App\Services\DataUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,74 +18,98 @@ class DataInputController extends Controller
         $this->uploadService = $uploadService;
     }
 
+    /**
+     * Helper untuk mengambil data master yang konsisten di seluruh halaman input
+     */
     private function getMetadata()
     {
         return [
-            'tema'      => Tema::all(),
-            'urusan'    => Urusan::all(),
-            'bidang'    => Bidang::all(),
+            'tema'      => Tema::orderBy('nama_tema')->get(),
+            'urusan'    => Urusan::orderBy('nama_urusan')->get(),
+            'bidang'    => Bidang::orderBy('nama_bidang')->get(),
             'frekuensi' => Frekuensi::all(),
+            'katakunci' => Katakunci::orderBy('nama_katakunci')->get(),
         ];
     }
-public function index()
+
+    private function getDashboardRouteByRole(): string
     {
         $user = Auth::user();
-        $userId = $user->id; // sesuaikan jika primary key user Anda bukan 'id'
-        
-        // Cek apakah yang login adalah admin
+        $isAdmin = optional($user->role)->nama_role === 'Admin';
+
+        return $isAdmin ? 'admin.dashboard' : 'inputer.dashboard';
+    }
+
+    private function applyNamaDataSearch($query, ?string $search): void
+    {
+        $keyword = strtolower(trim((string) $search));
+        if ($keyword === '') {
+            return;
+        }
+
+        $query->whereRaw('LOWER(TRIM(nama_data)) LIKE ?', ['%' . $keyword . '%']);
+    }
+
+    public function index()
+    {
+        $user = Auth::user();
+        $userId = $user->id;
         $isAdmin = optional($user->role)->nama_role === 'Admin'; 
 
-        // 1. DATA UNTUK RIWAYAT UPLOAD (Tampilan CRUD)
+        // 1. Ambil ID aktivitas terbaru per indikator untuk Riwayat
+        $latestUploadIds = DataUpload::selectRaw('MAX(id_upload) as id_upload')
+            ->groupBy('id_data')
+            ->pluck('id_upload');
+
         $recentUploadsQuery = DataUpload::with(['data.urusan', 'data.bidang', 'user'])
+            ->whereIn('id_upload', $latestUploadIds)
             ->orderBy('created_at', 'desc');
 
-        // Jika BUKAN Admin, batasi hanya data miliknya sendiri
         if (!$isAdmin) {
             $recentUploadsQuery->where('id_user', $userId);
         }
         $recentUploads = $recentUploadsQuery->get();
 
-        // 2. METADATA UNTUK FILTER SPREADSHEET
+        // 2. Metadata untuk Filter dan Dropdown di Spreadsheet
         $metadata = [
-            'tema' => Tema::all(),
-            'urusan' => Urusan::all(),
-            'bidang' => Bidang::all(),
-            'frekuensi' => Frekuensi::all(),
-            'tahun_terbit' => Data::select('tahun_terbit')->whereNotNull('tahun_terbit')->distinct()->orderBy('tahun_terbit', 'desc')->pluck('tahun_terbit'),
+            'tema'         => Tema::orderBy('nama_tema')->get(),
+            'urusan'       => Urusan::orderBy('nama_urusan')->get(),
+            'bidang'       => Bidang::orderBy('nama_bidang')->get(),
+            'frekuensi'    => Frekuensi::all(),
+            'tahun_terbit' => Data::select('tahun_terbit')
+                                ->whereNotNull('tahun_terbit')
+                                ->distinct()
+                                ->orderBy('tahun_terbit', 'desc')
+                                ->pluck('tahun_terbit'),
         ];
 
-        // 3. AMBIL DATA UTAMA UNTUK SPREADSHEET
-        $query = \App\Models\Data::with(['values', 'tema', 'urusan', 'bidang', 'frekuensi']);
+        // 3. Query Utama Data Indikator (Spreadsheet)
+        $query = Data::with(['values', 'tema', 'urusan', 'bidang', 'frekuensi', 'katakunci']);
 
-        // Jika BUKAN Admin, batasi hanya data miliknya sendiri
         if (!$isAdmin) {
             $query->where('id_user', $userId);
         }
 
-        // Terapkan filter jika ada request dari Vue
-        if (request('search')) {
-            // CATATAN: Pastikan nama kolomnya benar. Sebelumnya Anda menulis nama_data. 
-            // Jika di database namanya nama_indikator, gunakan nama_indikator.
-            $query->where('nama_indikator', 'ilike', '%' . request('search') . '%'); 
-        }
+        // --- Logic Filtering ---
+        $this->applyNamaDataSearch($query, request('search'));
         if (request('urusan')) $query->where('id_urusan', request('urusan'));
         if (request('bidang')) $query->where('id_bidang', request('bidang'));
-        if (request('tema')) $query->where('id_tema', request('tema'));
+        if (request('tema'))   $query->where('id_tema', request('tema'));
         if (request('frekuensi')) $query->where('id_frekuensi', request('frekuensi'));
         if (request('tahun_terbit')) $query->where('tahun_terbit', request('tahun_terbit'));
 
         $allData = $query->get();
 
-        // 4. GROUPING DATA (Untuk tampilan Spreadsheet)
+        // 4. Grouping Data untuk View Spreadsheet
         $groupedData = [];
         $timeColumnsSet = [];
         $groupBy = request('group_by', 'tema'); 
 
         foreach ($allData as $item) {
             $groupName = 'Lainnya';
-            if ($groupBy === 'tema') $groupName = $item->tema->nama_tema ?? 'Tanpa Tema';
-            if ($groupBy === 'urusan') $groupName = $item->urusan->nama_urusan ?? 'Tanpa Urusan';
-            if ($groupBy === 'bidang') $groupName = $item->bidang->nama_bidang ?? 'Tanpa Bidang';
+            if ($groupBy === 'tema')      $groupName = $item->tema->nama_tema ?? 'Tanpa Tema';
+            if ($groupBy === 'urusan')    $groupName = $item->urusan->nama_urusan ?? 'Tanpa Urusan';
+            if ($groupBy === 'bidang')    $groupName = $item->bidang->nama_bidang ?? 'Tanpa Bidang';
             if ($groupBy === 'frekuensi') $groupName = $item->frekuensi->nama_frekuensi ?? 'Tanpa Frekuensi';
 
             $groupedData[$groupName][] = $item;
@@ -98,7 +122,6 @@ public function index()
         $timeColumns = array_keys($timeColumnsSet);
         sort($timeColumns); 
 
-        // RETURN KE HALAMAN INDEX / SPREADSHEET
         return Inertia::render('Inputer/Data/Index', [
             'recentUploads' => $recentUploads,
             'isAdmin'       => $isAdmin,    
@@ -122,29 +145,43 @@ public function index()
     public function edit($id)
     {
         return Inertia::render('Inputer/Data/Edit', array_merge(
-            ['dataIndikator' => Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'values'])->findOrFail($id)],
+            [
+                'dataIndikator' => Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'katakunci', 'values'])->findOrFail($id)
+            ],
             $this->getMetadata()
         ));
     }
 
     public function katalog(Request $request)
     {
-        $query = Data::with(['tema', 'urusan', 'bidang']);
-        if ($request->filled('search')) $query->where('nama_data', 'like', '%' . $request->search . '%');
+        $query = Data::with(['tema', 'urusan', 'bidang', 'katakunci']);
+        $this->applyNamaDataSearch($query, $request->search);
         if ($request->filled('tema')) $query->where('id_tema', $request->tema);
 
         return Inertia::render('Inputer/Data/Katalog', [
             'indicators' => $query->latest()->paginate(15)->withQueryString(),
             'filters'    => $request->only(['search', 'tema']),
-            'listTema'   => Tema::all()
+            'listTema'   => Tema::orderBy('nama_tema')->get()
         ]);
     }
 
     public function storeSingle(Request $request)
     {
-        // Validasi input data indikator
         $request->validate([
-            'nama_data'      => 'required|string|max:255',
+            'nama_data'      => [
+                'required',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) {
+                    $exists = Data::query()
+                        ->whereRaw('LOWER(TRIM(nama_data)) = LOWER(TRIM(?))', [$value])
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('Nama indikator sudah ada. Gunakan nama lain.');
+                    }
+                },
+            ],
             'id_tema'        => 'required',
             'id_urusan'      => 'required',
             'id_bidang'      => 'required',
@@ -154,18 +191,14 @@ public function index()
             'deskripsi'      => 'nullable|string',
             'values'         => 'required|array|min:1',
             'tahun_terbit'   => 'nullable|integer',
-
-            // Validasi setiap item dalam array values
+            'id_katakunci'   => 'nullable|array',
             'values.*.tahun' => 'required|string',
             'values.*.nilai' => 'required',
         ]);
 
         try {
             $this->uploadService->processSingleData($request->all(), Auth::id());
-
-            return redirect()->route('inputer.dashboard')
-                ->with('message', 'Data Indikator Berhasil Disimpan!');
-
+            return redirect()->route($this->getDashboardRouteByRole())->with('success', 'Data Indikator Berhasil Disimpan!');
         } catch (\Exception $e) {
             \Log::error('Gagal Simpan Single: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Gagal menyimpan: ' . $e->getMessage()]);
@@ -187,17 +220,10 @@ public function index()
     {
         try {
             if (!$request->has('dataset') || empty($request->input('dataset'))) {
-                throw new \Exception("Data Excel kosong atau gagal terbaca oleh sistem.");
+                throw new \Exception("Data Excel kosong atau gagal terbaca.");
             }
-
-            $this->uploadService->processBulkData(
-                $request->input('dataset'), 
-                $request->input('years'), 
-                Auth::id()
-            );
-
+            $this->uploadService->processBulkData($request->input('dataset'), $request->input('years'), Auth::id());
             return response()->json(['success' => true]);
-
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -205,9 +231,24 @@ public function index()
 
     public function update(Request $request, $id)
     {
-        // Validasi data indikator yang diperbarui
+        $dataMaster = Data::findOrFail($id);
+
         $request->validate([
-            'nama_data'      => 'required|string|max:255',
+            'nama_data'      => [
+                'required',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) use ($dataMaster) {
+                    $exists = Data::query()
+                        ->where('id_data', '!=', $dataMaster->id_data)
+                        ->whereRaw('LOWER(TRIM(nama_data)) = LOWER(TRIM(?))', [$value])
+                        ->exists();
+
+                    if ($exists) {
+                        $fail('Nama indikator sudah ada. Gunakan nama lain.');
+                    }
+                },
+            ],
             'id_tema'        => 'required',
             'id_urusan'      => 'required',
             'id_bidang'      => 'required',
@@ -216,8 +257,7 @@ public function index()
             'sumber'         => 'nullable|string',
             'deskripsi'      => 'nullable|string',
             'tahun_terbit'   => 'nullable|integer',
-
-            // Validasi array values
+            'id_katakunci'   => 'nullable|array',
             'values'         => 'required|array|min:1',
             'values.*.tahun' => 'required|string',
             'values.*.nilai' => 'required',
@@ -225,14 +265,7 @@ public function index()
 
         try {
             $this->uploadService->updateSingleData($id, $request->all(), Auth::id());
-
-            $user = Auth::user();
-            $isAdmin = (optional($user->role)->nama_role === 'Admin');
-            $routeName = $isAdmin ? 'admin.dashboard' : 'inputer.dashboard';
-
-            return redirect()->route($routeName)
-                ->with('message', 'Data berhasil diperbarui!');
-
+            return redirect()->route($this->getDashboardRouteByRole())->with('success', 'Data berhasil diperbarui!');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Gagal Update Single: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Gagal memperbarui data: ' . $e->getMessage()]);
@@ -242,7 +275,19 @@ public function index()
     public function destroy($id)
     {
         try {
-            $data = \App\Models\Data::findOrFail($id);
+            $data = Data::findOrFail($id);
+            $namaData = $data->nama_data;
+
+            // CATAT LOG AKTIVITAS SEBELUM DELETE (Gunakan variabel yang ada di scope)
+            ActivityLog::create([
+                'id_user'     => Auth::id(),
+                'id_data'     => $id,
+                'action'      => 'DELETE',
+                'target_name' => $namaData,
+                'description' => 'Menghapus data indikator secara permanen',
+                'ip_address'  => request()->ip()
+            ]);
+
             $data->delete();
 
             return redirect()->back()->with('success', 'Data berhasil dihapus');

@@ -98,7 +98,7 @@ class DashboardController extends Controller
             });
         };
 
-        return Inertia::render('Public/Dashboard', [
+        return Inertia::render('Public/Visualisasi', [
             'stats'          => $stats,
             'temaChart'      => $temaChart,
             'bidangChart'    => $bidangChart,

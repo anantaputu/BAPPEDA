@@ -1,5 +1,8 @@
 <script setup>
-defineProps({
+import { computed } from 'vue';
+import IconifyIcon from '@/Components/Base/IconifyIcon.vue';
+
+const props = defineProps({
     label: String,
     value: [String, Number],
     icon: String,
@@ -7,6 +10,8 @@ defineProps({
     progress: Number,
     colors: Object
 });
+
+const isLegacyPathIcon = computed(() => typeof props.icon === 'string' && /^[Mm][\d\s.,-]/.test(props.icon.trim()));
 </script>
 
 <template>
@@ -17,9 +22,10 @@ defineProps({
                 colors[color].bg, 
                 colors[color].text
             ]">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg v-if="isLegacyPathIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" :d="icon" />
                 </svg>
+                <IconifyIcon v-else :icon="icon" width="24" height="24" />
             </div>
             <h3 class="text-[11px] font-black text-textsecondary uppercase tracking-[0.15em] leading-tight">
                 {{ label }}

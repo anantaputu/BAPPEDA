@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Frekuensi;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Inertia\Inertia;
 
 class FrekuensiController extends Controller
@@ -62,8 +63,16 @@ class FrekuensiController extends Controller
 
     public function destroy(Frekuensi $frekuensi)
     {
-        $frekuensi->delete();
+        $usedCount = $frekuensi->data()->count();
+        if ($usedCount > 0) {
+            return back()->with('error', "Frekuensi '{$frekuensi->nama_frekuensi}' tidak dapat dihapus karena masih dipakai oleh {$usedCount} indikator.");
+        }
 
-        return back()->with('success', 'Frekuensi berhasil dihapus');
+        try {
+            $frekuensi->delete();
+            return back()->with('success', 'Frekuensi berhasil dihapus');
+        } catch (QueryException $e) {
+            return back()->with('error', "Frekuensi '{$frekuensi->nama_frekuensi}' tidak dapat dihapus karena masih memiliki relasi data.");
+        }
     }
 }

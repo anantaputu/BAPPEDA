@@ -1,5 +1,6 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import IconifyIcon from '@/Components/Base/IconifyIcon.vue';
 
 const props = defineProps({
     item: Object,
@@ -21,18 +22,18 @@ defineEmits(['toggle']);
             <div class="flex items-center gap-4">
                 <div class="p-2 rounded-lg transition-colors duration-500"
                     :class="isOpen ? 'bg-secondary/10' : 'bg-transparent group-hover:bg-primary/5'">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" :d="item.icon" />
-                    </svg>
+                    <IconifyIcon :icon="item.icon" width="20" height="20" />
                 </div>
                 <span class="tracking-tight">{{ item.name }}</span>
             </div>
 
-            <svg class="w-4 h-4 transition-transform duration-500" 
+            <IconifyIcon
+                icon="solar:alt-arrow-right-bold"
+                width="16"
+                height="16"
+                class="transition-transform duration-500"
                 :class="isOpen ? 'rotate-90 text-secondary' : 'text-textsecondary'" 
-                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7" />
-            </svg>
+            />
         </button>
         
         <div v-if="isOpen" class="ml-10 mt-2 border-l-2 border-bgsoft space-y-1 animate-in slide-in-from-top-2 duration-300">
@@ -59,9 +60,7 @@ defineEmits(['toggle']);
         
         <div class="p-2 rounded-lg transition-colors duration-500"
             :class="activeUrl.startsWith(item.path) ? 'bg-white/20' : 'bg-transparent group-hover:bg-primary/5'">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" :d="item.icon" />
-            </svg>
+            <IconifyIcon :icon="item.icon" width="20" height="20" />
         </div>
         <span class="tracking-tight">{{ item.name }}</span>
     </Link>

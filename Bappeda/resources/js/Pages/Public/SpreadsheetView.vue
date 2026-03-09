@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import DeleteModal from '@/Components/Layout/DeleteModal.vue'; // Pastikan path ini benar
+import DeleteModal from '@/Components/Layout/DeleteModal.vue';
 import { Head, router, Link } from '@inertiajs/vue3';
 import { ref, watch, computed } from 'vue';
 import debounce from 'lodash/debounce';
@@ -12,15 +12,12 @@ const props = defineProps({
     timeColumns: Array,
     metadata: Object, 
     filters: Object,
-    isAdmin: { // Ditambahkan dari file CRUD
+    isAdmin: {
         type: Boolean,
         default: false
     }
 });
 
-// ==========================================
-// 1. STATE & LOGIKA SPREADSHEET (FILTER & GROUPING)
-// ==========================================
 const getTahunanId = () => {
     if (!props.metadata?.frekuensi) return '';
     const tahunan = props.metadata.frekuensi.find(f => f.nama_frekuensi.toLowerCase() === 'tahunan');
@@ -72,10 +69,10 @@ const getValue = (values, timeKey) => {
 };
 
 const getGroupLabel = () => {
-    if (form.value.group_by === 'urusan') return '🏛️ Urusan Pemerintahan';
-    if (form.value.group_by === 'bidang') return '🏢 Bidang / Instansi';
-    if (form.value.group_by === 'frekuensi') return '⏰ Frekuensi Data';
-    return '📂 Tema Sektoral';
+    if (form.value.group_by === 'urusan') return 'Urusan Pemerintahan';
+    if (form.value.group_by === 'bidang') return 'Bidang / Instansi';
+    if (form.value.group_by === 'frekuensi') return 'Frekuensi Data';
+    return 'Tema Sektoral';
 };
 
 const formatTimeHeader = (timeString) => {
@@ -99,9 +96,6 @@ const formatTimeHeader = (timeString) => {
     }
 };
 
-// ==========================================
-// 2. STATE & LOGIKA CRUD (HAPUS DATA)
-// ==========================================
 const showDeleteModal = ref(false);
 const dataToDelete = ref(null);
 
@@ -112,7 +106,6 @@ const openDeleteModal = (item) => {
 
 const executeDeleteAction = () => {
     if (dataToDelete.value) {
-        // Sesuaikan endpoint ini dengan route delete data indikator Anda
         router.delete(`/inputer/data/${dataToDelete.value.id_data}`, {
             onSuccess: () => {
                 showDeleteModal.value = false;

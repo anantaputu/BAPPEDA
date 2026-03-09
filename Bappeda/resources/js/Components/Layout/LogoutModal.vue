@@ -1,5 +1,6 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
+import IconifyIcon from '@/Components/Base/IconifyIcon.vue';
 defineProps({ show: Boolean });
 defineEmits(['close']);
 </script>
@@ -19,9 +20,7 @@ defineEmits(['close']);
             <div class="relative bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl text-center transform transition-all border border-gray-100">
                 
                 <div class="mx-auto w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mb-6">
-                    <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
+                    <IconifyIcon icon="solar:logout-3-bold" width="40" height="40" class="text-red-500" />
                 </div>
 
                 <h3 class="text-2xl font-black text-[#000B58] mb-2">Keluar Sesi?</h3>

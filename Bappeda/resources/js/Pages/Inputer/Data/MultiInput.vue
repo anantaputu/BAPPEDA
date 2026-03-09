@@ -1,7 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, router, Link } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import AlertModal from '@/Components/Layout/AlertModal.vue';
+import { Head, router, Link, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import axios from 'axios';
 
 defineOptions({ layout: AppLayout });
@@ -13,6 +14,13 @@ const props = defineProps({
     frekuensi: Array, 
 });
 
+const page = usePage();
+const dashboardPath = computed(() => {
+    const role = page.props.auth?.user?.role;
+    const roleName = (typeof role === 'string' ? role : role?.nama_role || '').toLowerCase();
+    return roleName.includes('admin') ? '/admin/dashboard' : '/inputer/dashboard';
+});
+
 const fileExcel = ref(null);
 const isLoading = ref(false);
 const isPreviewing = ref(false);
@@ -20,6 +28,26 @@ const isPreviewing = ref(false);
 const previewData = ref([]);
 const timeColumns = ref([]);  
 const extraColumns = ref([]); 
+const showAlertModal = ref(false);
+const alertTitle = ref('Informasi');
+const alertMessage = ref('');
+const alertType = ref('info');
+const afterAlertAction = ref(null);
+
+const openAlert = (title, message, type = 'info', onClose = null) => {
+    alertTitle.value = title;
+    alertMessage.value = message;
+    alertType.value = type;
+    afterAlertAction.value = onClose;
+    showAlertModal.value = true;
+};
+
+const closeAlert = () => {
+    showAlertModal.value = false;
+    const action = afterAlertAction.value;
+    afterAlertAction.value = null;
+    if (typeof action === 'function') action();
+};
 
 // Default frekuensi
 const globalFrekuensi = ref(props.frekuensi?.length > 0 ? props.frekuensi[0].id_frekuensi : null);
@@ -109,7 +137,7 @@ const handleFileUpload = async (event) => {
     } catch (error) {
         let msg = 'Gagal membaca file Excel.';
         if (error.response?.data?.error) msg = error.response.data.error;
-        alert(msg);
+        openAlert('Gagal Membaca File', msg, 'error');
     } finally {
         isLoading.value = false;
     }
@@ -118,7 +146,7 @@ const handleFileUpload = async (event) => {
 const submitFinalData = async () => {
     const isAllValid = previewData.value.every(row => row.id_tema && row.id_urusan && row.id_bidang && row.id_frekuensi);
     if (!isAllValid) {
-        alert("Mohon lengkapi Tema, Urusan, dan Bidang untuk setiap baris data.");
+        openAlert('Validasi Gagal', 'Mohon lengkapi Tema, Urusan, dan Bidang untuk setiap baris data.', 'warning');
         return;
     }
 
@@ -128,10 +156,16 @@ const submitFinalData = async () => {
             dataset: previewData.value, // Data ini sekarang sudah memuat row.tahun_terbit
             years: timeColumns.value 
         });
-        router.visit('/inputer/dashboard');
+        openAlert(
+            'Berhasil',
+            'Data bulk berhasil disimpan.',
+            'success',
+            () => router.visit(dashboardPath.value)
+        );
     } catch (error) {
         isLoading.value = false; 
-        alert('Terjadi kesalahan saat menyimpan data.');
+        const message = error.response?.data?.error || 'Terjadi kesalahan saat menyimpan data.';
+        openAlert('Gagal Menyimpan', message, 'error');
     }
 };
 </script>
@@ -261,6 +295,14 @@ const submitFinalData = async () => {
             </div>
         </div>
     </div>
+
+    <AlertModal
+        :show="showAlertModal"
+        :title="alertTitle"
+        :description="alertMessage"
+        :type="alertType"
+        @close="closeAlert"
+    />
 </template>
 
 <style scoped>
