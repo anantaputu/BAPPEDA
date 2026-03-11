@@ -8,6 +8,7 @@ use App\Models\DataUpload;
 use App\Models\DataValue;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate; // [BARU] Import untuk kolom dinamis
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Str;
 
@@ -30,24 +31,61 @@ class DataOutputController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Data Export');
 
-        $sheet->setCellValue('A1', 'No');
-        $sheet->setCellValue('B1', 'Periode');
-        $sheet->setCellValue('C1', 'Nilai');
-        $sheet->getStyle('A1:C1')->getFont()->setBold(true);
+        // 1. Ekstrak Data Tambahan (informasi_tambahan)
+        $extraFields = [];
+        $rawExtra = $upload->data->informasi_tambahan ?? null;
+        if ($rawExtra) {
+            $decodedExtra = is_string($rawExtra) ? json_decode($rawExtra, true) : $rawExtra;
+            if (is_array($decodedExtra)) {
+                // Saring field yang bukan nama data
+                foreach ($decodedExtra as $key => $val) {
+                    if (!in_array(strtolower(trim($key)), ['nama data', 'nama indikator'])) {
+                        $extraFields[$key] = $val;
+                    }
+                }
+            }
+        }
 
+        // 2. Susun Header Secara Dinamis
+        $headers = ['No', 'Periode', 'Nilai'];
+        foreach (array_keys($extraFields) as $extraKey) {
+            $headers[] = ucwords($extraKey); // Tambahkan header ekstra
+        }
+
+        // 3. Tulis Header ke Baris Pertama
+        foreach ($headers as $colIndex => $headerText) {
+            $colLetter = Coordinate::stringFromColumnIndex($colIndex + 1); // 1 = A, 2 = B, dst
+            $sheet->setCellValue($colLetter . '1', $headerText);
+            
+            // Set AutoSize agar rapi
+            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
+        }
+
+        // Cetak tebal (Bold) pada baris Header
+        $lastColLetter = Coordinate::stringFromColumnIndex(count($headers));
+        $sheet->getStyle('A1:' . $lastColLetter . '1')->getFont()->setBold(true);
+
+        // 4. Looping Baris Data
         $currentRow = 2;
         foreach ($rows as $index => $item) {
+            // Tulis Kolom Utama (No, Periode, Nilai)
             $sheet->setCellValue('A' . $currentRow, $index + 1);
-            $sheet->setCellValue('B' . $currentRow, $item['periode']);
+            $sheet->setCellValueExplicit('B' . $currentRow, $item['periode'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValue('C' . $currentRow, $item['nilai']);
+
+            // Tulis Kolom Ekstra
+            $colIndex = 4; // Kolom ekstra dimulai dari D (indeks 4)
+            foreach ($extraFields as $key => $val) {
+                $colLetter = Coordinate::stringFromColumnIndex($colIndex);
+                $sheet->setCellValue($colLetter . $currentRow, $val);
+                $colIndex++;
+            }
+            
             $currentRow++;
         }
 
-        $sheet->getColumnDimension('A')->setWidth(8);
-        $sheet->getColumnDimension('B')->setAutoSize(true);
-        $sheet->getColumnDimension('C')->setAutoSize(true);
-
-        $safeName = Str::slug($upload->data->nama_data ?? 'Data');
+        // Nama file aman
+        $safeName = Str::slug($upload->data->nama_indikator ?? $upload->data->nama_data ?? 'Data');
         $fileName = 'Data_' . $safeName . '_' . ($upload->periode ?? now()->format('Y')) . '.xlsx';
 
         $writer = new Xlsx($spreadsheet);
@@ -113,4 +151,4 @@ class DataOutputController extends Controller
         usort($rows, fn ($a, $b) => strnatcasecmp((string) $a['periode'], (string) $b['periode']));
         return $rows;
     }
-}
+}   

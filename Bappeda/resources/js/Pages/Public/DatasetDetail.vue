@@ -22,7 +22,7 @@ const props = defineProps({
 });
 
 const activeTab = ref('Data');
-const tabs = ['Data', 'Relasi & Atribut', 'Infografis']; 
+const tabs = ['Data', 'Relasi & Atribut', 'Infografis', 'Riwayat']; 
 const selectedIndices = ref([0]); 
 const chartColors = ['#0284C7', '#15803D', '#D97706', '#C53030', '#1F3A63', '#9D4EDD', '#FF6B6B'];
 
@@ -144,17 +144,48 @@ const getActionName = (filePath) => {
     return 'Pembaruan Data';
 };
 
-const formatSnapshotValue = (jsonValue) => {
-    if (!jsonValue) return 'Tidak ada rekam nilai tersimpan.';
+// Fungsi baru untuk memecah JSON mentah menjadi Array Object yang rapi
+const parseLogValue = (jsonValue) => {
+    if (!jsonValue) return [];
+    
     try {
         let parsed = typeof jsonValue === 'string' ? JSON.parse(jsonValue) : jsonValue;
-        if (parsed.pesan) return parsed.pesan;
+        let results = [];
+
+        // Skenario 1: Data dari Single Input / Edit 
+        // Format: { values: [{tahun: '2024', nilai: '10'}] }
         if (parsed.values && Array.isArray(parsed.values)) {
-            return parsed.values.map(v => `${v.tahun} = ${v.nilai}`).join('   |   ');
+            parsed.values.forEach(v => {
+                results.push({ label: v.tahun, value: v.nilai });
+            });
+            return results;
         }
-        if (parsed.dataset) return 'Data diekstrak dari dokumen Excel massal.';
-        return JSON.stringify(parsed);
-    } catch(e) { return 'Format data tidak terbaca.'; }
+
+        // Skenario 2: Data dari Bulk Upload Excel (Sesuai gambar Anda)
+        // Format: { years: ['2023', '2024'], nilai: {'2023': '10', '2024': '20'} }
+        if (parsed.years && parsed.nilai) {
+            parsed.years.forEach(year => {
+                if (parsed.nilai[year] !== undefined && parsed.nilai[year] !== null) {
+                    results.push({ label: year, value: parsed.nilai[year] });
+                }
+            });
+            return results;
+        }
+
+        // Skenario 3: Data inisialisasi awal (Pesan teks)
+        if (parsed.pesan) {
+            return [{ label: 'pesan_sistem', value: parsed.pesan }];
+        }
+
+        // Skenario 4: Format lain (Fallback)
+        if (parsed.dataset) {
+            return [{ label: 'pesan_sistem', value: 'Data berhasil diekstrak dari dokumen Excel.' }];
+        }
+
+        return [];
+    } catch(e) {
+        return []; // Jika gagal parse JSON
+    }
 };
 
 const timelineHistory = computed(() => {
@@ -481,7 +512,7 @@ const toggleBookmark = () => {
                 </div>
             </div>
 
-            <!-- <div v-if="activeTab === 'Riwayat'" class="animate-in slide-in-from-bottom-4 duration-500">
+            <div v-if="activeTab === 'Riwayat'" class="animate-in slide-in-from-bottom-4 duration-500">
                 <div class="bg-white border border-gray-400 p-12 rounded-xl shadow-xl shadow-primary/5 max-w-4xl mx-auto">
                     <div class="mb-12 text-center">
                         <h4 class="text-3xl font-black text-primary uppercase tracking-[0.3em] mb-4">Log Histori</h4>
@@ -508,17 +539,37 @@ const toggleBookmark = () => {
                                         {{ log.status }}
                                     </span>
                                 </div>
-                                <div v-if="log.value" class="mt-6 pt-6 border-t border-gray-300">
-                                    <p class="text-[10px] font-black text-textsecondary uppercase tracking-[0.2em] mb-4">Nilai Capaian:</p>
-                                    <div class="bg-white p-5 rounded-xl border border-gray-200 text-xs font-black text-primary leading-loose shadow-inner">
-                                        {{ formatSnapshotValue(log.value) }}
+                                <div v-if="log.value" class="mt-6 pt-6 border-t border-gray-200">
+    <p class="text-[10px] font-black text-textsecondary uppercase tracking-[0.2em] mb-4">Nilai Capaian yang Tersimpan:</p>
+    
+                                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-inner">
+                                        <p v-if="parseLogValue(log.value).length === 1 && parseLogValue(log.value)[0].label === 'pesan_sistem'"
+                                        class="text-xs font-bold text-textsecondary italic leading-relaxed">
+                                            {{ parseLogValue(log.value)[0].value }}
+                                        </p>
+
+                                        <div v-else-if="parseLogValue(log.value).length > 0" class="flex flex-wrap gap-3">
+                                            <div v-for="(item, i) in parseLogValue(log.value)" :key="i"
+                                                class="flex items-center bg-bgsoft/50 rounded-lg border border-gray-200 overflow-hidden hover:border-secondary/30 transition-colors">
+                                                <span class="bg-gray-100/50 text-[10px] font-black text-textsecondary uppercase tracking-widest px-3 py-2 border-r border-gray-200">
+                                                    {{ item.label }}
+                                                </span>
+                                                <span class="text-xs font-black text-primary px-4 py-2">
+                                                    {{ item.value }}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <p v-else class="text-[10px] text-gray-400 font-medium italic break-words">
+                                            Data mentah: {{ log.value }}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div> -->
+            </div>
         </section>
     </div>
 </template>
