@@ -79,7 +79,7 @@ onUnmounted(() => window.removeEventListener('click', closeOnOutsideClick));
 <template>
     <Head title="Eksplorasi Data Indikator" />
 
-    <div class="max-w-[80%] mx-auto py-20 min-h-screen">
+    <div class="max-w-[82%] mx-auto py-20 min-h-screen">
         
         <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-10 mb-12">
             <div class="max-w-xl">

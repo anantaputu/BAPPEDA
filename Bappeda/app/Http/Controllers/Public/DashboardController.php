@@ -8,7 +8,6 @@ use App\Models\Tema;
 use App\Models\Bidang;
 use App\Models\Urusan;
 use App\Models\Frekuensi;
-use App\Models\Sumber;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 
@@ -90,13 +89,24 @@ class DashboardController extends Controller
         $mapDataset = function ($query) {
             return $query->with('tema')->limit(3)->get()->map(function ($item) {
                 return [
-                    'id'    => $item->id_data,
+                    'id' => $item->id_data,
                     'title' => $item->nama_data,
-                    'tags'  => ['XLSX', $item->tema->nama_tema ?? 'Umum'],
-                    'org'   => $item->sumber ?? 'Pemerintah',
+                    'tags' => ['XLSX', $item->tema->nama_tema ?? 'Umum'],
+                    'org' => $item->sumber ?? 'Pemerintah',
+                    'pin_count' => (int) ($item->bookmarks_count ?? 0),
                 ];
             });
         };
+
+        $popularDatasets = Data::withCount('bookmarks')
+            ->orderByDesc('bookmarks_count')
+            ->orderByDesc('updated_at');
+
+        if (DB::getDriverName() === 'pgsql') {
+            $popularDatasets->orderByRaw('LOWER(nama_data) ASC');
+        } else {
+            $popularDatasets->orderBy('nama_data');
+        }
 
         return Inertia::render('Public/Visualisasi', [
             'stats'          => $stats,
@@ -105,7 +115,7 @@ class DashboardController extends Controller
             'frekuensiChart' => $frekuensiChart,
             'trenChart'      => $trenChart,
             'datasets'       => [
-                'popular' => $mapDataset(Data::inRandomOrder()),
+                'popular' => $mapDataset($popularDatasets),
                 'latest'  => $mapDataset(Data::latest()),
             ],
             'topics'         => Tema::limit(6)->get()->map(fn($t) => ['name' => $t->nama_tema])

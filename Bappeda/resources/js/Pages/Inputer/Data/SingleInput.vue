@@ -154,6 +154,16 @@ const submitData = () => {
                         </select>
                     </div>
 
+                    <div class="md:col-span-4 space-y-2">
+                        <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-textsecondary ml-2">Deskripsi Data</label>
+                        <textarea
+                            v-model="form.deskripsi"
+                            rows="4"
+                            placeholder="Jelaskan definisi, cakupan, atau konteks indikator ini"
+                            class="w-full resize-none bg-white border border-gray-400 rounded-xl px-6 py-4 font-medium text-primary focus:outline-none focus:border-secondary transition-all shadow-sm"
+                        />
+                    </div>
+
                     <div class="md:col-span-1 space-y-2">
                         <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-textsecondary ml-2">Urusan *</label>
                         <select v-model="form.id_urusan" class="w-full bg-white border border-gray-400 rounded-xl px-6 py-4 font-bold text-primary appearance-none" required>

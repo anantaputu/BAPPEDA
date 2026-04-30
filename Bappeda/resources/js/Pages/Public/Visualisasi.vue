@@ -20,11 +20,7 @@ const props = defineProps({
 
 const selectedTema = ref('all');
 const temaLimit = ref(6);
-const temaSort = ref('desc');
 const trendWindow = ref('12');
-const bidangLimit = ref(6);
-const includeOthersBidang = ref(false);
-const frekuensiMin = ref(0);
 
 const temaRows = computed(() =>
     (props.temaChart.labels || [])
@@ -45,7 +41,7 @@ const filteredTemaRows = computed(() => {
         rows = rows.filter(item => item.label === selectedTema.value);
     }
 
-    rows.sort((a, b) => (temaSort.value === 'asc' ? a.value - b.value : b.value - a.value));
+    rows.sort((a, b) => b.value - a.value);
     return rows.slice(0, Number(temaLimit.value) || 6);
 });
 
@@ -62,9 +58,8 @@ const topBidang = computed(() =>
         label,
         value: props.bidangChart.values?.[idx] || 0,
     }))
-        .filter(item => includeOthersBidang.value || item.label !== 'Lainnya')
+        .filter(item => item.label !== 'Lainnya')
         .sort((a, b) => b.value - a.value)
-        .slice(0, Number(bidangLimit.value) || 6)
 );
 
 const temaBarData = computed(() => ({
@@ -124,7 +119,7 @@ const frekuensiRows = computed(() =>
             value,
             pct: Math.round((value / maxFrekuensi.value) * 100),
         };
-    }).filter(row => row.value >= Number(frekuensiMin.value || 0))
+    }).sort((a, b) => b.value - a.value)
 );
 
 const topPopularDatasets = computed(() => props.datasets?.popular?.slice(0, 5) || []);
@@ -132,22 +127,21 @@ const topLatestDatasets = computed(() => props.datasets?.latest?.slice(0, 5) || 
 const totalTrenTahunIni = computed(() =>
     (props.trenChart.values || []).reduce((a, b) => a + b, 0)
 );
+const temaFocusLabel = computed(() =>
+    selectedTema.value === 'all' ? 'Semua Tema' : selectedTema.value
+);
 
 const resetFilters = () => {
     selectedTema.value = 'all';
     temaLimit.value = 6;
-    temaSort.value = 'desc';
     trendWindow.value = '12';
-    bidangLimit.value = 6;
-    includeOthersBidang.value = false;
-    frekuensiMin.value = 0;
 };
 </script>
 
 <template>
     <Head title="Ragam Visualisasi Data" />
 
-    <div class="mx-auto max-w-[92%] pt-24 pb-12 space-y-8">
+    <div class="mx-auto max-w-[82%] pt-24 pb-12 space-y-8">
         <section class="rounded-3xl border border-gray-300 bg-[linear-gradient(120deg,#001a3f_0%,#0b2e59_45%,#0ea5e9_130%)] p-8 md:p-12 text-white overflow-hidden relative">
             <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
             <div class="absolute -left-16 -bottom-24 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl"></div>
@@ -187,23 +181,16 @@ const resetFilters = () => {
                     Reset Filter
                 </button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 <div class="space-y-2">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-textsecondary">Pilih Tema</label>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-textsecondary">Fokus Tema</label>
                     <select v-model="selectedTema" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm font-bold text-primary">
                         <option value="all">Semua Tema</option>
                         <option v-for="tema in temaOptions" :key="tema" :value="tema">{{ tema }}</option>
                     </select>
                 </div>
                 <div class="space-y-2">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-textsecondary">Urutan Tema</label>
-                    <select v-model="temaSort" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm font-bold text-primary">
-                        <option value="desc">Terbesar ke Terkecil</option>
-                        <option value="asc">Terkecil ke Terbesar</option>
-                    </select>
-                </div>
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-textsecondary">Batas Tema</label>
+                    <label class="text-[10px] font-black uppercase tracking-widest text-textsecondary">Jumlah Tema Ditampilkan</label>
                     <select v-model="temaLimit" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm font-bold text-primary">
                         <option :value="4">Top 4</option>
                         <option :value="6">Top 6</option>
@@ -221,25 +208,16 @@ const resetFilters = () => {
                     </select>
                 </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mt-4">
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-textsecondary">Batas Bidang</label>
-                    <select v-model="bidangLimit" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm font-bold text-primary">
-                        <option :value="4">Top 4</option>
-                        <option :value="6">Top 6</option>
-                        <option :value="8">Top 8</option>
-                    </select>
-                </div>
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-textsecondary">Frekuensi Minimal</label>
-                    <input v-model="frekuensiMin" type="number" min="0" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm font-bold text-primary" />
-                </div>
-                <div class="flex items-end pb-2">
-                    <label class="inline-flex items-center gap-3 text-xs font-black text-primary uppercase tracking-widest">
-                        <input v-model="includeOthersBidang" type="checkbox" class="rounded border-gray-300 text-secondary focus:ring-secondary" />
-                        Tampilkan kategori "Lainnya"
-                    </label>
-                </div>
+            <div class="mt-4 flex flex-wrap gap-2">
+                <span class="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-textsecondary">
+                    Tema: {{ temaFocusLabel }}
+                </span>
+                <span class="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-textsecondary">
+                    Top Tema: {{ temaLimit }}
+                </span>
+                <span class="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-textsecondary">
+                    Tren: {{ trendWindow === 'all' ? 'Semua Data' : `${trendWindow} Bulan` }}
+                </span>
             </div>
         </section>
 
@@ -324,7 +302,12 @@ const resetFilters = () => {
                                 class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
                             >
                                 <p class="text-xs font-black text-primary line-clamp-1">{{ item.title }}</p>
-                                <p class="text-[10px] font-bold text-textsecondary mt-1">{{ item.org }}</p>
+                                <div class="mt-1 flex items-center justify-between gap-3">
+                                    <p class="text-[10px] font-bold text-textsecondary">{{ item.org }}</p>
+                                    <span class="rounded-full bg-cyan-100 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-cyan-800">
+                                        {{ item.pin_count || 0 }} Pin
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>

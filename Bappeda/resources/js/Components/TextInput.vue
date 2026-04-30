@@ -1,0 +1,49 @@
+<script setup>
+import { computed, useAttrs, ref } from 'vue';
+
+defineOptions({
+    inheritAttrs: false,
+});
+
+const model = defineModel({
+    type: [String, Number],
+    default: '',
+});
+
+const props = defineProps({
+    id: {
+        type: String,
+        default: null,
+    },
+    type: {
+        type: String,
+        default: 'text',
+    },
+    class: {
+        type: String,
+        default: '',
+    },
+});
+
+const attrs = useAttrs();
+const input = ref(null);
+
+const classes = computed(() => (
+    'w-full rounded-xl border border-gray-300 px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 ' + props.class
+));
+
+defineExpose({
+    focus: () => input.value?.focus(),
+});
+</script>
+
+<template>
+    <input
+        ref="input"
+        :id="id"
+        v-model="model"
+        :type="type"
+        :class="classes"
+        v-bind="attrs"
+    />
+</template>

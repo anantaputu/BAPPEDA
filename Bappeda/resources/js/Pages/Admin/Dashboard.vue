@@ -78,9 +78,6 @@ const sourceRows = computed(() =>
                 <h1 class="text-2xl font-black text-primary uppercase tracking-tight">Dashboard Monitoring Admin</h1>
                 <p class="text-sm text-textsecondary font-medium">Pantau user, kualitas data, aktivitas sistem, dan tren dataset secara terpusat.</p>
             </div>
-            <Link href="/admin/data" class="px-5 py-3 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:bg-secondary transition-colors">
-                Kelola Data
-            </Link>
         </section>
 
         <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -107,6 +104,40 @@ const sourceRows = computed(() =>
                 <p class="text-[10px] font-black uppercase tracking-[0.2em] text-textsecondary">Dataset Tanpa Tahun</p>
                 <p class="mt-3 text-3xl font-black text-profesional">{{ dataHealth.without_tahun_count || 0 }}</p>
                 <p class="mt-1 text-xs font-bold text-textsecondary">Perlu normalisasi tahun terbit.</p>
+            </div>
+        </section>
+
+        <section class="animate-in fade-in duration-500">
+            <div class="flex items-center justify-between gap-3 mb-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 shadow-sm border border-amber-100">
+                        <IconifyIcon icon="solar:bookmark-bold" width="20" height="20" />
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-primary uppercase tracking-widest">Pin Indikator Favorit</h3>
+                        <p class="text-[10px] text-textsecondary font-bold uppercase tracking-wider mt-0.5">Akses cepat indikator prioritas</p>
+                    </div>
+                </div>
+
+                <Link href="/inputer/data" class="text-[10px] font-black text-secondary hover:text-primary transition-colors uppercase tracking-widest bg-secondary/5 px-4 py-2 rounded-xl">
+                    Jelajahi Data
+                </Link>
+            </div>
+
+            <div v-if="pinnedData.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                <Link
+                    v-for="item in pinnedData"
+                    :key="item.id_data"
+                    :href="`/dataset/${item.id_data}`"
+                    class="group bg-white p-4 rounded-xl border border-gray-400 hover:border-secondary/40 transition-all"
+                >
+                    <p class="text-sm font-black text-primary line-clamp-2">{{ item.nama_indikator }}</p>
+                    <p class="text-[10px] font-bold text-textsecondary mt-3 uppercase tracking-widest">Tahun {{ item.tahun_terbit || '-' }}</p>
+                </Link>
+            </div>
+
+            <div v-else class="w-full bg-white border border-dashed border-gray-300 rounded-xl p-6 text-center">
+                <p class="text-xs font-black text-textsecondary uppercase tracking-[0.2em]">Belum ada pin indikator.</p>
             </div>
         </section>
 
@@ -173,38 +204,6 @@ const sourceRows = computed(() =>
             </div>
         </section>
 
-        <section class="animate-in fade-in duration-500">
-            <div class="flex items-center justify-between gap-3 mb-5">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 shadow-sm border border-amber-100">
-                        <IconifyIcon icon="solar:bookmark-bold" width="20" height="20" />
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-black text-primary uppercase tracking-widest">Pin Indikator Favorit</h3>
-                        <p class="text-[10px] text-textsecondary font-bold uppercase tracking-wider mt-0.5">Akses cepat indikator prioritas</p>
-                    </div>
-                </div>
-
-                <Link href="/inputer/data" class="text-[10px] font-black text-secondary hover:text-primary transition-colors uppercase tracking-widest bg-secondary/5 px-4 py-2 rounded-xl">
-                    Jelajahi Data
-                </Link>
-            </div>
-
-            <div v-if="pinnedData.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                <Link
-                    v-for="item in pinnedData"
-                    :key="item.id_data"
-                    :href="`/dataset/${item.id_data}`"
-                    class="group bg-white p-4 rounded-xl border border-gray-400 hover:border-secondary/40 transition-all"
-                >
-                    <p class="text-sm font-black text-primary line-clamp-2">{{ item.nama_indikator }}</p>
-                    <p class="text-[10px] font-bold text-textsecondary mt-3 uppercase tracking-widest">Tahun {{ item.tahun_terbit || '-' }}</p>
-                </Link>
-            </div>
-
-            <div v-else class="w-full bg-white border border-dashed border-gray-300 rounded-xl p-6 text-center">
-                <p class="text-xs font-black text-textsecondary uppercase tracking-[0.2em]">Belum ada pin indikator.</p>
-            </div>
-        </section>
+        
     </div>
 </template>

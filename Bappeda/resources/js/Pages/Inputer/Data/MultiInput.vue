@@ -191,7 +191,7 @@ const submitFinalData = async () => {
                 
                 <div class="relative">
                     <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".xlsx, .xls" @change="handleFileUpload" />
-                    <button :disabled="isLoading" class="bg-[#00139E] text-white px-10 py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all">
+                    <button type="button" :disabled="isLoading" class="bg-[#00139E] text-white px-10 py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all">
                         {{ isLoading ? 'Memproses Berkas...' : 'Cari Berkas Excel' }}
                     </button>
                 </div>
@@ -281,10 +281,10 @@ const submitFinalData = async () => {
             </div>
 
             <div class="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-gray-400 shadow-xl">
-                <button @click="isPreviewing = false" class="px-8 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-500 transition-colors">
+                <button type="button" @click.prevent="isPreviewing = false" class="px-8 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-500 transition-colors">
                     Batal & Reset
                 </button>
-                <button @click="submitFinalData" :disabled="isLoading" 
+                <button type="button" @click.prevent="submitFinalData" :disabled="isLoading" 
                     class="bg-emerald-600 text-white px-12 py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg hover:bg-emerald-700 transition-all flex items-center gap-3">
                     <svg v-if="isLoading" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

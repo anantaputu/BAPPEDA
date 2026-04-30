@@ -10,6 +10,7 @@ use App\Models\Frekuensi;
 use App\Models\DataField;
 use App\Models\DataUpload;
 use App\Models\DataValue;
+use App\Models\Bookmark;
 
 class Data extends Model
 {
@@ -70,5 +71,10 @@ class Data extends Model
 
    public function values() {
        return $this->hasMany(DataValue::class, 'id_data', 'id_data');
+   }
+
+   public function bookmarks()
+   {
+       return $this->hasMany(Bookmark::class, 'dataset_id', 'id_data');
    }
 }

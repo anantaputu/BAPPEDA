@@ -1,0 +1,31 @@
+• Saya sudah siapkan suite testing untuk 16 case di tests/Feature/
+  FunctionalModulesTest.php dan membetulkan bootstrap provider yang semula rusak
+  di app/Providers/AppServiceProvider.php. php -l untuk dua file itu lolos, dan
+  php artisan route:list --except-vendor juga berhasil, jadi route yang dipakai
+  test valid.
+
+  Eksekusi penuh php artisan test tests/Feature/FunctionalModulesTest.php belum
+  bisa diselesaikan di environment ini karena layer database testing tidak
+  tersedia. Error pertama yang muncul adalah could not find driver untuk
+  sqlite :memory: dari phpunit.xml, dan setelah dicek PHP hanya punya pdo_pgsql/
+  pgsql tanpa pdo_sqlite. Koneksi PostgreSQL proyek di .env juga belum aktif;
+  php artisan migrate:status gagal ke 127.0.0.1:5432 database bappeda.
+
+  Status saat ini:
+
+  - Suite 16 case: sudah ditulis.
+  - Verifikasi statis: berhasil.
+  - Eksekusi otomatis end-to-end: terblokir environment database.
+  - Case popup hapus saya cover lewat verifikasi wiring komponen Vue + endpoint
+    delete, bukan browser automation.
+
+  Agar saya bisa benar-benar menjalankan dan memberi hasil pass/fail per case,
+  cukup sediakan salah satu:
+
+  1. aktifkan pdo_sqlite, lalu pakai sqlite :memory: seperti di phpunit.xml,
+     atau
+  2. nyalakan PostgreSQL lokal dan sediakan database test yang bisa
+     dimigrasikan.
+
+  Setelah itu saya bisa langsung rerun suite dan laporkan hasil 16 case satu per
+  satu.

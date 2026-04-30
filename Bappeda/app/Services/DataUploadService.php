@@ -11,6 +11,270 @@ use Exception;
 
 class DataUploadService
 {
+    private array $timeKeywords = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des', 'minggu', 'triwulan', 'semester', 'kondisi'];
+    private array $ignoreHeaders = ['no', 'nomor'];
+    private array $specialExtraHeaders = ['tahun terbit', 'keterangan', 'deskripsi', 'sumber', 'catatan'];
+
+    private function normalizeCellValue(mixed $value): string
+    {
+        $string = str_replace(["\xC2\xA0", "\xA0"], ' ', (string) $value);
+        $string = preg_replace('/\s+/', ' ', trim($string));
+
+        return strtolower($string);
+    }
+
+    private function isTimeHeader(string $normalizedHeader): bool
+    {
+        if ($normalizedHeader === '') {
+            return false;
+        }
+
+        if (preg_match('/^(19|20)\d{2}$/', $normalizedHeader) || preg_match('/^(19|20)\d{2}\s*[-\/]\s*(19|20)?\d{2}$/', $normalizedHeader)) {
+            return true;
+        }
+
+        foreach ($this->timeKeywords as $keyword) {
+            if (str_contains($normalizedHeader, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function classifyHeader(string $normalizedHeader): string
+    {
+        if ($normalizedHeader === '') {
+            return 'empty';
+        }
+
+        if (in_array($normalizedHeader, ['nama data', 'nama indikator', 'indikator', 'uraian', 'rincian', 'indikator data'], true)) {
+            return 'name';
+        }
+
+        if (in_array($normalizedHeader, ['satuan', 'unit', 'sat'], true)) {
+            return 'unit';
+        }
+
+        if (in_array($normalizedHeader, $this->ignoreHeaders, true)) {
+            return 'ignore';
+        }
+
+        if (in_array($normalizedHeader, $this->specialExtraHeaders, true)) {
+            return 'extra';
+        }
+
+        if ($this->isTimeHeader($normalizedHeader)) {
+            return 'time';
+        }
+
+        return 'candidate';
+    }
+
+    private function detectHeaderRow(array $rows): array
+    {
+        $bestMatch = null;
+
+        foreach ($rows as $index => $row) {
+            $score = 0;
+            $colNama = null;
+            $nonEmptyCount = 0;
+            $timeColumnCount = 0;
+            $candidateColumnCount = 0;
+
+            foreach ($row as $colKey => $cellValue) {
+                $normalized = $this->normalizeCellValue($cellValue);
+                if ($normalized === '') {
+                    continue;
+                }
+
+                $nonEmptyCount++;
+
+                switch ($this->classifyHeader($normalized)) {
+                    case 'name':
+                        $score += 8;
+                        $colNama ??= $colKey;
+                        break;
+                    case 'unit':
+                        $score += 3;
+                        break;
+                    case 'time':
+                        $score += 3;
+                        $timeColumnCount++;
+                        break;
+                    case 'extra':
+                        $score += 1;
+                        break;
+                    case 'candidate':
+                        $candidateColumnCount++;
+                        if ($colNama === null) {
+                            $colNama = $colKey;
+                        }
+                        break;
+                }
+            }
+
+            if ($colNama === null || $nonEmptyCount < 2) {
+                continue;
+            }
+
+            if ($timeColumnCount >= 2) {
+                $score += 4;
+            }
+
+            if ($candidateColumnCount > 0) {
+                $score += 1;
+            }
+
+            if ($score < 5) {
+                continue;
+            }
+
+            if ($bestMatch === null || $score > $bestMatch['score']) {
+                $bestMatch = [
+                    'index' => $index,
+                    'headers' => $row,
+                    'col_nama' => $colNama,
+                    'score' => $score,
+                ];
+            }
+        }
+
+        if ($bestMatch !== null) {
+            return $bestMatch;
+        }
+
+        $fallbackIndex = array_key_first($rows) ?? 1;
+        $fallbackHeaders = $rows[$fallbackIndex] ?? [];
+        $fallbackColNama = 'A';
+
+        foreach ($fallbackHeaders as $key => $val) {
+            if ($this->normalizeCellValue($val) !== '') {
+                $fallbackColNama = $key;
+                break;
+            }
+        }
+
+        return [
+            'index' => $fallbackIndex,
+            'headers' => $fallbackHeaders,
+            'col_nama' => $fallbackColNama,
+            'score' => 0,
+        ];
+    }
+
+    private function buildPreviewFromRows(array $rows): array
+    {
+        $headerDetection = $this->detectHeaderRow($rows);
+        $headerRowIndex = $headerDetection['index'];
+        $headers = $headerDetection['headers'];
+        $colNama = $headerDetection['col_nama'];
+        $colSatuan = null;
+        $colTahun = [];
+        $colExtra = [];
+
+        foreach ($headers as $colKey => $cellValue) {
+            if ($colKey === $colNama) {
+                continue;
+            }
+
+            $normalized = $this->normalizeCellValue($cellValue);
+            $original = trim((string) $cellValue);
+
+            if ($normalized === '') {
+                continue;
+            }
+
+            switch ($this->classifyHeader($normalized)) {
+                case 'unit':
+                    $colSatuan = $colKey;
+                    break;
+                case 'ignore':
+                    break;
+                case 'time':
+                    $colTahun[$colKey] = $original;
+                    break;
+                default:
+                    $colExtra[$colKey] = $original;
+                    break;
+            }
+        }
+
+        $previewData = [];
+
+        foreach ($rows as $index => $row) {
+            if ($index <= $headerRowIndex) {
+                continue;
+            }
+
+            $namaIndikator = trim(str_replace(["\xA0", "\xc2\xa0"], ' ', (string) ($row[$colNama] ?? '')));
+
+            // Jika kolom nama hasil tebakan ternyata kosong, fallback ke kolom teks pertama yang bukan time/ignore.
+            if ($namaIndikator === '') {
+                foreach ($headers as $fallbackColKey => $headerCellValue) {
+                    if ($fallbackColKey === $colSatuan) {
+                        continue;
+                    }
+
+                    $headerType = $this->classifyHeader($this->normalizeCellValue($headerCellValue));
+                    if (in_array($headerType, ['time', 'ignore', 'unit', 'empty'], true)) {
+                        continue;
+                    }
+
+                    $candidateValue = trim(str_replace(["\xA0", "\xc2\xa0"], ' ', (string) ($row[$fallbackColKey] ?? '')));
+                    if ($candidateValue !== '') {
+                        $namaIndikator = $candidateValue;
+                        break;
+                    }
+                }
+            }
+
+            if ($namaIndikator === '') {
+                continue;
+            }
+
+            $values = [];
+            $hasAtLeastOneValue = false;
+            foreach ($colTahun as $colKey => $tahun) {
+                $cellValue = $row[$colKey] ?? null;
+                $values[$tahun] = $cellValue;
+
+                if ($cellValue !== null && trim((string) $cellValue) !== '') {
+                    $hasAtLeastOneValue = true;
+                }
+            }
+
+            $extraData = [];
+            foreach ($colExtra as $colKey => $namaHeader) {
+                $extraData[$namaHeader] = $row[$colKey] ?? '';
+            }
+
+            // Abaikan baris footer atau separator yang tidak punya nilai time-series sama sekali.
+            if (!$hasAtLeastOneValue && !empty($colTahun)) {
+                continue;
+            }
+
+            $previewData[] = [
+                'nama_data' => $namaIndikator,
+                'satuan' => $colSatuan ? (($row[$colSatuan] ?? '-') ?: '-') : '-',
+                'id_tema' => null,
+                'id_urusan' => null,
+                'id_bidang' => null,
+                'id_katakunci' => [],
+                'values' => $values,
+                'extra_fields' => $extraData,
+            ];
+        }
+
+        return [
+            'rows' => $previewData,
+            'years' => array_values($colTahun),
+            'extra_headers' => array_values($colExtra),
+            'header_row' => $headerRowIndex,
+            'detected_name_column' => $colNama,
+        ];
+    }
+
     private function hasDuplicateNamaData(string $namaData, ?int $ignoreId = null): bool
     {
         $query = Data::query()
@@ -34,95 +298,21 @@ class DataUploadService
         }
 
         $spreadsheet = $reader->load($file->getPathname());
-        $rows = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
 
-        $keywordsNama = ['nama data', 'uraian', 'indikator', 'data', 'kegiatan', 'program', 'sasaran', 'rincian'];
-        $headerRowIndex = -1;
-        $colNama = null; $colSatuan = null;
-        $headers = [];
+        $bestPreview = null;
+        foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
+            $rows = $sheet->toArray(null, true, true, true);
+            $preview = $this->buildPreviewFromRows($rows);
 
-        foreach ($rows as $index => $row) {
-            foreach ($row as $colKey => $cellValue) {
-                $cleanString = preg_replace('/\s+/', ' ', strtolower(trim((string)$cellValue)));
-                foreach ($keywordsNama as $keyword) {
-                    if (str_contains($cleanString, $keyword)) {
-                        $headerRowIndex = $index;
-                        $colNama = $colKey;
-                        $headers = $row;
-                        break 2;
-                    }
-                }
+            if ($bestPreview === null || count($preview['rows']) > count($bestPreview['rows'])) {
+                $bestPreview = $preview + ['sheet_name' => $sheet->getTitle()];
             }
-        }
-
-        if ($headerRowIndex === -1) {
-            $headerRowIndex = 1;
-            $headers = $rows[1];
-            foreach ($headers as $key => $val) { if (!empty($val)) { $colNama = $key; break; } }
-            if (!$colNama) $colNama = 'A';
-        }
-
-        $waktuKeywords = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des', 'minggu', 'triwulan', 'semester', 'kondisi'];
-        $ignoreHeaders = ['no', 'nomor'];
-
-        $colTahun = [];
-        $colExtra = [];
-
-        foreach ($headers as $colKey => $cellValue) {
-            if ($colKey === $colNama) continue;
-            $val = strtolower(trim((string)$cellValue));
-            $asli = trim((string)$cellValue);
-            if (empty($val)) continue;
-
-            if (in_array($val, ['satuan', 'unit', 'sat'])) {
-                $colSatuan = $colKey; continue;
-            }
-
-            $isIgnored = false;
-            foreach ($ignoreHeaders as $ignore) {
-                if (str_contains($val, $ignore)) { $isIgnored = true; break; }
-            }
-
-            if (!$isIgnored) {
-                $isWaktu = false;
-                if (preg_match('/(20\d{2})/', $val)) $isWaktu = true;
-                foreach ($waktuKeywords as $kw) {
-                    if (str_contains($val, $kw)) { $isWaktu = true; break; }
-                }
-
-                if ($isWaktu) { $colTahun[$colKey] = $asli; } 
-                else { $colExtra[$colKey] = $asli; }
-            }
-        }
-
-        $previewData = [];
-        foreach ($rows as $index => $row) {
-            if ($index <= $headerRowIndex) continue;
-            $namaIndikator = trim(str_replace(["\xA0", "\xc2\xa0"], ' ', ($row[$colNama] ?? '')));
-            if (empty($namaIndikator) || strlen($namaIndikator) < 2) continue;
-
-            $values = [];
-            foreach ($colTahun as $colKey => $tahun) $values[$tahun] = $row[$colKey] ?? null;
-
-            $extraData = [];
-            foreach ($colExtra as $colKey => $namaHeader) { $extraData[$namaHeader] = $row[$colKey] ?? ''; }
-
-            $previewData[] = [
-                'nama_data' => $namaIndikator,
-                'satuan'    => $colSatuan ? ($row[$colSatuan] ?? '-') : '-',
-                'id_tema'   => null,
-                'id_urusan' => null,
-                'id_bidang' => null,
-                'id_katakunci' => [],
-                'values'    => $values,
-                'extra_fields' => $extraData
-            ];
         }
 
         return [
-            'rows' => $previewData,
-            'years' => array_values($colTahun),
-            'extra_headers' => array_values($colExtra)
+            'rows' => $bestPreview['rows'] ?? [],
+            'years' => $bestPreview['years'] ?? [],
+            'extra_headers' => $bestPreview['extra_headers'] ?? [],
         ];
     }
 
