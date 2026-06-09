@@ -18,7 +18,6 @@ class KataKunciController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Katakunci/Index', [
-            // Nama prop disesuaikan dengan yang diminta di Vue tadi: 'katakunci'
             'katakunci' => Katakunci::orderBy('id_katakunci', 'desc')->get(),
         ]);
     }
@@ -30,7 +29,6 @@ class KataKunciController extends Controller
 
     public function store(Request $request)
     {
-        // Sesuaikan dengan nama kolom di database: nama_katakunci
         $validated = $request->validate([
             'nama_katakunci' => 'required|string|max:255|unique:katakunci,nama_katakunci',
         ]);

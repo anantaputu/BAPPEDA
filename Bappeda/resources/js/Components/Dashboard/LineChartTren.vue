@@ -28,6 +28,14 @@ const props = defineProps({
     chartData: {
         type: Object,
         required: true
+    },
+    xAxisLabel: {
+        type: String,
+        default: 'Periode'
+    },
+    yAxisLabel: {
+        type: String,
+        default: 'Jumlah Dataset'
     }
 });
 
@@ -53,6 +61,15 @@ const chartOptions = computed(() => ({
     scales: {
         y: {
             beginAtZero: true,
+            title: {
+                display: true,
+                text: props.yAxisLabel,
+                color: '#1F3A63',
+                font: {
+                    size: 12,
+                    weight: 'bold'
+                }
+            },
             grid: {
                 display: false,
                 color: '#EEF2F5',
@@ -62,13 +79,22 @@ const chartOptions = computed(() => ({
             ticks: {
                 stepSize: 1,
                 font: { 
-                    size: 11,
+                    size: 12,
                     weight: 'bold'
                 },
                 color: '#4B5563'
             }
         },
         x: {
+            title: {
+                display: true,
+                text: props.xAxisLabel,
+                color: '#1F3A63',
+                font: {
+                    size: 12,
+                    weight: 'bold'
+                }
+            },
             grid: {
                 display: false,
                 color: '#EEF2F5',
@@ -77,7 +103,7 @@ const chartOptions = computed(() => ({
             },
             ticks: {
                 font: { 
-                    size: 11,
+                    size: 12,
                     weight: 'bold'
                 },
                 color: '#4B5563'

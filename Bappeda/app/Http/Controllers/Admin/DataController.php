@@ -13,10 +13,6 @@ use Inertia\Inertia;
 
 class DataController extends Controller
 {
-    /**
-     * INDEX
-     */
-
     public function __construct()
     {
 
@@ -26,17 +22,13 @@ class DataController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Data/Index', [
-            // Menggunakan paginate() alih-alih get()
             'data' => Data::with(['tema', 'urusan', 'bidang', 'frekuensi'])
                 ->orderBy('id_data', 'desc')
-                ->paginate(10) // Menampilkan 10 data per halaman
-                ->withQueryString(), // Mempertahankan filter jika ada
+                ->paginate(10)
+                ->withQueryString(),
         ]);
     }
 
-    /**
-     * CREATE
-     */
     public function create()
     {
         return Inertia::render('Admin/Data/Create', [
@@ -47,9 +39,6 @@ class DataController extends Controller
         ]);
     }
 
-    /**
-     * STORE
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -74,31 +63,31 @@ class DataController extends Controller
             'id_bidang'      => 'required|exists:bidang,id_bidang',
             'id_frekuensi'   => 'required|exists:frekuensi,id_frekuensi',
 
-            'kata_kunci'     => 'nullable|string|max:255',
+            'id_katakunci'   => 'nullable|array',
             'satuan'         => 'required|string|max:255',
             'sumber'         => 'required|string|max:255',
         ]);
 
-        Data::create([
+        $dataMaster = Data::create([
             'nama_data' => trim($validated['nama_data']),
             'deskripsi'      => $validated['deskripsi'],
             'id_tema'        => $validated['id_tema'],
             'id_urusan'      => $validated['id_urusan'],
             'id_bidang'      => $validated['id_bidang'],
             'id_frekuensi'   => $validated['id_frekuensi'],
-            'kata_kunci'     => $validated['kata_kunci'],
             'satuan'         => $validated['satuan'],
             'sumber'         => $validated['sumber'],
             'status'         => 'aktif',
         ]);
 
+        if ($request->has('id_katakunci')) {
+            $dataMaster->katakunci()->sync($request->input('id_katakunci'));
+        }
+
         return redirect('/admin/data')
             ->with('success', 'Metadata indikator berhasil ditambahkan');
     }
 
-    /**
-     * EDIT
-     */
     public function edit(Data $data)
     {
         return Inertia::render('Admin/Data/Edit', [
@@ -110,9 +99,6 @@ class DataController extends Controller
         ]);
     }
 
-    /**
-     * UPDATE
-     */
     public function update(Request $request, Data $data)
     {
         $validated = $request->validate([
@@ -138,22 +124,32 @@ class DataController extends Controller
             'id_bidang'      => 'required|exists:bidang,id_bidang',
             'id_frekuensi'   => 'required|exists:frekuensi,id_frekuensi',
 
-            'kata_kunci'     => 'nullable|string|max:255',
+            'id_katakunci'   => 'nullable|array',
             'satuan'         => 'required|string|max:255',
             'sumber'         => 'required|string|max:255',
             'status'         => 'required|string',
         ]);
 
-        $validated['nama_data'] = trim($validated['nama_data']);
-        $data->update($validated);
+        $data->update([
+            'nama_data'    => trim($validated['nama_data']),
+            'deskripsi'    => $validated['deskripsi'],
+            'id_tema'      => $validated['id_tema'],
+            'id_urusan'    => $validated['id_urusan'],
+            'id_bidang'    => $validated['id_bidang'],
+            'id_frekuensi' => $validated['id_frekuensi'],
+            'satuan'       => $validated['satuan'],
+            'sumber'       => $validated['sumber'],
+            'status'       => $validated['status'],
+        ]);
+
+        if ($request->has('id_katakunci')) {
+            $data->katakunci()->sync($request->input('id_katakunci'));
+        }
 
         return redirect('/admin/data')
             ->with('success', 'Metadata indikator berhasil diperbarui');
     }
 
-    /**
-     * DESTROY
-     */
     public function destroy(Data $data)
     {
         $data->delete();

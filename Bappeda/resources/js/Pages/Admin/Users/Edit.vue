@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue'
-import { Head, useForm, Link } from '@inertiajs/vue3'
+import { Head, useForm, Link, router } from '@inertiajs/vue3'
 
 defineOptions({ layout: AppLayout })
 
@@ -19,6 +19,14 @@ const form = useForm({
 
 const submit = () => {
     form.put(`/admin/users/${props.user.id}`)
+}
+
+const resetPassword = () => {
+    if (confirm(`Apakah Anda yakin ingin mereset password untuk @${props.user.username}? Password default baru akan disetel menjadi 'bappeda123'.`)) {
+        router.post(`/admin/users/${props.user.id}/reset-password`, {}, {
+            preserveScroll: true,
+        })
+    }
 }
 </script>
 
@@ -110,7 +118,11 @@ const submit = () => {
                     <p class="text-[9px] font-black text-textsecondary uppercase tracking-widest text-center md:text-left opacity-50">
                         Pembaruan terakhir: {{ props.user.updated_at_formatted ?? 'Baru saja' }}
                     </p>
-                    <div class="flex items-center gap-6 w-full md:w-auto">
+                    <div class="flex flex-wrap items-center gap-6 w-full md:w-auto justify-end">
+                        <button type="button" @click="resetPassword"
+                            class="flex-1 md:flex-none bg-inovasi text-white px-6 py-4 rounded-xl text-xs font-black uppercase tracking-widest hover:opacity-90 shadow-lg shadow-inovasi/20 transition-all active:scale-95">
+                            Reset Password
+                        </button>
                         <Link href="/admin/users" class="text-xs font-black uppercase tracking-widest text-textsecondary hover:text-integritas transition-colors">
                             Batal
                         </Link>

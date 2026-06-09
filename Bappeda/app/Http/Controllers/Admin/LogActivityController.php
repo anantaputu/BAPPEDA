@@ -4,18 +4,39 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog; // Menggunakan model ActivityLog yang baru
+use App\Models\User;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
 class LogActivityController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // 1. Ambil data dari tabel activity_logs dengan relasi user
-        // Relasi 'data' tidak wajib karena kita sudah punya kolom 'target_name'
-        $logs = ActivityLog::with(['user'])
-            ->latest('created_at')
-            ->paginate(20);
+        $query = ActivityLog::with(['user']);
+
+        // Filter Action
+        if ($request->filled('action')) {
+            $query->where('action', $request->action);
+        }
+
+        // Filter User
+        if ($request->filled('user_id')) {
+            $query->where('id_user', $request->user_id);
+        }
+
+        // Pencarian target atau deskripsi
+        if ($request->filled('search')) {
+            $keyword = strtolower(trim($request->search));
+            $query->where(function($q) use ($keyword) {
+                $q->whereRaw('LOWER(target_name) LIKE ?', ['%' . $keyword . '%'])
+                  ->orWhereRaw('LOWER(description) LIKE ?', ['%' . $keyword . '%']);
+            });
+        }
+
+        $logs = $query->latest('created_at')
+            ->paginate(20)
+            ->withQueryString();
 
         // 2. Format data agar selaras dengan UI Dashboard dan Logs Index
         $formattedLogs = collect($logs->items())->map(function ($log) {
@@ -46,6 +67,8 @@ class LogActivityController extends Controller
         // 3. Return ke Vue dengan data aktivitas dan pagination lengkap
         return Inertia::render('Admin/Logs/Index', [
             'activities' => $formattedLogs,
+            'users'      => User::orderBy('name')->get(['id', 'name', 'username']),
+            'filters'    => $request->only(['action', 'user_id', 'search']),
             'pagination' => [
                 'links'        => $logs->linkCollection(),
                 'current_page' => $logs->currentPage(),

@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import AlertModal from '@/Components/Layout/AlertModal.vue';
 import { Head, router, Link, usePage } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import axios from 'axios';
 
 defineOptions({ layout: AppLayout });
@@ -88,7 +88,7 @@ const handleFileUpload = async (event) => {
     
     fileExcel.value = file;
     isLoading.value = true;
-
+ 
     const formData = new FormData();
     formData.append('file', file);
 
@@ -168,6 +168,56 @@ const submitFinalData = async () => {
         openAlert('Gagal Menyimpan', message, 'error');
     }
 };
+
+// ==========================================
+// SCROLL SLIDER LOGIC
+// ==========================================
+const tableContainer = ref(null);
+const scrollLeftVal = ref(0);
+const scrollMaxVal = ref(0);
+
+const updateScrollMetrics = () => {
+    if (tableContainer.value) {
+        const el = tableContainer.value;
+        scrollLeftVal.value = el.scrollLeft;
+        scrollMaxVal.value = el.scrollWidth - el.clientWidth;
+    }
+};
+
+const handleTableScroll = () => {
+    if (tableContainer.value) {
+        scrollLeftVal.value = tableContainer.value.scrollLeft;
+    }
+};
+
+const handleSliderInput = (e) => {
+    if (tableContainer.value) {
+        tableContainer.value.scrollLeft = parseFloat(e.target.value);
+    }
+};
+
+const scrollTable = (direction) => {
+    if (tableContainer.value) {
+        const offset = direction === 'left' ? -200 : 200;
+        tableContainer.value.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+};
+
+watch(isPreviewing, (newVal) => {
+    if (newVal) {
+        nextTick(() => {
+            updateScrollMetrics();
+        });
+    }
+});
+
+onMounted(() => {
+    window.addEventListener('resize', updateScrollMetrics);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('resize', updateScrollMetrics);
+});
 </script>
 
 <template>
@@ -182,16 +232,16 @@ const submitFinalData = async () => {
         </div>
 
         <div v-if="!isPreviewing" class="max-w-3xl mx-auto">
-            <div class="bg-white rounded-[2.5rem] border-2 border-dashed border-gray-400 p-16 flex flex-col items-center text-center shadow-2xl shadow-gray-100">
-                <div class="w-20 h-20 bg-blue-50 rounded-[1.5rem] flex items-center justify-center mb-6 text-[#00139E]">
+            <div class="bg-white rounded-2xl border-2 border-dashed border-gray-400 p-16 flex flex-col items-center text-center shadow-sm">
+                <div class="w-20 h-20 bg-primary/10 rounded-xl flex items-center justify-center mb-6 text-primary">
                     <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
                 </div>
-                <h3 class="text-xl font-black text-gray-900 mb-2 uppercase tracking-tight">Impor Berkas Excel</h3>
-                <p class="text-gray-400 text-xs font-bold mb-8 uppercase tracking-widest leading-loose">Pilih berkas untuk memulai pratinjau data.</p>
+                <h3 class="text-xl font-black text-primary mb-2 uppercase tracking-tight">Impor Berkas Excel</h3>
+                <p class="text-textsecondary text-xs font-bold mb-8 uppercase tracking-widest leading-loose">Pilih berkas untuk memulai pratinjau data.</p>
                 
                 <div class="relative">
                     <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" accept=".xlsx, .xls" @change="handleFileUpload" />
-                    <button type="button" :disabled="isLoading" class="bg-[#00139E] text-white px-10 py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all">
+                    <button type="button" :disabled="isLoading" class="bg-primary text-white px-10 py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-sm hover:bg-secondary transition-all">
                         {{ isLoading ? 'Memproses Berkas...' : 'Cari Berkas Excel' }}
                     </button>
                 </div>
@@ -200,22 +250,22 @@ const submitFinalData = async () => {
 
         <div v-if="isPreviewing" class="animate-fade-in space-y-6">
             
-            <div class="bg-white p-6 rounded-[2rem] border border-gray-400 shadow-xl flex flex-wrap justify-between items-center gap-4">
+            <div class="bg-white p-6 rounded-2xl border border-gray-400 shadow-sm flex flex-wrap justify-between items-center gap-4">
                 <div class="flex items-center gap-4 ml-2">
-                    <span class="bg-[#00139E] text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest">
+                    <span class="bg-primary text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest">
                         {{ previewData.length }} Baris Terdeteksi
                     </span>
                 </div>
                 
                 <div class="flex flex-wrap gap-4">
-                    <div class="flex items-center gap-4 px-4 py-2 bg-gray-50 rounded-2xl border border-gray-200">
-                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Set Tahun Terbit Semua:</label>
-                        <input v-model="globalTahunTerbit" type="number" class="bg-transparent border-none text-[#00139E] text-[11px] font-black focus:ring-0 w-20 p-0 text-center">
+                    <div class="flex items-center gap-4 px-4 py-2 bg-slate-50 rounded-xl border border-gray-400">
+                        <label class="text-[10px] font-black text-textsecondary uppercase tracking-widest">Set Tahun Terbit Semua:</label>
+                        <input v-model="globalTahunTerbit" type="number" class="bg-transparent border-none text-primary text-[11px] font-black focus:ring-0 w-20 p-0 text-center">
                     </div>
 
-                    <div class="flex items-center gap-4 px-4 py-2 bg-gray-50 rounded-2xl border border-gray-200">
-                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Set Frekuensi Semua:</label>
-                        <select v-model="globalFrekuensi" class="bg-transparent border-none text-[#00139E] text-[11px] font-black focus:ring-0 cursor-pointer uppercase">
+                    <div class="flex items-center gap-4 px-4 py-2 bg-slate-50 rounded-xl border border-gray-400">
+                        <label class="text-[10px] font-black text-textsecondary uppercase tracking-widest">Set Frekuensi Semua:</label>
+                        <select v-model="globalFrekuensi" class="bg-transparent border-none text-primary text-[11px] font-black focus:ring-0 cursor-pointer uppercase">
                             <option :value="null">Pilih...</option>
                             <option v-for="f in frekuensi" :key="f.id_frekuensi" :value="f.id_frekuensi">{{ f.nama_frekuensi }}</option>
                         </select>
@@ -223,64 +273,82 @@ const submitFinalData = async () => {
                 </div>
             </div>
 
-            <div class="bg-white rounded-[2rem] border border-gray-400 shadow-2xl overflow-x-auto custom-scrollbar">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-900 text-white border-b border-gray-800">
-                            <th class="p-5 text-[9px] uppercase font-black tracking-widest whitespace-nowrap">Indikator</th>
-                            <th class="p-5 text-[9px] uppercase font-black tracking-widest w-[160px]">Tema</th>
-                            <th class="p-5 text-[9px] uppercase font-black tracking-widest w-[160px]">Urusan</th>
-                            <th class="p-5 text-[9px] uppercase font-black tracking-widest w-[160px]">Bidang</th>
-                            <th class="p-5 text-[9px] uppercase font-black tracking-widest text-center">Satuan</th>
-                            
-                            <th class="p-5 text-[9px] uppercase font-black tracking-widest text-center text-blue-300">Thn Terbit</th>
-                            
-                            <th v-for="t in timeColumns" :key="t" class="p-5 text-[9px] uppercase font-black tracking-widest text-center bg-blue-900 min-w-[100px]">
-                                {{ formatHeader(t) }}
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        <tr v-for="(row, index) in previewData" :key="index" class="hover:bg-gray-50 transition-colors">
-                            <td class="p-5 border-r border-gray-100">
-                                <span class="text-[11px] font-black text-gray-900 uppercase block">{{ row.nama_data }}</span>
-                                <span class="text-[9px] text-gray-400 font-bold uppercase mt-1 block">Ref: {{ row.kode_indikator }}</span>
-                            </td>
-                            
-                            <td class="p-2 border-r border-gray-100">
-                                <select v-model="row.id_tema" class="w-full bg-gray-50 border-gray-200 rounded-lg text-[10px] font-bold py-2 focus:ring-[#00139E] uppercase tracking-tighter">
-                                    <option value="">Pilih...</option>
-                                    <option v-for="t in tema" :key="t.id_tema" :value="t.id_tema">{{ t.nama_tema }}</option>
-                                </select>
-                            </td>
-                            <td class="p-2 border-r border-gray-100">
-                                <select v-model="row.id_urusan" class="w-full bg-gray-50 border-gray-200 rounded-lg text-[10px] font-bold py-2 focus:ring-[#00139E] uppercase tracking-tighter">
-                                    <option value="">Pilih...</option>
-                                    <option v-for="u in urusan" :key="u.id_urusan" :value="u.id_urusan">{{ u.nama_urusan }}</option>
-                                </select>
-                            </td>
-                            <td class="p-2 border-r border-gray-100">
-                                <select v-model="row.id_bidang" class="w-full bg-gray-50 border-gray-200 rounded-lg text-[10px] font-bold py-2 focus:ring-[#00139E] uppercase tracking-tighter">
-                                    <option value="">Pilih...</option>
-                                    <option v-for="b in bidang" :key="b.id_bidang" :value="b.id_bidang">{{ b.nama_bidang }}</option>
-                                </select>
-                            </td>
-                            
-                            <td class="p-5 text-[10px] text-center font-bold text-gray-500 uppercase border-r border-gray-100">{{ row.satuan }}</td>
-                            
-                            <td class="p-2 border-r border-gray-100 bg-blue-50/20">
-                                <input v-model="row.tahun_terbit" type="number" class="w-full bg-white border-blue-100 rounded-lg text-[10px] font-black py-2 focus:ring-[#00139E] text-center text-[#00139E]">
-                            </td>
+            <div class="border border-gray-400 rounded-2xl overflow-hidden shadow-sm bg-white">
+                <div ref="tableContainer" @scroll="handleTableScroll" class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse whitespace-nowrap">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-gray-400">
+                                <th class="p-4 border-r border-gray-400 text-xs font-bold text-textsecondary uppercase tracking-wider">Indikator</th>
+                                <th class="p-4 border-r border-gray-400 text-xs font-bold text-textsecondary uppercase tracking-wider w-[160px]">Tema</th>
+                                <th class="p-4 border-r border-gray-400 text-xs font-bold text-textsecondary uppercase tracking-wider w-[160px]">Urusan</th>
+                                <th class="p-4 border-r border-gray-400 text-xs font-bold text-textsecondary uppercase tracking-wider w-[160px]">Bidang</th>
+                                <th class="p-4 border-r border-gray-400 text-xs font-bold text-textsecondary uppercase tracking-wider text-center">Satuan</th>
+                                <th class="p-4 border-r border-gray-400 text-xs font-bold text-textsecondary uppercase tracking-wider text-center">Thn Terbit</th>
+                                <th v-for="t in timeColumns" :key="t" class="p-4 border-r border-gray-400 min-w-[120px] text-center text-xs font-bold text-primary uppercase tracking-wider">
+                                    {{ formatHeader(t) }}
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-400">
+                            <tr v-for="(row, index) in previewData" :key="index" class="hover:bg-slate-50/50 transition-colors group">
+                                <td class="p-4 border-r border-gray-400 group-hover:bg-slate-50/30">
+                                    <span class="text-xs font-bold text-primary uppercase block leading-tight">{{ row.nama_data }}</span>
+                                    <span class="text-[9px] text-textsecondary font-semibold uppercase mt-1 block tracking-wider">Ref: {{ row.kode_indikator }}</span>
+                                </td>
+                                
+                                <td class="p-2 border-r border-gray-400 group-hover:bg-slate-50/30">
+                                    <select v-model="row.id_tema" class="w-full bg-slate-50/80 border border-gray-400 rounded-xl text-[10px] font-bold py-2 focus:ring-secondary focus:border-secondary uppercase tracking-tighter">
+                                        <option value="">Pilih...</option>
+                                        <option v-for="t in tema" :key="t.id_tema" :value="t.id_tema">{{ t.nama_tema }}</option>
+                                    </select>
+                                </td>
+                                <td class="p-2 border-r border-gray-400 group-hover:bg-slate-50/30">
+                                    <select v-model="row.id_urusan" class="w-full bg-slate-50/80 border border-gray-400 rounded-xl text-[10px] font-bold py-2 focus:ring-secondary focus:border-secondary uppercase tracking-tighter">
+                                        <option value="">Pilih...</option>
+                                        <option v-for="u in urusan" :key="u.id_urusan" :value="u.id_urusan">{{ u.nama_urusan }}</option>
+                                    </select>
+                                </td>
+                                <td class="p-2 border-r border-gray-400 group-hover:bg-slate-50/30">
+                                    <select v-model="row.id_bidang" class="w-full bg-slate-50/80 border border-gray-400 rounded-xl text-[10px] font-bold py-2 focus:ring-secondary focus:border-secondary uppercase tracking-tighter">
+                                        <option value="">Pilih...</option>
+                                        <option v-for="b in bidang" :key="b.id_bidang" :value="b.id_bidang">{{ b.nama_bidang }}</option>
+                                    </select>
+                                </td>
+                                
+                                <td class="p-4 text-xs text-center font-semibold text-textsecondary uppercase border-r border-gray-400 group-hover:bg-slate-50/30">
+                                    {{ row.satuan }}
+                                </td>
+                                
+                                <td class="p-2 border-r border-gray-400 group-hover:bg-slate-50/30">
+                                    <input v-model="row.tahun_terbit" type="number" class="w-full bg-white border border-gray-400 rounded-xl text-[10px] font-bold py-2 focus:ring-secondary focus:border-secondary text-center text-primary">
+                                </td>
 
-                            <td v-for="t in timeColumns" :key="t" class="p-5 text-xs text-center font-black text-[#00139E] bg-blue-50/30">
-                                {{ row.values[t] || '-' }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                <td v-for="t in timeColumns" :key="t" class="p-4 text-sm text-center font-bold text-primary border-r border-gray-400 group-hover:bg-slate-50/30">
+                                    <span class="group-hover:text-secondary transition-colors">
+                                        {{ row.values[t] !== undefined && row.values[t] !== null && row.values[t] !== '' ? row.values[t] : '-' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Custom Scroll Slider Indicator -->
+                <div v-if="scrollMaxVal > 0" class="flex items-center justify-center gap-3 py-3 border-t border-gray-400 bg-slate-50/50">
+                    <span class="text-[9px] font-black text-textsecondary uppercase tracking-widest">Scroll Horizontal</span>
+                    <div class="flex items-center gap-2">
+                        <button @click="scrollTable('left')" class="p-1 rounded-lg hover:bg-slate-200 text-textsecondary hover:text-primary transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                        </button>
+                        <input type="range" min="0" :max="scrollMaxVal" :value="scrollLeftVal" @input="handleSliderInput" 
+                            class="w-48 accent-primary cursor-pointer h-1 bg-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-0">
+                        <button @click="scrollTable('right')" class="p-1 rounded-lg hover:bg-slate-200 text-textsecondary hover:text-primary transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <div class="flex justify-between items-center bg-white p-6 rounded-[2rem] border border-gray-400 shadow-xl">
+            <div class="flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-400 shadow-sm">
                 <button type="button" @click.prevent="isPreviewing = false" class="px-8 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-red-500 transition-colors">
                     Batal & Reset
                 </button>
@@ -306,9 +374,10 @@ const submitFinalData = async () => {
 </template>
 
 <style scoped>
-.custom-scrollbar::-webkit-scrollbar { height: 8px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar { height: 10px; width: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #EEF2F5; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; border: 2px solid #EEF2F5; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #1F3A63; }
 
 .animate-fade-in {
     animation: fadeIn 0.4s ease-out;

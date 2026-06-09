@@ -36,12 +36,9 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user() ? [
                     'id' => $request->user()->id,
                     'username' => $request->user()->username,
-                    'nama_depan' => $request->user()->nama_depan, // Dari migration
-                    'nama_belakang' => $request->user()->nama_belakang, // Dari migration
-                    'role_id' => $request->user()->role_id, // Penting untuk cek ID
-                    
-                    // Ini yang dibaca oleh "const namaRole" di Vue kamu
-                    // Kita ambil nama_role dari tabel roles
+                    'nama_depan' => $request->user()->nama_depan,
+                    'nama_belakang' => $request->user()->nama_belakang,
+                    'role_id' => $request->user()->role_id,
                     'role' => $request->user()->role?->nama_role, 
                 ] : null,
             ],

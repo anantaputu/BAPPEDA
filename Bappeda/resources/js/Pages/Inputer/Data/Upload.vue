@@ -39,7 +39,7 @@ const submit = () => {
                 <span class="text-gray-900">Upload Excel</span>
             </div>
 
-            <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-gray-100 relative">
+            <div class="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-gray-400 relative">
                 
                 <div class="bg-[#4A6CF7] p-10 text-white relative overflow-hidden">
                     <div class="relative z-10">

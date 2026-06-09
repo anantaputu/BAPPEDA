@@ -18,7 +18,7 @@ defineEmits(['toggleMasterData', 'logout', 'toggleSidebar']);
 <template>
     <aside 
         :class="[isSidebarOpen ? 'w-[20rem]' : 'w-0 opacity-0 -translate-x-[150%]']"
-        class="fixed left-0 top-0 z-40 bg-white border-r border-gray-400 flex flex-col p-10 h-full transition-all duration-500 ease-in-out"
+        class="fixed left-0 top-0 z-40 flex h-full flex-col border-r border-gray-400 bg-white p-8 transition-all duration-500 ease-in-out"
     >
         <button 
             @click="$emit('toggleSidebar')"
@@ -34,22 +34,22 @@ defineEmits(['toggleMasterData', 'logout', 'toggleSidebar']);
             />
         </button>
 
-        <div class="flex flex-col h-full">
-            <Link class="flex items-center gap-5 mb-12" href="/">
+        <div class="flex h-full flex-col">
+            <Link class="mb-10 flex items-center gap-4" href="/">
                     <div>
                         <img :src="logoPath" alt="Logo" class="w-14 h-14 object-contain">
                     </div>
                     <div class="flex flex-col">
-                        <span class="text-xl font-black text-primary leading-none tracking-tight uppercase">
+                        <span class="text-[1.25rem] font-black leading-none tracking-tight uppercase text-primary">
                             DATA<span class="text-secondary">BAPPEDA</span>
                         </span>
-                        <span class="text-xs font-black text-textsecondary uppercase">NTB Terintegrasi</span>
+                        <span class="ui-eyebrow mt-2">NTB Terintegrasi</span>
                     </div>
             </Link>
 
-            <div class="flex-1 overflow-y-auto space-y-10 no-scrollbar">
+            <div class="no-scrollbar flex-1 space-y-8 overflow-y-auto">
                 <div v-for="group in menuGroups" :key="group.label">
-                    <p class="text-[10px] font-black text-textsecondary tracking-[0.2em] mb-6 ml-4 uppercase opacity-60">
+                    <p v-if="group.label" class="ui-eyebrow mb-4 ml-4 opacity-60">
                         {{ group.label }}
                     </p>
                     <div class="space-y-2 px-2">
@@ -64,9 +64,10 @@ defineEmits(['toggleMasterData', 'logout', 'toggleSidebar']);
                 </div>
             </div>
 
-            <div class="mt-auto pt-8 border-t border-bgsoft">
+            <div class="mt-auto border-t border-bgsoft pt-6">
                 <button @click="$emit('logout')" 
-                    class="w-full flex items-center gap-4 text-textsecondary font-black text-[11px] uppercase tracking-widest hover:text-integritas transition-all duration-300 px-5 py-4 rounded-xl hover:bg-integritas/5 group">
+                    class="ui-eyebrow group flex w-full items-center gap-4 px-4 py-4 text-left text-textsecondary transition-all duration-300 hover:bg-integritas/5 hover:text-integritas"
+                    style="border-radius: var(--radius-soft);">
                     <IconifyIcon icon="solar:logout-3-bold" width="20" height="20" class="transition-transform group-hover:-translate-x-1" />
                     Keluar Sesi
                 </button>

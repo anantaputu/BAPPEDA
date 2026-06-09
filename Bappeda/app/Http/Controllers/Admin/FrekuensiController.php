@@ -12,8 +12,6 @@ class FrekuensiController extends Controller
 {
     public function __construct()
     {
-        // Middleware ini akan mencegat Inputer jika mencoba Edit atau Hapus
-        // 'role:admin' artinya HANYA Admin yang boleh masuk ke method tersebut
         $this->middleware('role:admin')->only(['edit', 'update', 'destroy']);
     }
     public function index()

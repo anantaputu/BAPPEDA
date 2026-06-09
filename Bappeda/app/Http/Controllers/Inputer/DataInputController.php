@@ -56,7 +56,7 @@ class DataInputController extends Controller
         $userId = $user->id;
         $isAdmin = optional($user->role)->nama_role === 'Admin'; 
 
-        // 1. Ambil ID aktivitas terbaru per indikator untuk Riwayat
+        // Ambil ID aktivitas terbaru per indikator untuk Riwayat
         $latestUploadIds = DataUpload::selectRaw('MAX(id_upload) as id_upload')
             ->groupBy('id_data')
             ->pluck('id_upload');
@@ -70,65 +70,9 @@ class DataInputController extends Controller
         }
         $recentUploads = $recentUploadsQuery->get();
 
-        // 2. Metadata untuk Filter dan Dropdown di Spreadsheet
-        $metadata = [
-            'tema'         => Tema::orderBy('nama_tema')->get(),
-            'urusan'       => Urusan::orderBy('nama_urusan')->get(),
-            'bidang'       => Bidang::orderBy('nama_bidang')->get(),
-            'frekuensi'    => Frekuensi::all(),
-            'tahun_terbit' => Data::select('tahun_terbit')
-                                ->whereNotNull('tahun_terbit')
-                                ->distinct()
-                                ->orderBy('tahun_terbit', 'desc')
-                                ->pluck('tahun_terbit'),
-        ];
-
-        // 3. Query Utama Data Indikator (Spreadsheet)
-        $query = Data::with(['values', 'tema', 'urusan', 'bidang', 'frekuensi', 'katakunci']);
-
-        if (!$isAdmin) {
-            $query->where('id_user', $userId);
-        }
-
-        // --- Logic Filtering ---
-        $this->applyNamaDataSearch($query, request('search'));
-        if (request('urusan')) $query->where('id_urusan', request('urusan'));
-        if (request('bidang')) $query->where('id_bidang', request('bidang'));
-        if (request('tema'))   $query->where('id_tema', request('tema'));
-        if (request('frekuensi')) $query->where('id_frekuensi', request('frekuensi'));
-        if (request('tahun_terbit')) $query->where('tahun_terbit', request('tahun_terbit'));
-
-        $allData = $query->get();
-
-        // 4. Grouping Data untuk View Spreadsheet
-        $groupedData = [];
-        $timeColumnsSet = [];
-        $groupBy = request('group_by', 'tema'); 
-
-        foreach ($allData as $item) {
-            $groupName = 'Lainnya';
-            if ($groupBy === 'tema')      $groupName = $item->tema->nama_tema ?? 'Tanpa Tema';
-            if ($groupBy === 'urusan')    $groupName = $item->urusan->nama_urusan ?? 'Tanpa Urusan';
-            if ($groupBy === 'bidang')    $groupName = $item->bidang->nama_bidang ?? 'Tanpa Bidang';
-            if ($groupBy === 'frekuensi') $groupName = $item->frekuensi->nama_frekuensi ?? 'Tanpa Frekuensi';
-
-            $groupedData[$groupName][] = $item;
-
-            foreach ($item->values as $val) {
-                $timeColumnsSet[$val->tahun] = true;
-            }
-        }
-
-        $timeColumns = array_keys($timeColumnsSet);
-        sort($timeColumns); 
-
         return Inertia::render('Inputer/Data/Index', [
             'recentUploads' => $recentUploads,
             'isAdmin'       => $isAdmin,    
-            'groupedData'   => $groupedData,
-            'timeColumns'   => $timeColumns,
-            'metadata'      => $metadata,
-            'filters'       => request()->all('search', 'tema', 'urusan', 'bidang', 'frekuensi', 'group_by', 'periode', 'tahun_terbit'),
         ]);
     }
 
@@ -144,9 +88,18 @@ class DataInputController extends Controller
 
     public function edit($id)
     {
+        $data = Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'katakunci', 'values'])->findOrFail($id);
+        
+        $user = Auth::user();
+        $isAdmin = optional($user->role)->nama_role === 'Admin';
+        
+        if (!$isAdmin && $data->id_user !== $user->id) {
+            abort(403, 'Akses Ditolak. Anda tidak memiliki hak untuk mengedit data ini.');
+        }
+
         return Inertia::render('Inputer/Data/Edit', array_merge(
             [
-                'dataIndikator' => Data::with(['tema', 'urusan', 'bidang', 'frekuensi', 'katakunci', 'values'])->findOrFail($id)
+                'dataIndikator' => $data
             ],
             $this->getMetadata()
         ));
@@ -233,6 +186,13 @@ class DataInputController extends Controller
     {
         $dataMaster = Data::findOrFail($id);
 
+        $user = Auth::user();
+        $isAdmin = optional($user->role)->nama_role === 'Admin';
+        
+        if (!$isAdmin && $dataMaster->id_user !== $user->id) {
+            abort(403, 'Akses Ditolak. Anda tidak memiliki hak untuk mengubah data ini.');
+        }
+
         $request->validate([
             'nama_data'      => [
                 'required',
@@ -276,6 +236,14 @@ class DataInputController extends Controller
     {
         try {
             $data = Data::findOrFail($id);
+
+            $user = Auth::user();
+            $isAdmin = optional($user->role)->nama_role === 'Admin';
+            
+            if (!$isAdmin && $data->id_user !== $user->id) {
+                abort(403, 'Akses Ditolak. Anda tidak memiliki hak untuk menghapus data ini.');
+            }
+
             $namaData = $data->nama_data;
 
             // CATAT LOG AKTIVITAS SEBELUM DELETE (Gunakan variabel yang ada di scope)

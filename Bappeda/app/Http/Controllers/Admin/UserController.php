@@ -111,6 +111,17 @@ class UserController extends Controller
         return back()->with('success', 'User berhasil dihapus');
     }
 
+    public function resetPassword(User $user)
+    {
+        if ($user->role?->nama_role === 'Admin' && $user->id !== auth()->id()) {
+            return back()->with('error', 'Password akun Admin dilindungi dan tidak dapat direset.');
+        }
 
+        $user->update([
+            'password' => 'bappeda123'
+        ]);
+
+        return back()->with('success', "Password untuk user {$user->username} berhasil direset menjadi 'bappeda123'");
+    }
 }
 

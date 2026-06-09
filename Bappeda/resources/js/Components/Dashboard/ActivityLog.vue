@@ -4,6 +4,10 @@ import { usePage } from '@inertiajs/vue3'
 import { computed } from 'vue'
 
 defineProps({ 
+    title: {
+        type: String,
+        default: 'Log Aktivitas Terbaru',
+    },
     activities: {
         type: Array,
         default: () => []
@@ -18,28 +22,21 @@ const canManage = computed(() => {
     return role === 'Admin Super' || role === 'Admin';
 });
 
-const getStatusClass = (status) => {
-    const map = {
-        'valid': 'bg-inovasi/10 text-inovasi border-inovasi/20', // Hijau Inovasi
-        'pending': 'bg-profesional/10 text-profesional border-profesional/20', // Oranye Profesional
-        'rejected': 'bg-integritas/10 text-integritas border-integritas/20', // Merah Integritas
-    };
-    return map[status?.toLowerCase()] || 'bg-bgsoft text-textsecondary border-gray-200';
-};
 </script>
 
 <template>
-    <div class="bg-white rounded-xl p-8 shadow-sm border border-gray-400">
+    <div class="ui-panel p-8 border border-gray-400 bg-white" style="border-radius: var(--radius-panel);">
         <div class="flex items-center justify-between mb-10">
             <div class="flex items-center gap-3">
-                <h3 class="text-sm font-black text-primary uppercase tracking-[0.2em] border-l-4 border-secondary pl-4">
-                    Log Aktivitas Terbaru
+                <h3 class="ui-eyebrow border-l-4 border-secondary pl-4">
+                    {{ title }}
                 </h3>
             </div>
             <Link 
                 v-if="canManage"
                 href="/admin/logs"
-                class="text-[10px] font-black text-secondary uppercase tracking-[0.2em] hover:bg-bgsoft px-4 py-2 rounded-xl transition-all border border-transparent hover:border-gray-200"
+                class="ui-chip border border-transparent px-4 py-2 text-secondary transition-all hover:border-gray-200 hover:bg-bgsoft"
+                style="border-radius: var(--radius-soft);"
             >
                 Lihat Semua
             </Link>

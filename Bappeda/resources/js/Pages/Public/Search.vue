@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import debounce from 'lodash/debounce';
 
 const props = defineProps({
@@ -53,6 +53,16 @@ const performSearch = debounce(() => {
 }, 300);
 
 watch(form, () => performSearch(), { deep: true });
+
+const exportUrl = computed(() => {
+    const params = new URLSearchParams();
+    Object.keys(form.value).forEach(key => {
+        if (form.value[key] !== '') {
+            params.append(key, form.value[key]);
+        }
+    });
+    return `/export-bulk?${params.toString()}`;
+});
 
 const clearFilters = () => {
     form.value = { 
@@ -110,6 +120,14 @@ onUnmounted(() => window.removeEventListener('click', closeOnOutsideClick));
                             </svg>
                             {{ isFilterExpanded ? 'Tutup' : 'Filter' }}
                         </button>
+
+                        <a :href="exportUrl" target="_blank"
+                            class="px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all border border-gray-400 bg-inovasi text-white border-inovasi hover:opacity-90 whitespace-nowrap shadow-lg shadow-inovasi/20">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Export Excel
+                        </a>
                     </div>
                 </div>
             </div>

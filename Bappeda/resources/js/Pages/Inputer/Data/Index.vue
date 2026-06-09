@@ -3,18 +3,13 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import DeleteModal from '@/Components/Layout/DeleteModal.vue';
 import AlertModal from '@/Components/Layout/AlertModal.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch, computed } from 'vue';
-import debounce from 'lodash/debounce';
+import { ref } from 'vue';
 
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
     recentUploads: { type: Array, default: () => [] },
     isAdmin: { type: Boolean, default: false },
-    groupedData: { type: Object, default: () => ({}) },
-    timeColumns: { type: Array, default: () => [] },
-    metadata: { type: Object, default: () => ({}) },
-    filters: { type: Object, default: () => ({}) }
 });
 
 const showDeleteModal = ref(false);
@@ -32,7 +27,6 @@ const openAlert = (title, message, type = 'info') => {
 };
 
 const openDeleteModal = (item, type = 'data') => {
-    // Kita standarisasi agar dataToDelete selalu berisi id_data
     if (type === 'riwayat') {
         dataToDelete.value = {
             id_data: item.data?.id_data,
@@ -49,7 +43,6 @@ const openDeleteModal = (item, type = 'data') => {
 
 const executeDeleteAction = () => {
     if (dataToDelete.value && dataToDelete.value.id_data) {
-        // Mengarah ke destroy($id) di DataInputController
         router.delete(`/inputer/data/${dataToDelete.value.id_data}`, {
             preserveScroll: true,
             onSuccess: () => {
@@ -66,78 +59,7 @@ const executeDeleteAction = () => {
     }
 };
 
-// ==========================================
-// 2. LOGIKA SPREADSHEET (DI PERTAHANKAN)
-// ==========================================
-const getTahunanId = () => {
-    if (!props.metadata?.frekuensi) return '';
-    const tahunan = props.metadata.frekuensi.find(f => f.nama_frekuensi.toLowerCase() === 'tahunan');
-    return tahunan ? tahunan.id_frekuensi : '';
-};
-
-const form = ref({
-    search: props.filters.search || '',
-    tema: props.filters.tema || '',
-    urusan: props.filters.urusan || '',
-    bidang: props.filters.bidang || '',
-    frekuensi: props.filters.frekuensi || getTahunanId(), 
-    group_by: props.filters.group_by || 'tema',
-    periode: props.filters.periode || '', 
-    tahun_terbit: props.filters.tahun_terbit || ''
-});
-
-const updateView = debounce(() => {
-    router.get('/inputer/data', form.value, { 
-        preserveState: true, preserveScroll: true,
-        only: ['groupedData', 'timeColumns', 'filters', 'recentUploads'] 
-    });
-}, 500);
-
-watch(form, () => { updateView(); }, { deep: true });
-
-const formatTimeHeader = (timeString) => {
-    if (timeString === null || timeString === undefined) return '-';
-    try {
-        let str = String(timeString).trim(); 
-        if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return new Date(str).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-        if (/^\d{4}-\d{2}$/.test(str)) {
-            const [year, month] = str.split('-');
-            return new Date(year, month - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }); 
-        }
-        return str.replace(/\b\w/g, char => char.toUpperCase());
-    } catch (e) { return String(timeString).toUpperCase(); }
-};
-
-const filteredTimeColumns = computed(() => {
-    if (!props.timeColumns) return [];
-    const selectedFreq = props.metadata.frekuensi?.find(f => f.id_frekuensi === form.value.frekuensi);
-    const freqName = selectedFreq ? selectedFreq.nama_frekuensi.toLowerCase() : '';
-    const searchPeriode = form.value.periode.toLowerCase().trim();
-
-    return props.timeColumns.filter(col => {
-        const rawCol = String(col).trim().toLowerCase();
-        const formattedCol = formatTimeHeader(col).toLowerCase(); 
-        if (searchPeriode && !rawCol.includes(searchPeriode) && !formattedCol.includes(searchPeriode)) return false;
-        const isTahunAngka = /^\d{4}$/.test(rawCol); 
-        if (freqName.includes('tahun')) return isTahunAngka;
-        else if (freqName.includes('bulan') || freqName.includes('minggu') || freqName.includes('hari')) return !isTahunAngka;
-        return true; 
-    });
-});
-
-const getValue = (values, timeKey) => {
-    if (!values) return '-';
-    const found = values.find(v => String(v.tahun).trim() === String(timeKey).trim()); 
-    return found ? found.nilai : '-';
-};
-
-const getGroupLabel = () => {
-    const labels = { tema: 'Tema', urusan: 'Urusan', bidang: 'Bidang', frekuensi: 'Frekuensi' };
-    return labels[form.value.group_by] || 'Tema';
-};
-
-const isSpreadsheetView = ref(false);
-const hasSpreadsheetData = computed(() => Object.keys(props.groupedData || {}).length > 0);
+const exportUrl = '/export-bulk?scope=internal';
 </script>
 
 <template>
@@ -156,15 +78,6 @@ const hasSpreadsheetData = computed(() => Object.keys(props.groupedData || {}).l
             </div>
 
             <div class="flex flex-wrap gap-3 w-full md:w-auto">
-                <button @click="isSpreadsheetView = !isSpreadsheetView" 
-                    class="bg-white text-primary border border-gray-400 px-5 py-3 rounded-xl font-black text-[10px] tracking-widest uppercase hover:bg-bgsoft transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95">
-                    <component :is="isSpreadsheetView ? 'svg' : 'svg'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path v-if="isSpreadsheetView" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                        <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </component>
-                    {{ isSpreadsheetView ? 'Mode Riwayat' : 'Mode Spreadsheet' }}
-                </button>
-
                 <Link href="/inputer/data/input-single" 
                     class="bg-white text-secondary border-2 border-secondary px-6 py-3 rounded-xl font-black text-[10px] tracking-widest uppercase hover:bg-secondary/5 transition-all shadow-sm flex items-center justify-center gap-2 active:scale-95">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" /></svg>
@@ -176,180 +89,18 @@ const hasSpreadsheetData = computed(() => Object.keys(props.groupedData || {}).l
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                     Bulk Upload
                 </Link>
+
+                <a :href="exportUrl" target="_blank"
+                    class="bg-inovasi text-white px-6 py-3 rounded-xl font-black text-[10px] tracking-widest uppercase hover:opacity-90 transition-all shadow-lg shadow-inovasi/20 flex items-center justify-center gap-2 active:scale-95">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export Excel
+                </a>
             </div>
         </div>
 
-        <div v-if="isSpreadsheetView" class="space-y-6">
-            <div class="bg-white p-8 rounded-xl shadow-2xl shadow-primary/5 border border-gray-400">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-6">
-                    
-                    <div class="xl:col-span-2 space-y-2">
-                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
-                            Cari Nama Data
-                        </label>
-                        <div class="relative">
-                            <input v-model="form.search" type="text" placeholder="Ketik kata kunci..." 
-                                class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300 placeholder:text-gray-300 shadow-sm">
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
-                            Kelompokkan
-                        </label>
-                        <div class="relative group">
-                            <select v-model="form.group_by" 
-                                class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
-                                <option value="tema">Per Tema</option>
-                                <option value="urusan">Per Urusan</option>
-                                <option value="bidang">Per Bidang</option>
-                                <option value="frekuensi">Per Frekuensi</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
-                            Tema
-                        </label>
-                        <select v-model="form.tema"
-                            class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
-                            <option value="">Semua Tema</option>
-                            <option v-for="t in metadata.tema" :key="t.id_tema" :value="t.id_tema">{{ t.nama_tema }}</option>
-                        </select>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
-                            Urusan
-                        </label>
-                        <select v-model="form.urusan" 
-                            class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
-                            <option value="">Semua Urusan</option>
-                            <option v-for="u in metadata.urusan" :key="u.id_urusan" :value="u.id_urusan">{{ u.nama_urusan }}</option>
-                        </select>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
-                            Bidang
-                        </label>
-                        <select v-model="form.bidang" 
-                            class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
-                            <option value="">Semua Bidang</option>
-                            <option v-for="b in metadata.bidang" :key="b.id_bidang" :value="b.id_bidang">{{ b.nama_bidang }}</option>
-                        </select>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
-                            Frekuensi
-                        </label>
-                        <select v-model="form.frekuensi"
-                            class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
-                            <option value="">Semua Frekuensi</option>
-                            <option v-for="f in metadata.frekuensi" :key="f.id_frekuensi" :value="f.id_frekuensi">{{ f.nama_frekuensi }}</option>
-                        </select>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-[9px] font-black text-inovasi uppercase tracking-[0.2em] ml-2">
-                            Filter Periode
-                        </label>
-                        <input v-model="form.periode" type="text" placeholder="Cth: 2020..." 
-                            class="w-full bg-white border border-inovasi/30 rounded-xl px-4 py-3 text-xs font-bold text-inovasi focus:outline-none focus:border-inovasi focus:ring-4 focus:ring-inovasi/5 transition-all duration-300 placeholder:text-inovasi/30 shadow-sm">
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">
-                            Tahun Terbit
-                        </label>
-                        <select v-model="form.tahun_terbit" 
-                            class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3 text-xs font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300">
-                            <option value="">Semua</option>
-                            <option v-for="t in metadata.tahun_terbit" :key="t" :value="t">{{ t }}</option>
-                        </select>
-                    </div>
-
-                </div>
-            </div>
-            <div class="bg-white border border-gray-400 rounded-xl overflow-hidden shadow-sm flex flex-col max-h-[75vh]">
-                <div class="overflow-auto flex-1 custom-scrollbar">
-                    <table class="w-full text-left border-collapse relative">
-                        <thead class="bg-primary text-white sticky top-0 z-40">
-                            <tr class="divide-x divide-white/10">
-                                <th class="p-5 text-[10px] uppercase font-black tracking-widest min-w-[400px] sticky left-0 bg-primary z-50 shadow-md">Nama Indikator</th>
-                                <th class="p-5 text-[10px] uppercase font-black tracking-widest w-[120px] text-center">Satuan</th>
-                                <th class="p-5 text-[10px] uppercase font-black tracking-widest w-[120px] text-center">Update</th>
-                                <th v-for="col in filteredTimeColumns" :key="col" class="p-5 text-[10px] uppercase font-black tracking-widest min-w-[140px] text-center bg-secondary">
-                                    {{ formatTimeHeader(col) }}
-                                </th>
-                                <th class="p-5 text-[10px] uppercase font-black tracking-widest w-[160px] text-center sticky right-0 bg-primary z-50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)]">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody v-if="hasSpreadsheetData" class="text-sm font-bold text-primary">
-                            <template v-for="(groupItems, groupName) in groupedData" :key="groupName">
-                                <tr class="bg-bgsoft sticky top-[58px] z-30">
-                                    <td :colspan="filteredTimeColumns.length + 4" class="p-4 text-[11px] font-black text-primary uppercase tracking-[0.2em] border-b border-gray-300">
-                                        {{ getGroupLabel() }}: <span class="text-secondary">{{ groupName }}</span>
-                                    </td>
-                                </tr>
-
-                                <tr v-for="item in groupItems" :key="item.id_data" class="hover:bg-bgsoft transition-colors border-b border-gray-100 group divide-x divide-gray-100">
-                                    <td class="p-4 sticky left-0 bg-white group-hover:bg-bgsoft z-20 shadow-md transition-colors">
-                                        <a :href="`/dataset/${item.id_data}`" class="hover:text-secondary transition-colors leading-relaxed block uppercase text-xs font-black tracking-tight">
-                                            {{ item.nama_data }}
-                                        </a>
-                                        <div class="flex gap-2 mt-1.5 opacity-40 text-[9px] uppercase font-black text-textsecondary">
-                                            <span v-if="form.group_by !== 'tema'">{{ item.tema?.nama_tema }}</span>
-                                            <span v-if="form.group_by !== 'urusan'">• {{ item.urusan?.nama_urusan }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="p-4 text-[10px] font-black text-center text-textsecondary/60 uppercase">{{ item.satuan }}</td>
-                                    <td class="p-4 text-[9px] font-black text-center uppercase tracking-tighter">
-                                        <span :class="item.frekuensi?.nama_frekuensi === 'Tahunan' ? 'text-inovasi bg-inovasi/10 border-inovasi/20' : 'text-profesional bg-profesional/10 border-profesional/20'" class="px-2 py-1 rounded-lg border">
-                                            {{ item.frekuensi?.nama_frekuensi || '-' }}
-                                        </span>
-                                    </td>
-                                    <td v-for="col in filteredTimeColumns" :key="col" class="p-4 text-xs font-black text-center group-hover:bg-white/50">
-                                        <span :class="getValue(item.values, col) === '-' ? 'text-gray-300 font-normal' : 'text-primary'">
-                                            {{ getValue(item.values, col) }}
-                                        </span>
-                                    </td>
-                                    <td class="p-4 text-center sticky right-0 bg-white group-hover:bg-bgsoft z-20 shadow-[-4px_0_10px_rgba(0,0,0,0.03)] transition-colors">
-                                        <div class="flex justify-center gap-2">
-                                            <a :href="`/export/data/${item.id_data}`" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-bgsoft text-primary hover:bg-secondary hover:text-white transition-all shadow-sm border border-gray-200">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12" stroke-width="2.5" /></svg>
-                                            </a>
-                                            <Link :href="`/inputer/data/${item.id_data}/edit`" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-bgsoft text-primary hover:bg-secondary hover:text-white transition-all shadow-sm border border-gray-200">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-width="2.5" /></svg>
-                                            </Link>
-                                            <button @click="openDeleteModal(item)" 
-                                                class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-integritas/10 text-integritas hover:bg-integritas hover:text-white transition-all shadow-sm border border-integritas/20">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2.5" /></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                        <tbody v-else>
-                            <tr>
-                                <td :colspan="filteredTimeColumns.length + 4" class="p-10 text-center">
-                                    <p class="text-sm font-black uppercase tracking-widest text-primary">Data Tidak Ditemukan</p>
-                                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-textsecondary mt-2">
-                                        Ubah filter pencarian untuk menampilkan data indikator.
-                                    </p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <p class="text-[10px] text-textsecondary mt-4 font-bold uppercase tracking-widest">* Gunakan scroll horizontal untuk navigasi tahun.</p>
-        </div>
-
-        <div v-else class="overflow-hidden rounded-xl border border-gray-400 bg-white shadow-sm">
+        <div class="overflow-hidden rounded-xl border border-gray-400 bg-white shadow-sm">
             <table class="w-full border-collapse">
                 <thead>
                     <tr class="bg-bgsoft text-left text-[10px] font-black text-textsecondary uppercase tracking-[0.2em] border-b border-gray-400">

@@ -29,6 +29,14 @@ const props = defineProps({
     chartData: {
         type: Object,
         default: () => ({ labels: [], values: [] })
+    },
+    xAxisLabel: {
+        type: String,
+        default: 'Periode Bulanan'
+    },
+    yAxisLabel: {
+        type: String,
+        default: 'Jumlah Dataset'
     }
 });
 
@@ -53,6 +61,12 @@ const chartOptions = computed(() => ({
     scales: {
         y: {
             beginAtZero: true,
+            title: {
+                display: true,
+                text: props.yAxisLabel,
+                color: '#1F3A63',
+                font: { size: 12, weight: 'bold' }
+            },
             grid: { 
                 display: false,
                 color: '#EEF2F5', // bgsoft
@@ -66,6 +80,12 @@ const chartOptions = computed(() => ({
             }
         },
         x: {
+            title: {
+                display: true,
+                text: props.xAxisLabel,
+                color: '#1F3A63',
+                font: { size: 12, weight: 'bold' }
+            },
             grid: { 
                 display: false,
                 color: '#EEF2F5', // bgsoft
@@ -83,7 +103,6 @@ const chartOptions = computed(() => ({
     }
 }));
 
-// --- FORMAT DATA DENGAN GRADASI ---
 const formattedData = computed(() => ({
     labels: props.chartData.labels,
     datasets: [{

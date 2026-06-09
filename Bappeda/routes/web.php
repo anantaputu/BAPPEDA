@@ -42,6 +42,7 @@ Route::get('/dataset/{id}', [DatasetController::class, 'show'])->name('dataset.d
 Route::get('/export/data/{id}', [DataOutputController::class, 'export'])
     ->whereNumber('id')
     ->name('public.export');
+Route::get('/export-bulk', [DataOutputController::class, 'exportBulk'])->name('public.export-bulk');
 Route::get('/katalog', [App\Http\Controllers\Public\DatasetController::class, 'index'])->name('public.katalog');// ini ga penting nanta cuman kek search gitu
 Route::get('/data-spreadsheet', [App\Http\Controllers\Public\DatasetController::class, 'spreadsheetView'])->name('public.spreadsheet');// ini kumpulan data yang ditampilkan dalam bentuk spreadsheet, bisa untuk lihat data per indikator dengan semua tahunannya sekaligus
 
@@ -101,6 +102,7 @@ Route::middleware(['auth', 'role:admin|inputer'])->prefix('inputer')->name('inpu
     Route::get('/export/{id}', [DataOutputController::class, 'export'])
         ->whereNumber('id')
         ->name('export');
+    Route::get('/export-bulk', [DataOutputController::class, 'exportBulk'])->name('export-bulk');
     
     Route::get('/data/input-single', [DataInputController::class, 'createSingle'])->name('createSingle');
     Route::post('/data/store-single', [DataInputController::class, 'storeSingle'])->name('storeSingle');
@@ -121,4 +123,5 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/logs', [LogActivityController::class, 'index'])->name('admin.logs');
     Route::get('/contacts', [ContactController::class, 'index'])->name('contacts.index');
     Route::resource('users', UserController::class);
+    Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
 });

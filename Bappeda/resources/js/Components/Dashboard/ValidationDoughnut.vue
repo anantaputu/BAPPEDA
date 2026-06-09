@@ -13,6 +13,14 @@ const props = defineProps({
     validationData: {
         type: Object,
         default: () => ({ total: 0 })
+    },
+    categoryLabel: {
+        type: String,
+        default: 'Bidang'
+    },
+    valueLabel: {
+        type: String,
+        default: 'Jumlah Dataset'
     }
 });
 
@@ -51,8 +59,8 @@ const top3Data = computed(() => {
 </script>
 
 <template>
-    <div class="bg-white p-8 rounded-xl border border-gray-400 shadow-sm flex flex-col h-full group">
-        <h3 class="text-sm font-black text-primary uppercase tracking-[0.2em] border-l-4 border-secondary pl-4 mb-8">
+    <div class="ui-panel flex h-full flex-col p-8 group border border-gray-400 bg-white" style="border-radius: var(--radius-panel);">
+        <h3 class="ui-eyebrow mb-8 border-l-4 border-secondary pl-4">
             Proporsi Bidang
         </h3>
         
@@ -60,25 +68,29 @@ const top3Data = computed(() => {
             <Doughnut :data="doughnutData" :options="chartOptions" />
             
             <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-transform group-hover:scale-110 duration-500">
-                <span class="text-4xl font-black text-primary leading-none">{{ validationData.total }}</span>
-                <span class="text-[10px] font-black text-textsecondary uppercase tracking-widest mt-1">Total Data</span>
+                <span class="ui-title-md leading-none">{{ validationData.total }}</span>
+                <span class="ui-eyebrow mt-2">Total Data</span>
             </div>
         </div>
 
         <div class="mt-8 pt-6 border-t border-bgsoft">
+            <div class="mb-4 flex items-center justify-center gap-6 text-[0.72rem] font-black uppercase tracking-[0.16em] text-textsecondary">
+                <span>Kategori: {{ categoryLabel }}</span>
+                <span>Nilai: {{ valueLabel }}</span>
+            </div>
             <div class="flex justify-around items-start">
                 <div v-for="(item, index) in top3Data" :key="index" class="text-center flex flex-col items-center px-1">
-                    <span class="text-xl font-black mb-1" :style="{ color: item.color }">
+                    <span class="mb-1 text-[1.375rem] font-black leading-none" :style="{ color: item.color }">
                         {{ item.value }}
                     </span>
-                    <span class="text-[9px] font-black text-textsecondary uppercase leading-tight tracking-tighter text-center line-clamp-2 w-full" :title="item.label">
+                    <span class="ui-eyebrow w-full text-center leading-tight line-clamp-2" :title="item.label">
                         {{ item.label }}
                     </span>
                 </div>
             </div>
             
             <div v-if="doughnutData?.labels?.length > 3" class="text-center mt-4">
-                <span class="text-[10px] font-bold text-textsecondary/40 uppercase tracking-widest">
+                <span class="ui-eyebrow text-textsecondary/50">
                     +{{ doughnutData.labels.length - 3 }} Bidang Lainnya
                 </span>
             </div>

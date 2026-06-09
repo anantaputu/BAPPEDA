@@ -1,7 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Head, router } from '@inertiajs/vue3';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import debounce from 'lodash/debounce';
 import BarChartIndikator from '@/Components/Dashboard/BarChartIndikator.vue';
 import LineChartTren from '@/Components/Dashboard/LineChartTren.vue';
 import ValidationDoughnut from '@/Components/Dashboard/ValidationDoughnut.vue';
@@ -16,11 +17,55 @@ const props = defineProps({
     trenChart: { type: Object, default: () => ({ labels: [], values: [] }) },
     datasets: { type: Object, default: () => ({ popular: [], latest: [] }) },
     topics: { type: Array, default: () => [] },
+    listTema: { type: Array, default: () => [] },
+    listUrusan: { type: Array, default: () => [] },
+    listBidang: { type: Array, default: () => [] },
+    listFrekuensi: { type: Array, default: () => [] },
+    filters: { type: Object, default: () => ({}) },
 });
 
-const selectedTema = ref('all');
+const isFilterExpanded = ref(false);
+const openDropdown = ref(null);
 const temaLimit = ref(6);
 const trendWindow = ref('12');
+
+const form = ref({
+    tema: props.filters?.tema || '',
+    urusan: props.filters?.urusan || '',
+    bidang: props.filters?.bidang || '',
+    frekuensi: props.filters?.frekuensi || '',
+});
+
+const toggleDropdown = (name) => {
+    openDropdown.value = openDropdown.value === name ? null : name;
+};
+
+const selectOption = (field, value) => {
+    form.value[field] = value;
+    openDropdown.value = null;
+};
+
+const getSelectedName = (list, id, fieldId, fieldName, defaultLabel) => {
+    if (!list) return defaultLabel;
+    const found = list.find(item => item[fieldId] == id);
+    return found ? found[fieldName] : defaultLabel;
+};
+
+const performFilter = debounce(() => {
+    const params = {};
+    if (form.value.tema) params.tema = form.value.tema;
+    if (form.value.urusan) params.urusan = form.value.urusan;
+    if (form.value.bidang) params.bidang = form.value.bidang;
+    if (form.value.frekuensi) params.frekuensi = form.value.frekuensi;
+
+    router.get('/visualisasi', params, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true
+    });
+}, 300);
+
+watch(form, () => performFilter(), { deep: true });
 
 const temaRows = computed(() =>
     (props.temaChart.labels || [])
@@ -30,17 +75,8 @@ const temaRows = computed(() =>
         }))
 );
 
-const temaOptions = computed(() =>
-    [...(props.temaChart.labels || [])].sort((a, b) => a.localeCompare(b))
-);
-
 const filteredTemaRows = computed(() => {
     let rows = [...temaRows.value];
-
-    if (selectedTema.value !== 'all') {
-        rows = rows.filter(item => item.label === selectedTema.value);
-    }
-
     rows.sort((a, b) => b.value - a.value);
     return rows.slice(0, Number(temaLimit.value) || 6);
 });
@@ -69,7 +105,7 @@ const temaBarData = computed(() => ({
             label: 'Jumlah Dataset',
             data: topTema.value.map(item => item.value),
             backgroundColor: '#0B3A7E',
-            borderRadius: 10,
+            borderRadius: 6,
         },
     ],
 }));
@@ -127,80 +163,146 @@ const topLatestDatasets = computed(() => props.datasets?.latest?.slice(0, 5) || 
 const totalTrenTahunIni = computed(() =>
     (props.trenChart.values || []).reduce((a, b) => a + b, 0)
 );
-const temaFocusLabel = computed(() =>
-    selectedTema.value === 'all' ? 'Semua Tema' : selectedTema.value
-);
+const temaFocusLabel = computed(() => {
+    if (!form.value.tema) return 'Semua Tema';
+    const found = props.listTema.find(t => String(t.id_tema) === String(form.value.tema));
+    return found ? found.nama_tema : 'Tema';
+});
 
 const resetFilters = () => {
-    selectedTema.value = 'all';
+    form.value = {
+        tema: '',
+        urusan: '',
+        bidang: '',
+        frekuensi: '',
+    };
     temaLimit.value = 6;
     trendWindow.value = '12';
 };
+
+const closeOnOutsideClick = (e) => {
+    if (!e.target.closest('.custom-select-container')) {
+        openDropdown.value = null;
+    }
+};
+
+onMounted(() => window.addEventListener('click', closeOnOutsideClick));
+onUnmounted(() => window.removeEventListener('click', closeOnOutsideClick));
 </script>
 
 <template>
     <Head title="Ragam Visualisasi Data" />
 
-    <div class="mx-auto max-w-[82%] pt-24 pb-12 space-y-8">
-        <section class="rounded-3xl border border-gray-300 bg-[linear-gradient(120deg,#001a3f_0%,#0b2e59_45%,#0ea5e9_130%)] p-8 md:p-12 text-white overflow-hidden relative">
+    <div class="mx-auto max-w-[82%] space-y-8 pb-12 pt-24">
+        <section class="ui-shell relative overflow-hidden border border-gray-400 bg-[linear-gradient(120deg,#001a3f_0%,#0b2e59_45%,#0ea5e9_130%)] p-8 text-white md:p-12">
             <div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl"></div>
             <div class="absolute -left-16 -bottom-24 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl"></div>
-            <h1 class="text-3xl md:text-5xl font-black uppercase tracking-tight leading-tight">
+            <h1 class="text-[2.375rem] font-black uppercase leading-[1.02] tracking-tight text-white md:text-[4.625rem]">
                 Ragam Visualisasi
             </h1>
-            <p class="mt-3 max-w-2xl text-sm md:text-base text-white/80 font-medium">
+            <p class="mt-4 max-w-2xl text-[1rem] font-medium leading-7 text-white/80 md:text-[1.125rem]">
                 Portal visual publik untuk membaca komposisi data pembangunan secara cepat tanpa masuk ke panel admin.
             </p>
             <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="rounded-2xl bg-white/10 border border-white/20 p-4">
-                    <p class="text-[10px] uppercase tracking-widest text-white/70 font-black">Total Dataset</p>
-                    <p class="text-3xl font-black mt-1">{{ stats.total_dataset || 0 }}</p>
+                <div class="border border-white/20 bg-white/10 p-4 backdrop-blur-sm" style="border-radius: var(--radius-panel);">
+                    <p class="ui-eyebrow text-white/70">Total Dataset</p>
+                    <p class="mt-2 text-[2.375rem] font-black leading-none text-white">{{ stats.total_dataset || 0 }}</p>
                 </div>
-                <div class="rounded-2xl bg-white/10 border border-white/20 p-4">
-                    <p class="text-[10px] uppercase tracking-widest text-white/70 font-black">Tema</p>
-                    <p class="text-3xl font-black mt-1">{{ stats.total_tema || 0 }}</p>
+                <div class="border border-white/20 bg-white/10 p-4 backdrop-blur-sm" style="border-radius: var(--radius-panel);">
+                    <p class="ui-eyebrow text-white/70">Tema</p>
+                    <p class="mt-2 text-[2.375rem] font-black leading-none text-white">{{ stats.total_tema || 0 }}</p>
                 </div>
-                <div class="rounded-2xl bg-white/10 border border-white/20 p-4">
-                    <p class="text-[10px] uppercase tracking-widest text-white/70 font-black">Bidang</p>
-                    <p class="text-3xl font-black mt-1">{{ stats.total_bidang || 0 }}</p>
+                <div class="border border-white/20 bg-white/10 p-4 backdrop-blur-sm" style="border-radius: var(--radius-panel);">
+                    <p class="ui-eyebrow text-white/70">Bidang</p>
+                    <p class="mt-2 text-[2.375rem] font-black leading-none text-white">{{ stats.total_bidang || 0 }}</p>
                 </div>
-                <div class="rounded-2xl bg-white/10 border border-white/20 p-4">
-                    <p class="text-[10px] uppercase tracking-widest text-white/70 font-black">Sumber Data</p>
-                    <p class="text-3xl font-black mt-1">{{ stats.total_sumber || 0 }}</p>
+                <div class="border border-white/20 bg-white/10 p-4 backdrop-blur-sm" style="border-radius: var(--radius-panel);">
+                    <p class="ui-eyebrow text-white/70">Sumber Data</p>
+                    <p class="mt-2 text-[2.375rem] font-black leading-none text-white">{{ stats.total_sumber || 0 }}</p>
                 </div>
             </div>
         </section>
 
-        <section class="rounded-3xl border border-gray-300 bg-white p-5 md:p-6">
-            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <h2 class="text-base font-black uppercase tracking-tight text-primary">Kontrol Visualisasi</h2>
-                <button
-                    @click="resetFilters"
-                    class="px-4 py-2 rounded-xl border border-gray-300 bg-slate-50 hover:bg-slate-100 text-[10px] font-black uppercase tracking-widest text-textsecondary"
-                >
-                    Reset Filter
-                </button>
+        <section class="ui-panel p-6 shadow-xl shadow-primary/5 bg-white border border-gray-400" style="border-radius: var(--radius-panel);">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
+                <div>
+                    <h2 class="ui-title-sm">Kontrol Visualisasi</h2>
+                    <p class="text-xs font-bold text-textsecondary mt-1">Saring dan sesuaikan data visualisasi pembangunan secara dinamis.</p>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button @click="isFilterExpanded = !isFilterExpanded" 
+                        class="px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all border border-gray-400 whitespace-nowrap"
+                        :class="isFilterExpanded ? 'bg-secondary text-white border-secondary shadow-lg shadow-secondary/20' : 'bg-white text-primary hover:bg-bgsoft'">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                        {{ isFilterExpanded ? 'Tutup Filter' : 'Filter Lanjutan' }}
+                    </button>
+
+                    <button @click="resetFilters"
+                        class="px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest bg-white border border-gray-400 text-textsecondary hover:bg-slate-50 transition-all">
+                        Reset Filter
+                    </button>
+                </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+            <!-- Panel Filter Lanjutan (Expandable) -->
+            <transition 
+                enter-active-class="transition duration-300 ease-out"
+                enter-from-class="transform opacity-0 -translate-y-4"
+                enter-to-class="transform opacity-100 translate-y-0"
+                leave-active-class="transition duration-200 ease-in"
+                leave-from-class="transform opacity-100 translate-y-0"
+                leave-to-class="transform opacity-0 -translate-y-4">
+                
+                <div v-if="isFilterExpanded" class="border-t border-gray-200 pt-6 mt-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div v-for="filter in [
+                            { name: 'urusan', list: listUrusan, key: 'id_urusan', label: 'Semua Urusan', display: 'nama_urusan', title: 'Urusan' },
+                            { name: 'bidang', list: listBidang, key: 'id_bidang', label: 'Semua Bidang', display: 'nama_bidang', title: 'Bidang' },
+                            { name: 'tema', list: listTema, key: 'id_tema', label: 'Semua Tema', display: 'nama_tema', title: 'Tema' },
+                            { name: 'frekuensi', list: listFrekuensi, key: 'id_frekuensi', label: 'Semua Frekuensi', display: 'nama_frekuensi', title: 'Frekuensi' }
+                        ]" :key="filter.name" class="relative custom-select-container">
+                            
+                            <label class="block text-[10px] font-black text-primary/40 uppercase tracking-[0.2em] mb-3 ml-1">{{ filter.title }}</label>
+                            
+                            <div @click="toggleDropdown(filter.name)"
+                                class="w-full px-5 py-3 bg-white border border-gray-400 rounded-xl font-bold text-primary flex justify-between items-center cursor-pointer hover:border-secondary transition-all text-xs"
+                                :class="{'ring-2 ring-secondary border-transparent shadow-lg': openDropdown === filter.name}">
+                                <span class="truncate text-[11px] uppercase tracking-tight">{{ getSelectedName(filter.list, form[filter.name], filter.key, filter.display, filter.label) }}</span>
+                                <svg class="w-4 h-4 text-secondary transition-transform duration-300" :class="{'rotate-180': openDropdown === filter.name}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+
+                            <div v-if="openDropdown === filter.name" class="absolute z-50 w-full mt-2 bg-white border border-gray-400 rounded-xl py-2 max-h-64 overflow-y-auto shadow-2xl">
+                                <div @click="selectOption(filter.name, '')" class="px-5 py-2.5 hover:bg-bgsoft cursor-pointer text-[10px] text-textsecondary uppercase font-black tracking-widest">{{ filter.label }}</div>
+                                <div v-for="item in filter.list" :key="item[filter.key]" @click="selectOption(filter.name, item[filter.key])"
+                                     class="px-5 py-2.5 hover:bg-bgsoft cursor-pointer text-[11px] font-bold transition-colors border-l-4 border-transparent"
+                                     :class="{'text-secondary bg-secondary/5 border-secondary': form[filter.name] == item[filter.key]}">
+                                    {{ item[filter.display] }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+
+            <!-- Panel Pengaturan Chart (Local Settings) -->
+            <div class="border-t border-gray-100 pt-6 mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-2">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-textsecondary">Fokus Tema</label>
-                    <select v-model="selectedTema" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm font-bold text-primary">
-                        <option value="all">Semua Tema</option>
-                        <option v-for="tema in temaOptions" :key="tema" :value="tema">{{ tema }}</option>
+                    <label class="block text-[10px] font-black text-primary/40 uppercase tracking-[0.2em] mb-1 ml-1">Jumlah Tema Ditampilkan</label>
+                    <select v-model="temaLimit" class="w-full border border-gray-400 px-4 py-3 text-xs font-bold text-primary bg-white rounded-xl focus:border-secondary focus:outline-none transition-all">
+                        <option :value="4">Top 4 Tema</option>
+                        <option :value="6">Top 6 Tema</option>
+                        <option :value="8">Top 8 Tema</option>
+                        <option :value="12">Top 12 Tema</option>
                     </select>
                 </div>
                 <div class="space-y-2">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-textsecondary">Jumlah Tema Ditampilkan</label>
-                    <select v-model="temaLimit" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm font-bold text-primary">
-                        <option :value="4">Top 4</option>
-                        <option :value="6">Top 6</option>
-                        <option :value="8">Top 8</option>
-                        <option :value="12">Top 12</option>
-                    </select>
-                </div>
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black uppercase tracking-widest text-textsecondary">Jendela Tren</label>
-                    <select v-model="trendWindow" class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm font-bold text-primary">
+                    <label class="block text-[10px] font-black text-primary/40 uppercase tracking-[0.2em] mb-1 ml-1">Jendela Tren Bulanan</label>
+                    <select v-model="trendWindow" class="w-full border border-gray-400 px-4 py-3 text-xs font-bold text-primary bg-white rounded-xl focus:border-secondary focus:outline-none transition-all">
                         <option value="3">3 bulan terakhir</option>
                         <option value="6">6 bulan terakhir</option>
                         <option value="12">12 bulan terakhir</option>
@@ -208,14 +310,32 @@ const resetFilters = () => {
                     </select>
                 </div>
             </div>
-            <div class="mt-4 flex flex-wrap gap-2">
-                <span class="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-textsecondary">
+
+            <!-- Chips Filter Terpasang -->
+            <div class="mt-6 flex flex-wrap gap-2 items-center text-xs">
+                <span class="text-[10px] font-black text-textsecondary uppercase tracking-[0.2em] ml-1">Kondisi Aktif:</span>
+                
+                <span class="ui-chip bg-slate-100 px-3 py-1.5 text-textsecondary rounded-lg font-bold border border-slate-200">
                     Tema: {{ temaFocusLabel }}
                 </span>
-                <span class="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-textsecondary">
-                    Top Tema: {{ temaLimit }}
+                
+                <span v-if="form.urusan" class="ui-chip bg-slate-100 px-3 py-1.5 text-textsecondary rounded-lg font-bold border border-slate-200">
+                    Urusan: {{ getSelectedName(listUrusan, form.urusan, 'id_urusan', 'nama_urusan', '') }}
                 </span>
-                <span class="rounded-full bg-slate-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-textsecondary">
+
+                <span v-if="form.bidang" class="ui-chip bg-slate-100 px-3 py-1.5 text-textsecondary rounded-lg font-bold border border-slate-200">
+                    Bidang: {{ getSelectedName(listBidang, form.bidang, 'id_bidang', 'nama_bidang', '') }}
+                </span>
+
+                <span v-if="form.frekuensi" class="ui-chip bg-slate-100 px-3 py-1.5 text-textsecondary rounded-lg font-bold border border-slate-200">
+                    Frekuensi: {{ getSelectedName(listFrekuensi, form.frekuensi, 'id_frekuensi', 'nama_frekuensi', '') }}
+                </span>
+
+                <span class="ui-chip bg-slate-100 px-3 py-1.5 text-textsecondary rounded-lg font-bold border border-slate-200">
+                    Limit Tema: Top {{ temaLimit }}
+                </span>
+
+                <span class="ui-chip bg-slate-100 px-3 py-1.5 text-textsecondary rounded-lg font-bold border border-slate-200">
                     Tren: {{ trendWindow === 'all' ? 'Semua Data' : `${trendWindow} Bulan` }}
                 </span>
             </div>
@@ -224,87 +344,101 @@ const resetFilters = () => {
         <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div class="xl:col-span-2">
                 <BarChartIndikator
+                    :key="JSON.stringify(temaBarData)"
                     title="Distribusi Dataset per Tema"
                     :chartData="temaBarData"
+                    xAxisLabel="Tema Pembangunan"
+                    yAxisLabel="Jumlah Dataset"
                 />
             </div>
 
-            <div class="rounded-3xl border border-gray-300 bg-white p-7">
-                <h2 class="text-lg font-black uppercase tracking-tight text-primary mb-5">Peringkat Tema</h2>
+            <div class="ui-panel p-7 border border-gray-400 bg-white" style="border-radius: var(--radius-panel);">
+                <h2 class="ui-title-sm mb-5">Peringkat Tema</h2>
                 <div class="space-y-3">
                     <div
                         v-for="(tema, index) in topTema"
                         :key="tema.label"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-3"
+                        class="ui-surface p-3"
+                        style="border-radius: var(--radius-soft);"
                     >
-                        <div class="flex items-center justify-between text-xs font-black uppercase">
-                            <span class="text-primary">{{ index + 1 }}. {{ tema.label }}</span>
-                            <span class="text-textsecondary">{{ tema.value }} ({{ tema.pct }}%)</span>
+                        <div class="flex items-center justify-between text-[0.82rem] font-black uppercase">
+                            <span class="tracking-[0.08em] text-primary">{{ index + 1 }}. {{ tema.label }}</span>
+                            <span class="tracking-[0.08em] text-textsecondary">{{ tema.value }} ({{ tema.pct }}%)</span>
                         </div>
                         <div class="mt-2 h-2 w-full rounded-full bg-slate-200 overflow-hidden">
                             <div class="h-full rounded-full bg-gradient-to-r from-cyan-600 to-blue-800" :style="{ width: `${tema.pct}%` }"></div>
                         </div>
                     </div>
-                    <p v-if="topTema.length === 0" class="text-sm text-textsecondary font-bold">Belum ada data tema.</p>
+                    <p v-if="topTema.length === 0" class="ui-body">Belum ada data tema.</p>
                 </div>
             </div>
         </section>
 
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 rounded-3xl border border-gray-300 bg-white p-7">
+            <div class="ui-panel p-7 lg:col-span-2 border border-gray-400 bg-white" style="border-radius: var(--radius-panel);">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-lg font-black uppercase tracking-tight text-primary">Tren Dataset Tahunan</h2>
-                    <span class="text-[10px] font-black uppercase tracking-widest text-textsecondary">
+                    <h2 class="ui-title-sm">Tren Dataset Tahunan</h2>
+                    <span class="ui-eyebrow">
                         Total Tahun Ini: {{ totalTrenTahunIni }} | Window: {{ trendWindow }}
                     </span>
                 </div>
                 <div class="h-[330px]">
-                    <LineChartTren :chartData="trenLineData" />
+                    <LineChartTren
+                        :key="JSON.stringify(trenLineData)"
+                        :chartData="trenLineData"
+                        xAxisLabel="Periode Bulanan"
+                        yAxisLabel="Jumlah Dataset Baru"
+                    />
                 </div>
             </div>
 
             <ValidationDoughnut
+                :key="JSON.stringify(bidangDoughnutData)"
                 :doughnutData="bidangDoughnutData"
                 :validationData="{ total: stats.total_dataset || 0 }"
+                categoryLabel="Bidang"
+                valueLabel="Jumlah Dataset"
             />
         </section>
 
         <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="rounded-3xl border border-gray-300 bg-white p-7">
-                <h2 class="text-lg font-black uppercase tracking-tight text-primary mb-5">Frekuensi Pembaruan</h2>
+            <div class="ui-panel p-7 border border-gray-400 bg-white" style="border-radius: var(--radius-panel);">
+                <h2 class="ui-title-sm mb-5">Frekuensi Pembaruan</h2>
                 <div class="space-y-3">
                     <div
                         v-for="row in frekuensiRows"
                         :key="row.label"
-                        class="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                        class="ui-surface p-4"
+                        style="border-radius: var(--radius-soft);"
                     >
-                        <div class="flex justify-between items-center text-xs font-black uppercase">
-                            <span class="text-primary">{{ row.label }}</span>
-                            <span class="text-textsecondary">{{ row.value }}</span>
+                        <div class="flex items-center justify-between text-[0.82rem] font-black uppercase">
+                            <span class="tracking-[0.08em] text-primary">{{ row.label }}</span>
+                            <span class="tracking-[0.08em] text-textsecondary">{{ row.value }}</span>
                         </div>
                         <div class="mt-2 h-2.5 w-full rounded-full bg-slate-200 overflow-hidden">
                             <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-cyan-600" :style="{ width: `${row.pct}%` }"></div>
                         </div>
                     </div>
-                    <p v-if="!frekuensiRows.length" class="text-sm text-textsecondary font-bold">Belum ada data frekuensi.</p>
+                    <p v-if="!frekuensiRows.length" class="ui-body">Belum ada data frekuensi.</p>
                 </div>
             </div>
 
-            <div class="rounded-3xl border border-gray-300 bg-white p-7">
-                <h2 class="text-lg font-black uppercase tracking-tight text-primary mb-5">Dataset Pilihan</h2>
+            <div class="ui-panel p-7 border border-gray-400 bg-white" style="border-radius: var(--radius-panel);">
+                <h2 class="ui-title-sm mb-5">Dataset Pilihan</h2>
                 <div class="space-y-5">
                     <div>
-                        <p class="text-[10px] font-black uppercase tracking-widest text-textsecondary mb-3">Populer</p>
+                        <p class="ui-eyebrow mb-3">Populer</p>
                         <div class="space-y-2">
                             <div
                                 v-for="item in topPopularDatasets"
                                 :key="`popular-${item.id}`"
-                                class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                                class="ui-surface px-3 py-3"
+                                style="border-radius: var(--radius-soft);"
                             >
-                                <p class="text-xs font-black text-primary line-clamp-1">{{ item.title }}</p>
+                                <p class="text-[0.92rem] font-black leading-snug text-primary line-clamp-1">{{ item.title }}</p>
                                 <div class="mt-1 flex items-center justify-between gap-3">
-                                    <p class="text-[10px] font-bold text-textsecondary">{{ item.org }}</p>
-                                    <span class="rounded-full bg-cyan-100 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-cyan-800">
+                                    <p class="text-[0.82rem] font-bold text-textsecondary">{{ item.org }}</p>
+                                    <span class="ui-chip border-transparent bg-cyan-100 px-2 py-1 text-cyan-800">
                                         {{ item.pin_count || 0 }} Pin
                                     </span>
                                 </div>
@@ -312,15 +446,16 @@ const resetFilters = () => {
                         </div>
                     </div>
                     <div>
-                        <p class="text-[10px] font-black uppercase tracking-widest text-textsecondary mb-3">Terbaru</p>
+                        <p class="ui-eyebrow mb-3">Terbaru</p>
                         <div class="space-y-2">
                             <div
                                 v-for="item in topLatestDatasets"
                                 :key="`latest-${item.id}`"
-                                class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                                class="ui-surface px-3 py-3"
+                                style="border-radius: var(--radius-soft);"
                             >
-                                <p class="text-xs font-black text-primary line-clamp-1">{{ item.title }}</p>
-                                <p class="text-[10px] font-bold text-textsecondary mt-1">{{ item.org }}</p>
+                                <p class="text-[0.92rem] font-black leading-snug text-primary line-clamp-1">{{ item.title }}</p>
+                                <p class="mt-1 text-[0.82rem] font-bold text-textsecondary">{{ item.org }}</p>
                             </div>
                         </div>
                     </div>
@@ -328,17 +463,18 @@ const resetFilters = () => {
             </div>
         </section>
 
-        <section class="rounded-3xl border border-gray-300 bg-white p-7">
-            <h2 class="text-lg font-black uppercase tracking-tight text-primary mb-5">Topik Cepat</h2>
+        <section class="ui-panel p-7 border border-gray-400 bg-white" style="border-radius: var(--radius-panel);">
+            <h2 class="ui-title-sm mb-5">Topik Cepat</h2>
             <div class="flex flex-wrap gap-3">
                 <span
                     v-for="topic in topics"
                     :key="topic.name"
-                    class="px-4 py-2 rounded-xl border border-cyan-200 bg-cyan-50 text-cyan-800 text-[11px] font-black uppercase tracking-wider"
+                    class="ui-chip border-cyan-200 bg-cyan-50 px-4 py-2 text-cyan-800"
+                    style="border-radius: var(--radius-soft);"
                 >
                     {{ topic.name }}
                 </span>
-                <p v-if="!topics.length" class="text-sm text-textsecondary font-bold">Belum ada topik.</p>
+                <p v-if="!topics.length" class="ui-body">Belum ada topik.</p>
             </div>
         </section>
     </div>

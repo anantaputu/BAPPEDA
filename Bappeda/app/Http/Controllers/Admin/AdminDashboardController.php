@@ -195,7 +195,7 @@ class AdminDashboardController extends Controller
         $userId = Auth::id();
         $pinnedDatasets = Bookmark::join('data', 'bookmark.dataset_id', '=', 'data.id_data')
             ->where('bookmark.user_id', $userId)
-            ->select('data.id_data', 'data.nama_data as nama_indikator', 'data.tahun_terbit')
+            ->select('data.id_data', 'data.nama_data', 'data.tahun_terbit')
             ->get();
 
         return Inertia::render('Admin/Dashboard', [

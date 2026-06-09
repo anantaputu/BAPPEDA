@@ -15,25 +15,25 @@ const isLegacyPathIcon = computed(() => typeof props.icon === 'string' && /^[Mm]
 </script>
 
 <template>
-    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-400 h-40">
-        <div class="flex items-center gap-4 mb-2">
+    <div class="ui-panel h-40 p-6" style="border-radius: var(--radius-panel);">
+        <div class="mb-3 flex items-center gap-4">
             <div :class="[
-                'w-12 h-12 rounded-xl flex items-center justify-center', 
+                'flex h-12 w-12 items-center justify-center', 
                 colors[color].bg, 
                 colors[color].text
-            ]">
+            ]" style="border-radius: var(--radius-soft);">
                 <svg v-if="isLegacyPathIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" :d="icon" />
                 </svg>
                 <IconifyIcon v-else :icon="icon" width="24" height="24" />
             </div>
-            <h3 class="text-[11px] font-black text-textsecondary uppercase tracking-[0.15em] leading-tight">
+            <h3 class="ui-eyebrow leading-tight">
                 {{ label }}
             </h3>
         </div>
 
         <div class="flex-1 flex items-center justify-center">
-            <p class="text-5xl font-black text-primary tracking-tighter">
+            <p class="ui-stat-value">
                 {{ value }}
             </p>
         </div>

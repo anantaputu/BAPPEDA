@@ -62,7 +62,7 @@ const temaDistributionBars = computed(() => {
         label,
         value: values[idx] || 0,
         percent: Math.round(((values[idx] || 0) / max) * 100),
-    }));
+    })).slice(0, 4);
 });
 
 const frekuensiDistributionBars = computed(() => {
@@ -73,7 +73,7 @@ const frekuensiDistributionBars = computed(() => {
         label,
         value: values[idx] || 0,
         percent: Math.round(((values[idx] || 0) / max) * 100),
-    }));
+    })).slice(0, 4);
 });
 
 // ========================================================
@@ -158,6 +158,7 @@ watch(activeSatuan, () => {
 const extraFieldKeys = computed(() => {
     if (!filteredData.value || filteredData.value.length === 0) return [];
     let keys = new Set();
+    const excludeKeys = ['nama data', 'nama_data', 'nama indikator', 'nama_indikator', 'uraian', 'indikator'];
     filteredData.value.forEach(row => {
         if (row.informasi_tambahan) {
             let extras = row.informasi_tambahan;
@@ -166,7 +167,10 @@ const extraFieldKeys = computed(() => {
             }
             if (typeof extras === 'object' && extras !== null) {
                 Object.keys(extras).forEach(k => {
-                    if (k.toLowerCase() !== 'nama data' && k.toLowerCase() !== 'nama indikator') keys.add(k);
+                    const cleanK = k.toLowerCase().trim();
+                    if (!excludeKeys.includes(cleanK)) {
+                        keys.add(k);
+                    }
                 });
             }
         }
@@ -330,8 +334,26 @@ const chartOptions = {
         }
     },
     scales: {
-        y: { grid: { color: '#f3f4f6', borderDash: [5, 5] }, ticks: { font: { size: 10 }, color: '#9ca3af' } },
-        x: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' }, color: '#000B58' } }
+        y: {
+            title: {
+                display: true,
+                text: 'Nilai Data',
+                color: '#000B58',
+                font: { size: 12, weight: 'bold' }
+            },
+            grid: { color: '#f3f4f6', borderDash: [5, 5] },
+            ticks: { font: { size: 10 }, color: '#9ca3af' }
+        },
+        x: {
+            title: {
+                display: true,
+                text: 'Periode Data',
+                color: '#000B58',
+                font: { size: 12, weight: 'bold' }
+            },
+            grid: { display: false },
+            ticks: { font: { size: 11, weight: 'bold' }, color: '#000B58' }
+        }
     }
 };
 
@@ -339,143 +361,153 @@ const chartOptions = {
 // 3. UPDATE STATS CARDS 
 // ========================================================
 const statsCards = computed(() => [
-    { label: 'TOTAL INDIKATOR SAYA', value: props.stats.total_indikator || 0, icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4', color: 'navy' },
-    { label: 'TOTAL UPLOAD SAYA', value: props.stats.total_upload || 0, icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4-4m0 0L8 8m4-4v12', color: 'navy' },
-    { label: 'TOTAL NILAI DATA', value: props.stats.total_nilai || 0, icon: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', color: 'navy' },
-    { label: 'CAKUPAN TEMA', value: props.stats.cakupan_tema || 0, icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z', color: 'navy' },
-    { label: 'VARIASI FREKUENSI', value: props.stats.variasi_frekuensi || 0, icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: 'navy' },
-    { label: 'SUMBER DATA SAYA', value: props.stats.sumber_data || 0, icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', color: 'navy' },
+    { label: 'Total Indikator Saya', value: props.stats.total_indikator || 0, icon: 'solar:database-bold', color: 'navy' },
+    { label: 'Total Upload Saya', value: props.stats.total_upload || 0, icon: 'solar:upload-square-bold', color: 'navy' },
+    { label: 'Total Nilai Data', value: props.stats.total_nilai || 0, icon: 'solar:chart-square-bold', color: 'navy' },
+    { label: 'Cakupan Tema', value: props.stats.cakupan_tema || 0, icon: 'solar:tag-bold', color: 'navy' },
 ]);
 </script>
 
 <template>
     <Head title="Dashboard Inputer" />
 
-    <div class="space-y-4">
-        <div class="flex flex-col md:flex-row md:items-center justify-between mb-5">
+    <div class="space-y-6">
+        <div class="mb-5 flex flex-col justify-between md:flex-row md:items-center">
             <div>
-                <h1 class="text-2xl font-black text-primary uppercase tracking-tight">Dashboard Inputer</h1>
-                <p class="text-sm text-textsecondary font-medium">Monitoring performa, tren, dan rekap data indikator Anda.</p>
+                <h1 class="ui-title-md">Dashboard Inputer</h1>
+                <p class="ui-body mt-2">Monitoring performa, tren, dan rekap indikator Anda dengan tampilan yang lebih ringkas.</p>
             </div>
         </div>
 
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard 
                 v-for="(stat, index) in statsCards" 
                 :key="index" 
                 v-bind="stat" 
                 :colors="colors"
-                class="!rounded-xl"
+                class="!rounded-xl border border-gray-400 bg-white"
             />
         </section>
 
-        <section class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div class="bg-white p-6 rounded-xl border border-gray-400 shadow-sm">
-                <h3 class="text-sm font-black text-primary uppercase tracking-[0.2em] border-l-4 border-secondary pl-4">Distribusi Tema Saya</h3>
-                <div class="mt-6 space-y-3">
-                    <div v-for="(item, idx) in temaDistributionBars" :key="`tema-${idx}`">
-                        <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-textsecondary mb-1">
-                            <span class="truncate">{{ item.label }}</span>
-                            <span class="text-primary">{{ item.value }}</span>
-                        </div>
-                        <div class="h-2 rounded-full bg-bgsoft overflow-hidden">
-                            <div class="h-full bg-secondary rounded-full" :style="{ width: `${item.percent}%` }"></div>
+        <section class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <div class="ui-panel p-6 xl:col-span-2 border border-gray-400 bg-white" style="border-radius: var(--radius-panel);">
+                <div class="mb-5 flex items-center justify-between gap-3">
+                    <h3 class="ui-eyebrow border-l-4 border-secondary pl-4">Ringkasan Sebaran Data Saya</h3>
+                    <span class="ui-chip border-slate-200 bg-slate-50 px-3 py-2 text-textsecondary" style="border-radius: var(--radius-soft);">
+                        {{ props.stats.variasi_frekuensi || 0 }} Frekuensi
+                    </span>
+                </div>
+                <div class="grid gap-6 md:grid-cols-2">
+                    <div>
+                        <p class="ui-eyebrow mb-3">Tema Utama</p>
+                        <div class="space-y-3">
+                            <div v-for="(item, idx) in temaDistributionBars" :key="`tema-${idx}`">
+                                <div class="mb-1 flex items-center justify-between text-[0.76rem] font-black uppercase tracking-[0.14em] text-textsecondary">
+                                    <span class="truncate">{{ item.label }}</span>
+                                    <span class="text-primary">{{ item.value }}</span>
+                                </div>
+                                <div class="h-2 overflow-hidden rounded-full bg-bgsoft">
+                                    <div class="h-full rounded-full bg-secondary" :style="{ width: `${item.percent}%` }"></div>
+                                </div>
+                            </div>
+                            <p v-if="temaDistributionBars.length === 0" class="ui-body">Belum ada data tema.</p>
                         </div>
                     </div>
-                    <p v-if="temaDistributionBars.length === 0" class="text-[10px] font-bold text-textsecondary uppercase tracking-wider">Belum ada data tema.</p>
+                    <div>
+                        <p class="ui-eyebrow mb-3">Frekuensi Teratas</p>
+                        <div class="space-y-3">
+                            <div v-for="(item, idx) in frekuensiDistributionBars" :key="`freq-${idx}`">
+                                <div class="mb-1 flex items-center justify-between text-[0.76rem] font-black uppercase tracking-[0.14em] text-textsecondary">
+                                    <span class="truncate">{{ item.label }}</span>
+                                    <span class="text-primary">{{ item.value }}</span>
+                                </div>
+                                <div class="h-2 overflow-hidden rounded-full bg-bgsoft">
+                                    <div class="h-full rounded-full bg-primary" :style="{ width: `${item.percent}%` }"></div>
+                                </div>
+                            </div>
+                            <p v-if="frekuensiDistributionBars.length === 0" class="ui-body">Belum ada data frekuensi.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-xl border border-gray-400 shadow-sm">
-                <h3 class="text-sm font-black text-primary uppercase tracking-[0.2em] border-l-4 border-secondary pl-4">Distribusi Frekuensi Saya</h3>
-                <div class="mt-6 space-y-3">
-                    <div v-for="(item, idx) in frekuensiDistributionBars" :key="`freq-${idx}`">
-                        <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-textsecondary mb-1">
-                            <span class="truncate">{{ item.label }}</span>
-                            <span class="text-primary">{{ item.value }}</span>
-                        </div>
-                        <div class="h-2 rounded-full bg-bgsoft overflow-hidden">
-                            <div class="h-full bg-primary rounded-full" :style="{ width: `${item.percent}%` }"></div>
-                        </div>
-                    </div>
-                    <p v-if="frekuensiDistributionBars.length === 0" class="text-[10px] font-bold text-textsecondary uppercase tracking-wider">Belum ada data frekuensi.</p>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-xl border border-gray-400 shadow-sm">
-                <h3 class="text-sm font-black text-primary uppercase tracking-[0.2em] border-l-4 border-secondary pl-4">Ringkasan Bulan Ini</h3>
+            <div class="ui-panel p-6 border border-gray-400 bg-white" style="border-radius: var(--radius-panel);">
+                <h3 class="ui-eyebrow border-l-4 border-secondary pl-4">Ringkasan Bulan Ini</h3>
                 <div class="mt-6 space-y-4">
-                    <div class="rounded-xl border border-gray-200 bg-bgsoft/50 p-4">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-textsecondary">Indikator Baru</p>
-                        <p class="text-2xl font-black text-primary mt-1">{{ props.stats.input_bulan_ini || 0 }}</p>
+                    <div class="ui-surface p-4" style="border-radius: var(--radius-soft);">
+                        <p class="ui-eyebrow">Indikator Baru</p>
+                        <p class="mt-2 text-[2rem] font-black leading-none text-primary">{{ props.stats.input_bulan_ini || 0 }}</p>
                     </div>
-                    <div class="rounded-xl border border-gray-200 bg-bgsoft/50 p-4">
-                        <p class="text-[10px] font-black uppercase tracking-widest text-textsecondary">Upload Data</p>
-                        <p class="text-2xl font-black text-primary mt-1">{{ props.stats.upload_bulan_ini || 0 }}</p>
+                    <div class="ui-surface p-4" style="border-radius: var(--radius-soft);">
+                        <p class="ui-eyebrow">Upload Data</p>
+                        <p class="mt-2 text-[2rem] font-black leading-none text-primary">{{ props.stats.upload_bulan_ini || 0 }}</p>
+                    </div>
+                    <div class="ui-surface p-4" style="border-radius: var(--radius-soft);">
+                        <p class="ui-eyebrow">Sumber Data Saya</p>
+                        <p class="mt-2 text-[2rem] font-black leading-none text-primary">{{ props.stats.sumber_data || 0 }}</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section class="mt-8 animate-in fade-in duration-500">
-            <div class="flex items-center justify-between gap-3 mb-5">
+        <section class="mt-2 animate-in fade-in duration-500">
+            <div class="mb-5 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 shadow-sm border border-amber-100">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-amber-500 shadow-sm">
+                        <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
                     </div>
                     <div>
-                        <h3 class="text-lg font-black text-primary uppercase tracking-widest">Pin Indikator Favorit</h3>
-                        <p class="text-[10px] text-textsecondary font-bold uppercase tracking-wider mt-0.5">Akses cepat ke data pantauan Anda</p>
+                        <h3 class="ui-title-sm">Pin Indikator Favorit</h3>
+                        <p class="ui-body mt-1">Akses cepat ke data pantauan Anda.</p>
                     </div>
                 </div>
                 
-                <Link href="/inputer/data" class="text-[10px] font-black text-secondary hover:text-primary transition-colors uppercase tracking-widest bg-secondary/5 px-4 py-2 rounded-xl">
-                    Jelajahi Data &rarr;
+                <Link href="/inputer/data" class="ui-chip bg-secondary/5 px-4 py-2 text-secondary hover:text-primary" style="border-radius: var(--radius-soft);">
+                    Jelajahi Data
                 </Link>
             </div>
 
-            <div v-if="pinnedData && pinnedData.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                <Link v-for="item in pinnedData" :key="item.id_data" :href="`/dataset/${item.id_data}`" 
-                    class="group relative bg-white p-5 rounded-[1.5rem] border border-gray-400 shadow-sm hover:border-secondary/40 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between min-h-[120px]">
-                    
-                    <div class="absolute top-0 left-0 w-1.5 h-full bg-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    
+            <div v-if="pinnedData && pinnedData.length > 0" class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <Link v-for="item in pinnedData.slice(0, 3)" :key="item.id_data" :href="`/dataset/${item.id_data}`" 
+                    class="ui-panel bg-white border border-gray-400 group flex min-h-[120px] flex-col justify-between p-5 transition-all duration-300 hover:-translate-y-1 hover:border-secondary/40 hover:shadow-xl"
+                    style="border-radius: var(--radius-panel);">
                     <div>
-                        <div class="flex justify-between items-start mb-2 gap-3">
-                            <h4 class="text-[13px] font-black text-primary line-clamp-2 leading-tight group-hover:text-secondary transition-colors">
+                        <div class="mb-2 flex items-start justify-between gap-3">
+                            <h4 class="text-[0.95rem] font-black leading-tight text-primary transition-colors group-hover:text-secondary line-clamp-2">
                                 {{ item.nama_data }}
                             </h4>
-                            <div class="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center shrink-0 group-hover:bg-amber-100 transition-colors">
-                                <svg class="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                            <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-50 transition-colors group-hover:bg-amber-100">
+                                <svg class="h-3 w-3 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="mt-4 flex items-center justify-between border-t border-gray-50 pt-3">
-                        <span class="text-[10px] font-bold text-textsecondary uppercase tracking-widest">Tahun Data</span>
-                        <span class="text-[11px] font-black text-secondary bg-primary/5 px-3 py-1.5 rounded-lg border border-primary/10">
+                    <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
+                        <span class="ui-eyebrow">Tahun Data</span>
+                        <span class="ui-chip border border-primary/10 bg-primary/5 px-3 py-1.5 text-secondary" style="border-radius: 0.7rem;">
                             {{ item.tahun_terbit || '-' }}
                         </span>
                     </div>
                 </Link>
             </div>
 
-            <div v-else class="w-full bg-white border border-dashed border-gray-300 rounded-[1.5rem] p-8 text-center flex flex-col items-center justify-center">
-                <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-3">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+            <div v-else class="ui-panel flex w-full flex-col items-center justify-center p-8 text-center" style="border-radius: var(--radius-panel); border-style: dashed;">
+                <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-50 text-gray-300">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
                 </div>
-                <h4 class="text-sm font-black text-textsecondary uppercase tracking-widest">Belum ada data yang disematkan</h4>
-                <p class="text-[11px] text-gray-400 mt-2 font-medium">Buka halaman detail data dan klik ikon <span class="inline-block mx-1 w-3 h-3 text-amber-500"><svg fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg></span> untuk memantau indikator penting di sini.</p>
+                <h4 class="ui-eyebrow text-textsecondary">Belum ada data yang disematkan</h4>
+                <p class="ui-body mt-2">Buka halaman detail data dan gunakan pin untuk menaruh indikator penting di sini.</p>
             </div>
         </section>
-<section class="mb-4 bg-white p-6 rounded-xl border border-gray-400 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
-    <div class="w-full md:w-auto flex flex-wrap gap-6">
+<section class="ui-panel mb-2 flex flex-col items-center justify-between gap-6 p-6 md:flex-row border border-gray-400 bg-white" style="border-radius: var(--radius-panel);">
+    <div class="flex w-full flex-wrap gap-6 md:w-auto">
         <div>
-            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Satuan:</p>
+            <p class="ui-eyebrow mb-3 ml-2">Satuan</p>
             <div class="flex flex-wrap gap-2">
                 <button v-for="satuan in availableSatuans" :key="satuan" 
                     @click="activeSatuan = satuan"
-                    class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                    class="ui-chip px-5 py-2.5 transition-all"
+                    style="border-radius: var(--radius-soft);"
                     :class="activeSatuan === satuan ? 'bg-primary text-white shadow-lg' : 'bg-bgsoft text-textsecondary border border-gray-200'">
                     {{ satuan }}
                 </button>
@@ -483,11 +515,12 @@ const statsCards = computed(() => [
         </div>
 
             <div>
-    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Tahun Terbit:</p>
+    <p class="ui-eyebrow mb-3 ml-2">Tahun Terbit</p>
     <div class="flex flex-wrap gap-2">
         <button v-for="tahun in availableTahunTerbit" :key="tahun" 
             @click="activeTahunTerbit = tahun"
-            class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+            class="ui-chip px-5 py-2.5 transition-all"
+            style="border-radius: var(--radius-soft);"
             :class="activeTahunTerbit === tahun 
                 ? 'bg-secondary text-white shadow-lg shadow-secondary/20' 
                 : 'bg-bgsoft text-textsecondary border border-gray-200 hover:bg-secondary/10'">
@@ -497,9 +530,10 @@ const statsCards = computed(() => [
 </div>
 </div>
 
-    <div class="flex bg-bgsoft p-1.5 rounded-xl border border-gray-300">
+    <div class="flex rounded-xl border border-gray-300 bg-bgsoft p-1.5" style="border-radius: var(--radius-soft);">
         <button v-for="view in views" :key="view" @click="activeView = view"
-            class="px-8 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all"
+            class="px-8 py-3 text-[0.82rem] font-black uppercase tracking-[0.14em] transition-all"
+            style="border-radius: 0.7rem;"
             :class="activeView === view ? 'bg-white text-primary shadow-sm' : 'text-textsecondary hover:text-primary'">
             {{ view }}
         </button>
@@ -572,101 +606,69 @@ const statsCards = computed(() => [
         </section>
 
         <section v-if="activeView === 'Tabel Data'" class="animate-in slide-in-from-bottom-4 duration-500">
-            <div class="bg-white border border-gray-400 rounded-xl overflow-hidden shadow-sm relative">
-                
-                <div class="bg-primary p-6 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-white">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-white font-black uppercase tracking-widest text-lg">Rekapitulasi Data ({{ activeSatuan }})</h3>
-                        <p class="text-blue-200 text-xs font-medium mt-1">Geser ke samping untuk melihat nilai per tahun. Total: {{ filteredData.length }} Indikator.</p>
-                    </div>
+            <div class="mb-4 flex items-center justify-between">
+                <div>
+                    <h4 class="text-sm font-extrabold text-primary uppercase tracking-wider">Rekapitulasi Data ({{ activeSatuan }})</h4>
+                    <p class="text-xs text-textsecondary font-medium mt-1">Geser ke samping untuk melihat nilai per tahun.</p>
                 </div>
-
+                <span class="px-3 py-1 rounded bg-secondary/10 text-secondary border border-secondary/20 text-[10px] font-bold uppercase tracking-wider">
+                    Total: {{ filteredData.length }} Indikator
+                </span>
+            </div>
+            
+            <div class="border border-gray-400 rounded-2xl overflow-hidden shadow-sm bg-white">
                 <div class="overflow-x-auto custom-scrollbar" v-if="filteredData.length > 0">
                     <table class="w-full text-left border-collapse whitespace-nowrap">
                         <thead>
-                            <tr class="bg-gray-50/80">
-                                <th class="p-5 bg-gray-100/90 border-b-2 border-r border-gray-200 text-[11px] font-black text-[#A2B5CB] uppercase tracking-[0.15em] sticky left-0 z-20 min-w-[280px] shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]">
+                            <tr class="bg-slate-50 border-b border-gray-400">
+                                <th class="p-4 border-r border-gray-400 text-xs font-bold text-textsecondary uppercase tracking-wider sticky left-0 z-20 min-w-[280px] bg-slate-50 shadow-sm">
                                     Nama Indikator
                                 </th>
                                 
-                                <th v-for="key in extraFieldKeys" :key="'th-'+key" class="p-5 border-b-2 border-r border-gray-200 text-[10px] font-black text-[#A2B5CB] uppercase tracking-widest text-center bg-gray-50/50">
+                                <th v-for="key in extraFieldKeys" :key="'th-'+key" class="p-4 border-r border-gray-400 text-xs font-bold text-textsecondary uppercase tracking-wider text-center bg-slate-50">
                                     {{ key }}
                                 </th>
 
-                                <th v-for="year in timeColumns" :key="year" class="p-4 border-b-2 border-r border-gray-100 min-w-[150px] align-bottom bg-gray-50/30">
-                                    <div class="bg-white border border-blue-100 rounded-xl px-4 py-3 text-center shadow-sm relative overflow-hidden">
-                                        <div class="absolute top-0 left-0 w-full h-1 bg-[#00139E]/20"></div>
-                                        <span class="text-xs font-black text-primary uppercase tracking-wider">{{ formatTimeHeader(year) }}</span>
-                                    </div>
+                                <th v-for="year in timeColumns" :key="year" class="p-4 border-r border-gray-400 min-w-[120px] text-center text-xs font-bold text-primary uppercase tracking-wider">
+                                    {{ formatTimeHeader(year) }}
                                 </th>
                             </tr>
                         </thead>
 
-                        <tbody class="divide-y divide-gray-100">
-                            <tr v-for="(row, idx) in filteredData" :key="idx" class="hover:bg-blue-50/20 transition-colors group">
-                                <td class="p-5 bg-white border-r border-gray-200 font-bold text-primary text-sm sticky left-0 z-10 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-[#f8fafc]">
+                        <tbody class="divide-y divide-gray-400">
+                            <tr v-for="(row, idx) in filteredData" :key="idx" class="hover:bg-slate-50/50 transition-colors group">
+                                <td class="p-4 bg-white border-r border-gray-400 font-bold text-primary text-sm sticky left-0 z-10 shadow-sm group-hover:bg-slate-50/50">
                                     <div class="line-clamp-2 w-[280px]">
                                         {{ idx + 1 }}. {{ row.nama_data || row['Nama Indikator'] || 'Data' }}
                                     </div>
                                 </td>
 
-                                <td v-for="key in extraFieldKeys" :key="'td-'+key" class="p-5 border-r border-gray-100 text-xs font-bold text-gray-500 text-center bg-white group-hover:bg-[#f8fafc]">
+                                <td v-for="key in extraFieldKeys" :key="'td-'+key" class="p-4 border-r border-gray-400 text-xs font-semibold text-textsecondary text-center group-hover:bg-slate-50/30">
                                     {{ row[key] || '-' }}
                                 </td>
 
-                                <td v-for="year in timeColumns" :key="year" class="p-3 border-r border-gray-100 min-w-[150px] bg-white group-hover:bg-[#f8fafc]">
-                                    <div class="w-full bg-[#F5F7FA] border border-gray-100 text-primary rounded-xl px-4 py-3 text-sm font-black text-center transition-all hover:border-primary/30 hover:bg-white">
+                                <td v-for="year in timeColumns" :key="year" class="p-4 border-r border-gray-400 text-center group-hover:bg-slate-50/30">
+                                    <span class="text-sm font-bold text-primary group-hover:text-secondary transition-colors">
                                         {{ row[year] !== undefined && row[year] !== null && row[year] !== '' ? row[year] : '-' }}
-                                    </div>
+                                    </span>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <div v-else class="p-16 text-center bg-gray-50">
+                <div v-else class="p-16 text-center bg-slate-50">
                     <p class="text-gray-400 font-bold uppercase tracking-widest text-sm">Tidak ada data untuk satuan ini.</p>
                 </div>
             </div>
         </section>
 
-        <GrowthLineChart :chartData="growthChart" />
-
-        <section class="bg-white p-6 rounded-xl border border-gray-400 shadow-sm">
-            <div class="flex items-center justify-between mb-5">
-                <h3 class="text-sm font-black text-primary uppercase tracking-[0.2em] border-l-4 border-secondary pl-4">Data Terbaru Saya</h3>
-                <Link href="/inputer/data" class="text-[10px] font-black text-secondary uppercase tracking-widest hover:text-primary">Buka Manajemen Data</Link>
-            </div>
-            <div class="overflow-x-auto custom-scrollbar">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-bgsoft text-[10px] font-black uppercase tracking-widest text-textsecondary">
-                            <th class="p-4">Nama Data</th>
-                            <th class="p-4 text-center">Tema</th>
-                            <th class="p-4 text-center">Frekuensi</th>
-                            <th class="p-4 text-center">Nilai</th>
-                            <th class="p-4 text-center">Update</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="row in recentMyData" :key="row.id_data" class="border-b border-gray-100 last:border-0">
-                            <td class="p-4 text-xs font-black text-primary uppercase">{{ row.nama_data }}</td>
-                            <td class="p-4 text-center text-[10px] font-bold text-textsecondary uppercase">{{ row.tema }}</td>
-                            <td class="p-4 text-center text-[10px] font-bold text-textsecondary uppercase">{{ row.frekuensi }}</td>
-                            <td class="p-4 text-center text-[10px] font-black text-primary">{{ row.values_count }}</td>
-                            <td class="p-4 text-center text-[10px] font-bold text-textsecondary">{{ row.updated_at }}</td>
-                        </tr>
-                        <tr v-if="recentMyData.length === 0">
-                            <td colspan="5" class="p-8 text-center text-[10px] font-bold uppercase tracking-widest text-textsecondary">
-                                Belum ada data yang Anda input.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <section class="w-full">
+            <GrowthLineChart
+                :chartData="growthChart"
+                xAxisLabel="Periode Bulanan"
+                yAxisLabel="Jumlah Upload Baru"
+            />
         </section>
 
         <div class="w-full mt-10">
@@ -678,10 +680,10 @@ const statsCards = computed(() => [
 <style scoped>
 div { transition: width 0.3s ease; }
 
-.custom-scrollbar::-webkit-scrollbar { height: 10px; width: 10px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 0 0 2rem 2rem; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f8fafc; }
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #00139E; }
+.custom-scrollbar::-webkit-scrollbar { height: 10px; width: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #EEF2F5; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; border: 2px solid #EEF2F5; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #1F3A63; }
 
 .line-clamp-2 {
     display: -webkit-box;

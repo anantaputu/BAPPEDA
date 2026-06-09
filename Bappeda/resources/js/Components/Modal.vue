@@ -50,7 +50,7 @@ const maxWidthClass = {
                     leave-from-class="opacity-100 translate-y-0 sm:scale-100"
                     leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 >
-                    <div v-show="show" :class="['mb-6 transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all sm:mx-auto sm:w-full', maxWidthClass]">
+                    <div v-show="show" :class="['mb-6 transform overflow-hidden bg-white shadow-2xl transition-all sm:mx-auto sm:w-full', maxWidthClass]" style="border-radius: var(--radius-panel);">
                         <slot />
                     </div>
                 </Transition>

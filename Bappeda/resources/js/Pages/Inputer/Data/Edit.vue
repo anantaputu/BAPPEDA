@@ -28,7 +28,7 @@ const props = defineProps({
 });
 
 // 1. Parsing Informasi Tambahan
-let parsedExtraFields = {};
+let parsedExtraFields = [];
 if (props.dataIndikator?.informasi_tambahan) {
     let rawExtra = props.dataIndikator.informasi_tambahan;
     if (typeof rawExtra === 'string') {
@@ -36,7 +36,7 @@ if (props.dataIndikator?.informasi_tambahan) {
     }
     for (let key in rawExtra) {
         if (key.toLowerCase() !== 'nama data' && key.toLowerCase() !== 'nama indikator') {
-            parsedExtraFields[key] = rawExtra[key] || ''; 
+            parsedExtraFields.push({ key: key, value: rawExtra[key] || '' }); 
         }
     }
 }
@@ -57,7 +57,7 @@ const form = useForm({
     tahun_terbit: props.dataIndikator.tahun_terbit || '', 
     
     // Properti Extra Fields dan Values
-    extra_fields: parsedExtraFields, 
+    extra_fields_array: parsedExtraFields, 
     values: props.dataIndikator.values && props.dataIndikator.values.length > 0 
             ? props.dataIndikator.values.map(v => ({ tahun: v.tahun, nilai: v.nilai }))
             : [{ tahun: String(new Date().getFullYear()), nilai: '' }]
@@ -77,6 +77,14 @@ const removeColumn = (index) => {
     }
 };
 
+const addExtraField = () => {
+    form.extra_fields_array.push({ key: '', value: '' });
+};
+
+const removeExtraField = (index) => {
+    form.extra_fields_array.splice(index, 1);
+};
+
 const submit = () => {
     const hasEmptyValues = form.values.some(v => v.tahun === '' || v.nilai === '');
     if (hasEmptyValues) {
@@ -84,7 +92,15 @@ const submit = () => {
         return;
     }
 
-    form.put(`/inputer/data/${props.dataIndikator.id_data}`, {
+    let formattedExtraFields = {};
+    form.extra_fields_array.forEach(item => {
+        if (item.key.trim() !== '') formattedExtraFields[item.key.trim()] = item.value.trim();
+    });
+
+    form.transform((data) => ({
+        ...data,
+        extra_fields: formattedExtraFields
+    })).put(`/inputer/data/${props.dataIndikator.id_data}`, {
         preserveScroll: true,
         onSuccess: () => {
             openAlert('Berhasil', 'Data berhasil diperbarui!', 'success');
@@ -174,19 +190,6 @@ const submit = () => {
                         <input v-model="form.tahun_terbit" type="number" class="w-full bg-white border border-gray-400 rounded-xl px-5 py-4 text-sm font-bold text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300" />
                     </div>
 
-                    <template v-if="Object.keys(form.extra_fields).length > 0">
-                        <div class="md:col-span-4 border-t border-gray-300 my-2 pt-6">
-                            <h4 class="text-[10px] font-black uppercase text-primary tracking-widest flex items-center gap-2">
-                                <svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-                                Atribut Tambahan
-                            </h4>
-                        </div>
-                        <div v-for="(value, key) in form.extra_fields" :key="key" class="md:col-span-2 space-y-2">
-                            <label class="text-[10px] font-black uppercase tracking-widest text-textsecondary ml-1">{{ key }}</label>
-                            <input v-model="form.extra_fields[key]" type="text" class="w-full bg-white border border-gray-400 rounded-xl px-5 py-4 text-sm font-medium text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300" />
-                        </div>
-                    </template>
-
                     <div class="md:col-span-2 space-y-2">
                         <label class="text-[10px] font-black uppercase tracking-widest text-textsecondary ml-1">Deskripsi</label>
                         <textarea v-model="form.deskripsi" rows="2" class="w-full bg-white border border-gray-400 rounded-xl px-5 py-4 text-sm font-medium text-primary focus:outline-none focus:border-secondary focus:ring-4 focus:ring-secondary/5 transition-all duration-300"></textarea>
@@ -208,6 +211,36 @@ const submit = () => {
                                 <svg v-if="form.id_katakunci.includes(tag.id_katakunci)" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                             </label>
                             <p v-if="!katakunci || katakunci.length === 0" class="text-[10px] text-gray-400 italic">Master kata kunci belum tersedia.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center border-l-4 border-secondary pl-4">
+                        <div>
+                            <h4 class="text-sm font-black uppercase text-primary tracking-widest">Atribut Tambahan</h4>
+                            <p class="text-[10px] text-textsecondary font-bold uppercase opacity-50">Informasi pendukung metadata</p>
+                        </div>
+                        <button @click.prevent="addExtraField" class="bg-bgsoft text-primary border border-gray-300 hover:bg-secondary hover:text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm">
+                            + Tambah Atribut
+                        </button>
+                    </div>
+
+                    <div v-if="form.extra_fields_array.length > 0" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div v-for="(field, index) in form.extra_fields_array" :key="index" class="bg-white p-6 rounded-xl border border-gray-400 relative group shadow-sm hover:border-secondary transition-all">
+                            <div class="space-y-4">
+                                <div class="space-y-1">
+                                    <label class="text-[9px] font-black text-textsecondary opacity-60 ml-1 uppercase">Nama Atribut</label>
+                                    <input v-model="field.key" type="text" placeholder="Cth: Nomenklatur" class="w-full bg-bgsoft border border-gray-200 rounded-lg px-4 py-2 font-black text-xs text-primary" required />
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[9px] font-black text-textsecondary opacity-60 ml-1 uppercase">Nilai</label>
+                                    <input v-model="field.value" type="text" placeholder="Isi detail..." class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2 text-xs text-primary font-bold" />
+                                </div>
+                            </div>
+                            <button @click.prevent="removeExtraField(index)" class="absolute -top-3 -right-3 text-white bg-integritas w-8 h-8 rounded-full flex items-center justify-center shadow-lg scale-0 group-hover:scale-100 transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -11,6 +11,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate; // [BARU] Import untuk kolom dinamis
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 
 class DataOutputController extends Controller
 {
@@ -150,5 +151,111 @@ class DataOutputController extends Controller
 
         usort($rows, fn ($a, $b) => strnatcasecmp((string) $a['periode'], (string) $b['periode']));
         return $rows;
+    }
+
+    public function exportBulk(Request $request)
+    {
+        $user = auth()->user();
+        $isAdmin = $user && optional($user->role)->nama_role === 'Admin';
+
+        // 1. Ambil data dengan filter
+        $query = Data::with(['values', 'tema', 'urusan', 'bidang', 'frekuensi']);
+
+        // Batasi berdasarkan cakupan (internal vs public)
+        $isInternal = $request->input('scope') === 'internal';
+        if ($isInternal && $user) {
+            if (!$isAdmin) {
+                $query->where('id_user', $user->id);
+            }
+        }
+
+        // Terapkan filter pencarian dan drop down
+        if ($request->filled('search')) {
+            $keyword = strtolower(trim($request->search));
+            $query->whereRaw('LOWER(TRIM(nama_data)) LIKE ?', ['%' . $keyword . '%']);
+        }
+        if ($request->filled('urusan')) $query->where('id_urusan', $request->urusan);
+        if ($request->filled('bidang')) $query->where('id_bidang', $request->bidang);
+        if ($request->filled('tema'))   $query->where('id_tema', $request->tema);
+        if ($request->filled('frekuensi')) $query->where('id_frekuensi', $request->frekuensi);
+        if ($request->filled('tahun_terbit')) $query->where('tahun_terbit', $request->tahun_terbit);
+
+        $allData = $query->get();
+
+        if ($allData->isEmpty()) {
+            return abort(404, 'Tidak ada data untuk diekspor.');
+        }
+
+        // 2. Kumpulkan seluruh periode tahun yang ada
+        $timeColumnsSet = [];
+        foreach ($allData as $item) {
+            foreach ($item->values as $val) {
+                if (!empty($val->tahun)) {
+                    $timeColumnsSet[$val->tahun] = true;
+                }
+            }
+        }
+        $timeColumns = array_keys($timeColumnsSet);
+        sort($timeColumns);
+
+        // 3. Buat file Excel menggunakan PhpSpreadsheet
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Data Bappeda');
+
+        // Susun header kolom
+        $headers = ['No', 'Nama Indikator', 'Satuan', 'Tema', 'Urusan', 'Bidang', 'Frekuensi'];
+        foreach ($timeColumns as $year) {
+            $headers[] = $year;
+        }
+
+        // Tulis header ke sheet
+        foreach ($headers as $colIndex => $headerText) {
+            $colLetter = Coordinate::stringFromColumnIndex($colIndex + 1);
+            $sheet->setCellValue($colLetter . '1', $headerText);
+            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
+        }
+
+        // Beri style bold pada header
+        $lastColLetter = Coordinate::stringFromColumnIndex(count($headers));
+        $sheet->getStyle('A1:' . $lastColLetter . '1')->getFont()->setBold(true);
+
+        // 4. Tulis baris data
+        $currentRow = 2;
+        foreach ($allData as $index => $item) {
+            $sheet->setCellValue('A' . $currentRow, $index + 1);
+            $sheet->setCellValue('B' . $currentRow, $item->nama_data);
+            $sheet->setCellValue('C' . $currentRow, $item->satuan ?: '-');
+            $sheet->setCellValue('D' . $currentRow, $item->tema->nama_tema ?? '-');
+            $sheet->setCellValue('E' . $currentRow, $item->urusan->nama_urusan ?? '-');
+            $sheet->setCellValue('F' . $currentRow, $item->bidang->nama_bidang ?? '-');
+            $sheet->setCellValue('G' . $currentRow, $item->frekuensi->nama_frekuensi ?? '-');
+
+            // Map values per tahun
+            $valuesMap = [];
+            foreach ($item->values as $val) {
+                $valuesMap[$val->tahun] = $val->nilai;
+            }
+
+            $colIndex = 8; // Kolom tahun dimulai dari H (indeks 8)
+            foreach ($timeColumns as $year) {
+                $colLetter = Coordinate::stringFromColumnIndex($colIndex);
+                $val = $valuesMap[$year] ?? null;
+                $sheet->setCellValue($colLetter . $currentRow, $val !== null ? (float)$val : '-');
+                $colIndex++;
+            }
+            $currentRow++;
+        }
+
+        $fileName = 'Matriks_Data_Pembangunan_' . now()->format('Ymd_His') . '.xlsx';
+        $writer = new Xlsx($spreadsheet);
+
+        return new StreamedResponse(function () use ($writer) {
+            $writer->save('php://output');
+        }, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 }   

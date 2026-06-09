@@ -1,13 +1,41 @@
 <script setup>
 import AppLayout from '@/Layouts/AppLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
+import debounce from 'lodash/debounce';
 
 defineOptions({ layout: AppLayout });
 
 const props = defineProps({
     activities: Array,
+    users: Array,
+    filters: Object,
     pagination: Object
 });
+
+const form = ref({
+    search: props.filters?.search || '',
+    action: props.filters?.action || '',
+    user_id: props.filters?.user_id || '',
+});
+
+const updateFilters = debounce(() => {
+    router.get('/admin/logs', form.value, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true
+    });
+}, 500);
+
+watch(form, () => updateFilters(), { deep: true });
+
+const clearFilters = () => {
+    form.value = {
+        search: '',
+        action: '',
+        user_id: '',
+    };
+};
 
 // Fungsi pembantu untuk menentukan skema warna berdasarkan tipe aksi
 const getActionTheme = (type) => {
@@ -54,6 +82,44 @@ const getActionTheme = (type) => {
         </div>
 
         <div class="bg-white rounded-xl p-8 md:p-12 shadow-2xl shadow-primary/5 border border-gray-400">
+            <!-- PANEL FILTER -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 pb-10 border-b border-gray-200">
+                <div class="space-y-2">
+                    <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">Cari Aktivitas/Target</label>
+                    <input v-model="form.search" type="text" placeholder="Masukkan kata kunci..."
+                        class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3.5 text-xs font-bold text-primary focus:outline-none focus:border-secondary transition-all shadow-sm">
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">Tipe Aksi</label>
+                    <select v-model="form.action"
+                        class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3.5 text-xs font-bold text-primary focus:outline-none focus:border-secondary transition-all shadow-sm cursor-pointer">
+                        <option value="">Semua Aksi</option>
+                        <option value="UPLOAD">UPLOAD (Tambah Data)</option>
+                        <option value="EDIT">EDIT (Perbarui Data)</option>
+                        <option value="DELETE">DELETE (Hapus Data)</option>
+                    </select>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-[9px] font-black text-textsecondary uppercase tracking-[0.2em] ml-2">Pengguna (User)</label>
+                    <select v-model="form.user_id"
+                        class="w-full bg-white border border-gray-400 rounded-xl px-4 py-3.5 text-xs font-bold text-primary focus:outline-none focus:border-secondary transition-all shadow-sm cursor-pointer">
+                        <option value="">Semua User</option>
+                        <option v-for="u in users" :key="u.id" :value="u.id">
+                            {{ u.name }} (@{{ u.username }})
+                        </option>
+                    </select>
+                </div>
+            </div>
+
+            <div v-if="form.search || form.action || form.user_id" class="flex items-center justify-between mb-8 -mt-6">
+                <span class="text-[9px] font-black text-textsecondary uppercase tracking-widest ml-2">Filter Terpasang</span>
+                <button @click="clearFilters" class="text-[9px] font-black text-integritas hover:underline uppercase tracking-widest transition-colors mr-2">
+                    Reset Filter
+                </button>
+            </div>
+
             <div class="relative">
                 <div v-if="activities.length > 0" class="absolute left-[9px] top-2 bottom-0 w-0.5 bg-gray-100"></div>
 

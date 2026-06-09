@@ -12,3 +12,105 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+@layer base {
+    :root {
+        --gr-base: 1rem;
+        --gr-ratio: 1.618;
+        --font-label: 0.76rem;
+        --font-body: var(--gr-base);
+        --font-body-lg: 1.125rem;
+        --font-title-sm: 1.375rem;
+        --font-title-md: 1.75rem;
+        --font-title-lg: 2.875rem;
+        --font-display: 4.625rem;
+
+        --radius-soft: 0.75rem;
+        --radius-panel: 1rem;
+        --radius-shell: 1.5rem;
+    }
+
+    html {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+    }
+
+    body {
+        @apply bg-white text-textmain;
+        font-size: var(--font-body);
+        line-height: 1.6;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+        @apply tracking-tight text-primary;
+    }
+}
+
+@layer components {
+    .ui-shell {
+        border-radius: var(--radius-shell);
+    }
+
+    .ui-panel {
+        @apply border border-slate-200 bg-white shadow-sm;
+        border-radius: var(--radius-panel);
+    }
+
+    .ui-surface {
+        @apply border border-slate-200 bg-slate-50;
+        border-radius: var(--radius-soft);
+    }
+
+    .ui-chip {
+        @apply inline-flex items-center uppercase font-black border;
+        border-radius: 999px;
+        font-size: var(--font-label);
+        letter-spacing: 0.16em;
+    }
+
+    .ui-eyebrow {
+        @apply uppercase font-black text-textsecondary;
+        font-size: var(--font-label);
+        letter-spacing: 0.18em;
+    }
+
+    .ui-title-sm {
+        @apply font-black text-primary;
+        font-size: var(--font-title-sm);
+        line-height: 1.18;
+    }
+
+    .ui-title-md {
+        @apply font-black text-primary;
+        font-size: var(--font-title-md);
+        line-height: 1.12;
+    }
+
+    .ui-title-lg {
+        @apply font-black text-primary;
+        font-size: var(--font-title-lg);
+        line-height: 1.02;
+    }
+
+    .ui-body {
+        @apply text-textsecondary font-medium;
+        font-size: var(--font-body);
+        line-height: 1.7;
+    }
+
+    .ui-body-lg {
+        @apply text-textsecondary font-medium;
+        font-size: var(--font-body-lg);
+        line-height: 1.72;
+    }
+
+    .ui-stat-value {
+        @apply font-black text-primary tracking-tight;
+        font-size: clamp(2rem, 3vw, 3.5rem);
+        line-height: 1;
+    }
+}

@@ -341,6 +341,23 @@ class DataUploadService
                     throw new Exception("Indikator '{$namaData}' sudah ada. Gunakan menu edit untuk memperbarui data.");
                 }
 
+                $extraFields = $row['extra_fields'] ?? [];
+                $deskripsiVal = null;
+                $sumberVal = null;
+
+                if (!empty($extraFields)) {
+                    foreach ($extraFields as $k => $v) {
+                        $kLower = strtolower(trim($k));
+                        if (in_array($kLower, ['deskripsi', 'definisi', 'keterangan'])) {
+                            $deskripsiVal = $v;
+                            unset($extraFields[$k]);
+                        } elseif ($kLower === 'sumber') {
+                            $sumberVal = $v;
+                            unset($extraFields[$k]);
+                        }
+                    }
+                }
+
                 $dataMaster = Data::create([
                     'nama_data' => $namaData,
                     'id_user'      => $userId,
@@ -349,7 +366,9 @@ class DataUploadService
                     'id_bidang'    => $row['id_bidang'],
                     'id_frekuensi' => $row['id_frekuensi'] ?? 1,
                     'satuan'       => $row['satuan'] ?? '-',
-                    'informasi_tambahan' => isset($row['extra_fields']) ? json_encode($row['extra_fields']) : null,
+                    'deskripsi'    => $deskripsiVal,
+                    'sumber'       => $sumberVal,
+                    'informasi_tambahan' => !empty($extraFields) ? json_encode($extraFields) : null,
                     'tahun_terbit' => $row['tahun_terbit'] ?? date('Y'),
                 ]);
 
@@ -419,6 +438,7 @@ class DataUploadService
                 'deskripsi'    => $formData['deskripsi'] ?? null,
                 'sumber'       => $formData['sumber'] ?? null,
                 'tahun_terbit' => $formData['tahun_terbit'] ?? date('Y'),
+                'informasi_tambahan' => isset($formData['extra_fields']) ? json_encode($formData['extra_fields']) : null,
             ]);
 
             if (isset($formData['id_katakunci']) && is_array($formData['id_katakunci'])) {

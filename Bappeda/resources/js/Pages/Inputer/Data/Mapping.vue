@@ -112,7 +112,7 @@ const getSelectedFieldInfo = (colKey) => {
             </button>
         </div>
 
-        <div class="flex-1 bg-white border border-gray-300 rounded-xl overflow-hidden shadow-sm flex flex-col">
+        <div class="flex-1 bg-white border border-gray-400 rounded-xl overflow-hidden shadow-sm flex flex-col">
             <div class="overflow-auto flex-1 relative">
                 <table class="w-full border-collapse min-w-max">
                     <thead class="bg-gray-50 sticky top-0 z-10 shadow-sm">

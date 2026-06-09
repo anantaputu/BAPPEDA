@@ -109,11 +109,11 @@ const menuGroups = computed(() => {
                     name: 'Master Data',
                     icon: 'solar:database-bold',
                     children: [
-                        { name: 'Tema', path: '/admin/tema' },
-                        { name: 'Urusan', path: '/admin/urusan' },
-                        { name: 'Bidang', path: '/admin/bidang' },
-                        { name: 'Frekuensi', path: '/admin/frekuensi' },
-                        { name: 'Kata Kunci', path: '/admin/katakunci'},
+                        { name: 'Tema', path: '/admin/tema', icon: 'solar:tag-bold' },
+                        { name: 'Urusan', path: '/admin/urusan', icon: 'solar:case-round-bold' },
+                        { name: 'Bidang', path: '/admin/bidang', icon: 'solar:widget-5-bold' },
+                        { name: 'Frekuensi', path: '/admin/frekuensi', icon: 'solar:calendar-mark-bold' },
+                        { name: 'Kata Kunci', path: '/admin/katakunci', icon: 'solar:hashtag-bold' },
                     ]
                 },
             ]
@@ -169,7 +169,7 @@ const menuGroups = computed(() => {
         >
             <Navbar v-if="shouldShowNavbar" :logoPath="logoPath"/>
 
-            <main :class="['p-8 flex-1 bg-white', shouldShowNavbar ? '' : '']">
+            <main :class="['flex-1 bg-white px-6 py-8 md:px-8', shouldShowNavbar ? '' : '']">
                 <div class="max-w-full">
                     <slot />
                 </div>
